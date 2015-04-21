@@ -1,0 +1,9 @@
+name: Main System
+root: System
+entities:
+    - name: System
+      type: Row
+      child: Bay
+    - name: Bay
+      type: Stack
+      child: Tray
