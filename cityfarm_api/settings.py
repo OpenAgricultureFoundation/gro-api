@@ -10,6 +10,8 @@ For the full list of settings and their values, see
 https://docs.djangoproject.com/en/1.8/ref/settings/
 """
 
+from django.core.exceptions import ImproperlyConfigured
+
 # Build paths inside the project like this: os.path.join(BASE_DIR, ...)
 import os
 
@@ -38,7 +40,10 @@ INSTALLED_APPS = (
     'django.contrib.messages',
     'django.contrib.staticfiles',
     'rest_framework',
-    'cityfarm_api.layout',
+    'setup',
+    'layout',
+    #'sensors',
+    #'plants',
 )
 
 MIDDLEWARE_CLASSES = (
@@ -102,3 +107,19 @@ USE_TZ = True
 # https://docs.djangoproject.com/en/1.8/howto/static-files/
 
 STATIC_URL = '/static/'
+
+# CityFARM-specific settings are stored in a separate file "farm_settings"
+
+# Make sure the server has been configured already
+#try:
+#    from cityfarm_api.farm_settings import CITYFARM_API
+#except ImportError as e:
+#    raise RuntimeError("The server must be configured before being run. " +
+#        "Please run 'python manage.py configure' and then try again")
+#if CITYFARM_API.get('NODE_TYPE', 'LEAF') == 'ROOT':
+#    INSTALLED_APPS = INSTALLED_APPS = ('cityfarm_api.root')
+#elif CITYFARM_API.get('NODE_TYPE', 'LEAF') == 'LEAF':
+#    INSTALLED_APPS = INSTALLED_APPS = ('cityfarm_api.leaf')
+#else:
+#    raise ImproperlyConfigured("Invalid NODE_TYPE: '%s'. " %
+#            CITYFARM_API["NODE_TYPE"] + "Valid types are 'ROOT' and 'LEAF'.")

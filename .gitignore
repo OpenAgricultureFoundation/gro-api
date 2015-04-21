@@ -58,3 +58,5 @@ target/
 
 # Database
 db.*
+
+farm_settings.py
