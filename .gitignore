@@ -59,5 +59,6 @@ target/
 # Database
 db.*
 
+.env
 *.swp
 farm_settings.py
