@@ -16,7 +16,7 @@ import yaml
 from django.conf import settings
 from voluptuous import All, Any, Length, Range, Required, Schema
 
-from cityfarm-api.models import Farm
+from cityfarm_api.models import Farm
 
 # Metaschema used to parse the layout schemata in this module
 lower = lambda x: x.lower()

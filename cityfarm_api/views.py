@@ -1,5 +1,5 @@
-from cityfarm-api.models import Farm
-from cityfarm-api.serializers import FarmSerializer
+from cityfarm_api.models import Farm
+from cityfarm_api.serializers import FarmSerializer
 
 from rest_framework import viewsets
 

@@ -3,7 +3,7 @@ from django.contrib import admin
 
 from rest_framework.routers import DefaultRouter
 
-from cityfarm-api import views
+from cityfarm_api import views
 
 farm_router = DefaultRouter()
 farm_router.register(r'farms', views.FarmViewset)
