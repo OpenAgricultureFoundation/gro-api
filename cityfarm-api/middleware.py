@@ -1,0 +1,2 @@
+class FarmRoutingMiddleware:
+    pass

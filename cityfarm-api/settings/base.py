@@ -10,8 +10,6 @@ For the full list of settings and their values, see
 https://docs.djangoproject.com/en/1.8/ref/settings/
 """
 
-from django.core.exceptions import ImproperlyConfigured
-
 # Build paths inside the project like this: os.path.join(BASE_DIR, ...)
 import os
 
@@ -40,10 +38,6 @@ INSTALLED_APPS = (
     'django.contrib.messages',
     'django.contrib.staticfiles',
     'rest_framework',
-    'setup',
-    'layout',
-    'sensors',
-    'plants',
 )
 
 MIDDLEWARE_CLASSES = (
@@ -108,10 +102,4 @@ USE_TZ = True
 
 STATIC_URL = '/static/'
 
-# CityFARM-specific settings are stored in a separate file "farm_settings"
-
-try:
-    from cityfarm-api.farm_settings import CITYFARM_API
-except ImportError as e:
-    raise RuntimeError("The server must be configured before being run. " +
-        "Please run 'python manage.py configure' and then try again")
+REST_FRAMEWORK = {}
