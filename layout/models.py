@@ -1,8 +1,24 @@
 from django.db import models
 from django.conf import settings
-from layout.schemata import schemata_to_use
+from layout.schemata import all_schemata
 from solo.models import SingletonModel
 from cityfarm_api.errors import InvalidNodeType
+
+def schemata_to_use():
+    if settings.NODE_TYPE == "LEAF":
+        from farms.models import Farm
+        try:
+            farm = Farm.get_solo()
+        except OperationalError as e:
+            return {}
+        if farm.is_configured():
+            return {farm.layout: all_schemata[farm.layout]}
+        else:
+            return {}
+    elif settings.NODE_TYPE == "ROOT":
+        return all_schemata
+    else:
+        raise InvalidNodeType()
 
 class DimensionsMixin(models.Model):
     width = models.FloatField(null=True)
