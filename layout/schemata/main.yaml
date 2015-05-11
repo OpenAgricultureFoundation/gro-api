@@ -1,9 +1,9 @@
 name: Main System
-root: Aisle
 entities:
     - name: Aisle
       orientation: X
-      child: Bay
+      parent: Enclosure
     - name: Bay
       orientation: Z
-      child: Tray
+      parent: Aisle
+tray-parent: Bay
