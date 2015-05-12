@@ -1,6 +1,6 @@
-from voluptuous import Invalid
+from voluptuous import Invalid, SchemaError
 from django.test import TestCase
-from layout.schemata import load_schema_from_dict, SchemaError
+from layout.schemata import load_schema_from_dict
 
 
 class InvalidSchemaTestCase(TestCase):

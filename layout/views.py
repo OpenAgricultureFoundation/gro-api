@@ -1,12 +1,16 @@
-from django.shortcuts import render
-from layout.schemata import schemata_to_use
-from layout.models import all_models
-from layout.serializers import all_serializers
-from rest_framework import viewsets, generics, mixins
-from cityfarm_api.viewsets import SingletonViewSet
 from solo.models import SingletonModel
+from django.shortcuts import render
+from rest_framework import viewsets, generics, mixins
+from layout.models import all_models, schemata_to_use, Model3D
+from layout.serializers import all_serializers, Model3DSerializer
+from cityfarm_api.viewsets import SingletonViewSet
+
+class Model3DViewset(viewsets.ModelViewSet):
+    queryset = Model3D.objects.all()
+    serializer_class = Model3DSerializer
 
 all_viewsets = {}
+# TODO: Create a viewset for layout_object
 for schema_name, schema in schemata_to_use().items():
     curr_viewsets = {}
     model_names = [entity["name"] for entity in schema["entities"]]

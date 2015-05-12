@@ -35,7 +35,7 @@ def NotIn(container, msg=None):
 
 # Metaschema used to parse the layout schemata in this module
 # TODO: Add the entity names from all other apps to this list
-RESERVED_ENTITY_NAMES = ["tray", "enclosure"]
+RESERVED_ENTITY_NAMES = ["tray", "enclosure", "layout_object"]
 entity = {
     Required('name'): All(Lower, NotIn(RESERVED_ENTITY_NAMES)),
     Required('orientation'): All(Lower, In(["x", "y", "z"])),
@@ -106,6 +106,7 @@ def load_schema_from_file(filename):
         schema = yaml.load(schema_file)
     return load_schema_from_dict(schema_name, schema)
 
+# Load all of the schema files from this directory
 for filename in os.listdir(os.path.dirname(__file__)):
     file_ext = os.path.splitext(filename)[1]
     # Only process yaml files
