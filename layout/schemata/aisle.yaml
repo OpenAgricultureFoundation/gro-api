@@ -1,4 +1,4 @@
-name: Main System
+name: Single Aisle
 entities:
     - name: Aisle
       orientation: X

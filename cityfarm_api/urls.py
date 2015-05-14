@@ -11,7 +11,6 @@ from layout import views as layout_views
 
 def base_router():
     base_router = DefaultRouter()
-    # Farm views
     base_router.register(r'farms', farm_views.FarmViewSet)
     base_router.register(r'model3D', layout_views.Model3DViewset)
     return base_router

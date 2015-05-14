@@ -1,0 +1,6 @@
+name: Single Bay
+entities:
+    - name: Bay
+      orientation: Z
+      parent: Enclosure
+tray-parent: Bay
