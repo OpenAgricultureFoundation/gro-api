@@ -61,4 +61,5 @@ db.*
 
 .env
 *.swp
-farm_settings.py
+media/*
+migrations
