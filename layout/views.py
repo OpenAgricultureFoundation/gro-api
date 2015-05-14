@@ -10,13 +10,10 @@ class Model3DViewset(viewsets.ModelViewSet):
     serializer_class = Model3DSerializer
 
 all_viewsets = {}
-# TODO: Create a viewset for layout_object
-for schema_name, schema in schemata_to_use().items():
+for schema_name, curr_serializers in all_serializers.items():
     curr_viewsets = {}
-    model_names = [entity["name"] for entity in schema["entities"]]
-    model_names += ["tray", "enclosure"]
-    for model_name in model_names:
-        curr_model = all_models[schema_name][model_name]
+    for model_name, Serializer in curr_serializers.items():
+        curr_model = Serializer.Meta.model
         if issubclass(curr_model, SingletonModel):
             viewset_classes = (SingletonViewSet,)
         else:

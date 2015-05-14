@@ -1,5 +1,7 @@
 #!/usr/bin/env bash
 
+# TODO: Allow for running of only certain tests via command line option
+
 #############
 # Constants #
 #############
@@ -36,7 +38,7 @@ for test_name in ${TEST_NAMES[*]}; do
     # The --noinput option is broken in django 1.8, so this is a workaround
     yes N | python ${MANAGE} makemigrations layout >/dev/null
     python ${MANAGE} migrate --noinput >/dev/null
-    python ${MANAGE} test layout --settings=$SETTINGS_FILE
+    python ${MANAGE} test layout.tests --settings=$SETTINGS_FILE
 done
 
 ###########
