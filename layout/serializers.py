@@ -1,5 +1,7 @@
 from rest_framework import serializers
 from rest_framework.serializers import ValidationError
+from rest_framework.utils.model_meta import _resolve_model
+from rest_framework.utils.model_meta import get_field_info, RelationInfo
 from rest_framework.utils.field_mapping import get_nested_relation_kwargs
 from layout.models import all_models, LocationMixin, Model3D
 
@@ -37,18 +39,29 @@ class LayoutObjectSerializer(serializers.HyperlinkedModelSerializer):
             return attrs
     def get_field_names(self, declared_fields, info):
         """
-        Add the "children" field to the list of fields to serialize if it exists
-        in the model.
+        Serialize all relations in the model, as well as the "layout_object"
+        field.
         """
         field_names = super().get_field_names(declared_fields, info)
-        if hasattr(self.Meta.model, 'children'):
-            if isinstance(field_names, tuple):
-                field_names = field_names + ('children',)
-            elif isinstance(field_names, list):
-                field_names.append('children')
-            else:
-                raise TypeError()
+        relations = get_field_info(self.Meta.model).relations
+        for field_name, relation_info in relations.items():
+            field_names.append(field_name)
+        if hasattr(self.Meta.model, "layout_object"):
+            field_names.append("layout_object")
         return field_names
+    def build_field(self, field_name, info, model_class, nested_depth):
+        if field_name == "layout_object":
+            model_field = model_class.layout_object.field
+            relation_info = RelationInfo(
+                model_field = model_field,
+                related_model = _resolve_model(model_field.rel.to),
+                to_many = False,
+                has_through_model = True
+            )
+            return self.build_relational_field(field_name, relation_info)
+        else:
+            return super().build_field(field_name, info, model_class,
+                    nested_depth)
     def build_nested_field(self, field_name, relation_info, nested_depth):
         if field_name == "parent":
             return self.build_relational_field(field_name, relation_info)

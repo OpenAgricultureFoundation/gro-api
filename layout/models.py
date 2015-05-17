@@ -65,7 +65,7 @@ for schema_name, schema in schemata_to_use().items():
     curr_models["layout_object"] = LayoutObject
     # Create the Enclosure model
     enclosure_name = "{}_enclosure".format(schema_name)
-    enclosure_classes = (LayoutObject, Enclosure, Object3D)
+    enclosure_classes = (Enclosure, Object3D)
     enclosure_attrs = {
         "__module__": __name__,
         "__str__": to_string_method("Enclosure", "id"),
@@ -81,6 +81,7 @@ for schema_name, schema in schemata_to_use().items():
         "num_rows": models.IntegerField(null=True),
         "num_cols": models.IntegerField(null=True),
         "parent": models.ForeignKey(tray_parent, related_name="children"),
+        "layout_object": models.OneToOneField(LayoutObject, parent_link=True),
         "__str__": to_string_method("Tray", "id"),
     }
     if schema["tray-parent"] == "enclosure":
@@ -97,6 +98,7 @@ for schema_name, schema in schemata_to_use().items():
             "__module__": __name__,
             "orientation": entity["orientation"],
             "parent": models.ForeignKey(model_parent, related_name="children"),
+            "layout_object": models.OneToOneField(LayoutObject, parent_link=True),
             "__str__": to_string_method(entity["name"], "id"),
         }
         if entity["parent"] == "enclosure":
