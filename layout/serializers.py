@@ -27,6 +27,7 @@ class LayoutObjectSerializer(serializers.HyperlinkedModelSerializer):
                 depth = int(depth)
             except:
                 depth = 0
+            depth = min(max(depth, 0), 10)
             self.Meta.depth = depth
     def validate_location(self, attrs):
         total_width = (attrs['x'] or 0) + (attrs['width'] or 0)
