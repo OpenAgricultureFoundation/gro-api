@@ -18,6 +18,16 @@ class LayoutObjectSerializer(serializers.HyperlinkedModelSerializer):
     not the 'parent' field, which prevents us from returning redundant data in
     the serialized response.
     """
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        request = self.context.get('request', None)
+        if request:
+            depth = request.query_params.get('depth', '0')
+            try:
+                depth = int(depth)
+            except:
+                depth = 0
+            self.Meta.depth = depth
     def validate_location(self, attrs):
         total_width = (attrs['x'] or 0) + (attrs['width'] or 0)
         parent_width = attrs['parent'].width
