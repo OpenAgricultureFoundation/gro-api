@@ -11,6 +11,16 @@ class Model3DSerializer(serializers.HyperlinkedModelSerializer):
 
 class LayoutObjectSerializer(serializers.HyperlinkedModelSerializer):
     """
+    A ModelSerializers subclass taht is used for serializing LayoutObject
+    """
+    pass
+    # TODO layout_object field that links to child object
+    # layout_object = serializers.SerializerMethodField()
+    # def get_layout_object(self, obj):
+    #     return self.Meta.model.objects.get_subclass(pk=obj.pk)
+
+class LayoutObjectSubSerializer(serializers.HyperlinkedModelSerializer):
+    """
     A ModelSerializer subclass that is used for serializing LayoutObjects. The
     ModelSerializers be default uses NestedSerializers for all references in
     each node when the depth parameter of the meta class is supplied.
@@ -92,8 +102,13 @@ all_serializers = {}
 for schema_name, curr_models in all_models.items():
     curr_serializers = {}
     for model_name, model in curr_models.items():
-        class Serializer(LayoutObjectSerializer):
-            class Meta:
-                model = model
+        if model_name == "layout_object":
+            class Serializer(LayoutObjectSerializer):
+                class Meta:
+                    model = model
+        else:
+            class Serializer(LayoutObjectSubSerializer):
+                class Meta:
+                    model = model
         curr_serializers[model_name] = Serializer
     all_serializers[schema_name] = curr_serializers

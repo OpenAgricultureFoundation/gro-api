@@ -1,5 +1,6 @@
 from django.db import models, OperationalError
 from django.conf import settings
+from model_utils.managers import InheritanceManager
 from solo.models import SingletonModel
 from cityfarm_api.errors import InvalidNodeType
 from layout.schemata import all_schemata
@@ -61,7 +62,11 @@ for schema_name, schema in schemata_to_use().items():
     curr_models = {}
     # Create the base LayoutObject model
     model_name = "{}_layout_object".format(schema_name)
-    LayoutObject = type(model_name, (models.Model,), {"__module__": __name__})
+    model_attrs = {
+        "__module__": __name__,
+        "objects": InheritanceManager(),
+    }
+    LayoutObject = type(model_name, (models.Model,), model_attrs)
     curr_models["layout_object"] = LayoutObject
     # Create the Enclosure model
     enclosure_name = "{}_enclosure".format(schema_name)
