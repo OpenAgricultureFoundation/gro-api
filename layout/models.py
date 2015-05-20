@@ -74,7 +74,7 @@ for schema_name, schema in schemata_to_use().items():
     enclosure_classes = (Enclosure, Object3D)
     enclosure_attrs = {
         "__module__": __name__,
-        "__str__": to_string_method("Enclosure", "id"),
+        "__str__": to_string_method("Enclosure", "name"),
     }
     Enclosure = type(enclosure_name, enclosure_classes, enclosure_attrs)
     curr_models["enclosure"] = Enclosure
@@ -88,7 +88,7 @@ for schema_name, schema in schemata_to_use().items():
         "num_cols": models.IntegerField(null=True),
         "parent": models.ForeignKey(tray_parent, related_name="children"),
         "layout_object": models.OneToOneField(LayoutObject, parent_link=True),
-        "__str__": to_string_method("Tray", "id"),
+        "__str__": to_string_method("Tray", "name"),
     }
     if schema["tray-parent"] == "enclosure":
         tray_classes = tray_classes + (SingletonModel,)
@@ -105,7 +105,7 @@ for schema_name, schema in schemata_to_use().items():
             "orientation": entity["orientation"],
             "parent": models.ForeignKey(model_parent, related_name="children"),
             "layout_object": models.OneToOneField(LayoutObject, parent_link=True),
-            "__str__": to_string_method(entity["name"], "id"),
+            "__str__": to_string_method(entity["name"], "name"),
         }
         if entity["parent"] == "enclosure":
             model_classes = model_classes + (SingletonModel,)
