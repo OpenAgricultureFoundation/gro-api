@@ -42,15 +42,15 @@ class Object3D(models.Model):
 class Enclosure(SingletonModel):
     class Meta:
         abstract = True
-    width = models.FloatField(null=True)
     length = models.FloatField(null=True)
+    width = models.FloatField(null=True)
     height = models.FloatField(null=True)
 
 class LocationMixin(models.Model):
     class Meta:
         abstract = True
-    width = models.FloatField(null=True)
     length = models.FloatField(null=True)
+    width = models.FloatField(null=True)
     height = models.FloatField(null=True)
     x = models.FloatField(null=True)
     y = models.FloatField(null=True)

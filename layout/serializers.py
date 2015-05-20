@@ -40,14 +40,14 @@ class LayoutObjectSubSerializer(serializers.HyperlinkedModelSerializer):
             depth = min(max(depth, 0), 10)
             self.Meta.depth = depth
     def validate_location(self, attrs):
-        total_width = (attrs['x'] or 0) + (attrs['width'] or 0)
-        parent_width = attrs['parent'].width
-        if parent_width and not total_width <= parent_width:
-            raise ValidationError("Model is too wide to fit in its parent")
-        total_length = (attrs['y'] or 0) + (attrs['length'] or 0)
+        total_length = (attrs['x'] or 0) + (attrs['length'] or 0)
         parent_length = attrs['parent'].length
         if parent_length and not total_length <= parent_length:
             raise ValidationError("Model is too long to fit in its parent")
+        total_width = (attrs['y'] or 0) + (attrs['width'] or 0)
+        parent_width = attrs['parent'].width
+        if parent_width and not total_width <= parent_width:
+            raise ValidationError("Model is too wide to fit in its parent")
         total_height = (attrs['z'] or 0) + (attrs['height'] or 0)
         parent_height = attrs['parent'].height
         if parent_height and not total_height <= parent_height:
