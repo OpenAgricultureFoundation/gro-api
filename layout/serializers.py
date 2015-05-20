@@ -97,6 +97,12 @@ class LayoutObjectSubSerializer(serializers.HyperlinkedModelSerializer):
         else:
             return super().build_nested_field(field_name, relation_info,
                     nested_depth)
+    def create(self, validated_data):
+        obj = super().create(validated_data)
+        if "name" in validated_data and validated_data["name"] is "":
+            obj.name = "{} {}".format(self.Meta.model_name, obj.pk)
+            obj.save()
+        return obj
 
 all_serializers = {}
 for schema_name, curr_models in all_models.items():
@@ -110,5 +116,6 @@ for schema_name, curr_models in all_models.items():
             class Serializer(LayoutObjectSubSerializer):
                 class Meta:
                     model = model
+                    model_name = model_name
         curr_serializers[model_name] = Serializer
     all_serializers[schema_name] = curr_serializers
