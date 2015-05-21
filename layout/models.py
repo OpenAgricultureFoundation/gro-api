@@ -40,11 +40,9 @@ class Object3D(models.Model):
         abstract = True
     model = models.ForeignKey(Model3D, null=True)
 
-enclosure_name = "{} enclosure".format(Farm.get_solo().name)
 class Enclosure(SingletonModel):
     class Meta:
         abstract = True
-    name = models.CharField(max_length=100, blank=True, default=enclosure_name)
     length = models.FloatField(null=True)
     width = models.FloatField(null=True)
     height = models.FloatField(null=True)
@@ -52,7 +50,6 @@ class Enclosure(SingletonModel):
 class LocationMixin(models.Model):
     class Meta:
         abstract = True
-    name = models.CharField(max_length=100, blank=True)
     length = models.FloatField(null=True)
     width = models.FloatField(null=True)
     height = models.FloatField(null=True)
@@ -60,6 +57,12 @@ class LocationMixin(models.Model):
     y = models.FloatField(null=True)
     z = models.FloatField(null=True)
 
+def NameMixin(default=None):
+    class NameMixin(models.Model):
+        class Meta:
+            abstract = True
+        name = models.CharField(max_length=100, blank=True, default=default)
+    return NameMixin
 
 all_models = {}
 for schema_name, schema in schemata_to_use().items():
@@ -74,7 +77,8 @@ for schema_name, schema in schemata_to_use().items():
     curr_models["layout_object"] = LayoutObject
     # Create the Enclosure model
     enclosure_name = "{}_enclosure".format(schema_name)
-    enclosure_classes = (Enclosure, Object3D)
+    default_name = "{} enclosure".format(Farm.get_solo().name)
+    enclosure_classes = (Enclosure, Object3D, NameMixin(default_name))
     enclosure_attrs = {
         "__module__": __name__,
         "__str__": to_string_method("Enclosure", "name"),
@@ -83,7 +87,11 @@ for schema_name, schema in schemata_to_use().items():
     curr_models["enclosure"] = Enclosure
     # Create the Tray model
     tray_name = "{}_tray".format(schema_name)
-    tray_classes = (LayoutObject, LocationMixin, Object3D)
+    if schema["tray-parent"] == "enclosure":
+        name_mixin = NameMixin("{} Tray".format(Farm.get_solo().name))
+    else:
+        name_mixin = NameMixin()
+    tray_classes = (LayoutObject, LocationMixin, Object3D, name_mixin)
     tray_parent = "{}_{}".format(schema_name, schema["tray-parent"])
     tray_attrs = {
         "__module__": __name__,
@@ -96,13 +104,17 @@ for schema_name, schema in schemata_to_use().items():
     if schema["tray-parent"] == "enclosure":
         tray_classes = tray_classes + (SingletonModel,)
         tray_attrs["parent"].default = 1
-        tray_attrs["name"].default = "{} Tray".format(Farm.get_solo().name)
     Tray = type(tray_name, tray_classes, tray_attrs)
     curr_models["tray"] = Tray
     # Create the rest of the models
     for entity in schema["entities"]:
         model_name = "{}_{}".format(schema_name, entity["name"])
-        model_classes = (LayoutObject, LocationMixin, Object3D)
+        if entity["parent"] == "enclosure":
+            name_mixin = NameMixin("{} {}".format(Farm.get_solo().name,
+                entity["name"]))
+        else:
+            name_mixin = NameMixin()
+        model_classes = (LayoutObject, LocationMixin, Object3D, name_mixin)
         model_parent = "{}_{}".format(schema_name, entity["parent"])
         model_attrs = {
             "__module__": __name__,
@@ -115,8 +127,5 @@ for schema_name, schema in schemata_to_use().items():
             model_classes = model_classes + (SingletonModel,)
             model_attrs["parent"].default = 1
         CurrModel = type(model_name, model_classes, model_attrs)
-        if entity["parent"] == "enclosure":
-            CurrModel.name.default = "{} {}".format(Farm.get_solo().name,
-                    entity["name"])
         curr_models[entity["name"]] = CurrModel
     all_models[schema_name] = curr_models
