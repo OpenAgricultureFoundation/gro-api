@@ -1,15 +1,38 @@
-from rest_framework import serializers
 from rest_framework.serializers import ValidationError
 from rest_framework.utils.model_meta import _resolve_model
 from rest_framework.utils.model_meta import get_field_info, RelationInfo
 from rest_framework.utils.field_mapping import get_nested_relation_kwargs
-from layout.models import all_models, LocationMixin, Model3D
+from cityfarm_api.serializers import BaseSerializer
+from layout.models import all_models
+from layout.models import Model3D, TrayLayout, PlantSiteLayout
+from layout.models import PositionMixin, SizeMixin
 
-class Model3DSerializer(serializers.HyperlinkedModelSerializer):
+######################
+# Static Serializers #
+######################
+
+class Model3DSerializer(BaseSerializer):
     class Meta:
         model = Model3D
 
-class LayoutObjectSerializer(serializers.HyperlinkedModelSerializer):
+
+class TrayLayoutSerializer(BaseSerializer):
+    class Meta:
+        model = TrayLayout
+        fields = ("name", "plant_sites")
+        depth = 1
+
+
+class PlantSiteLayoutSerializer(BaseSerializer):
+    class Meta:
+        model = PlantSiteLayout
+
+
+########################
+# Modified Serializers #
+########################
+
+class LayoutObjectSerializer(BaseSerializer):
     """
     A ModelSerializers subclass taht is used for serializing LayoutObject
     """
@@ -19,26 +42,7 @@ class LayoutObjectSerializer(serializers.HyperlinkedModelSerializer):
     # def get_layout_object(self, obj):
     #     return self.Meta.model.objects.get_subclass(pk=obj.pk)
 
-class LayoutObjectSubSerializer(serializers.HyperlinkedModelSerializer):
-    """
-    A ModelSerializer subclass that is used for serializing LayoutObjects. The
-    ModelSerializers be default uses NestedSerializers for all references in
-    each node when the depth parameter of the meta class is supplied.
-    LayoutObjectSerializer uses NestedSerializers for the 'children' field but
-    not the 'parent' field, which prevents us from returning redundant data in
-    the serialized response.
-    """
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-        request = self.context.get('request', None)
-        if request:
-            depth = request.query_params.get('depth', '0')
-            try:
-                depth = int(depth)
-            except:
-                depth = 0
-            depth = min(max(depth, 0), 10)
-            self.Meta.depth = depth
+class LayoutObjectSubSerializer(BaseSerializer):
     def validate_location(self, attrs):
         total_length = (attrs['x'] or 0) + (attrs['length'] or 0)
         parent_length = attrs['parent'].length
@@ -54,22 +58,11 @@ class LayoutObjectSubSerializer(serializers.HyperlinkedModelSerializer):
             raise ValidationError("Model is too tall to fit in its parent")
         return attrs
     def validate(self, attrs):
-        if issubclass(self.Meta.model, LocationMixin):
+        if issubclass(self.Meta.model, PositionMixin) and \
+                issubclass(self.Meta.model, SizeMixin):
             return self.validate_location(attrs)
         else:
             return attrs
-    def get_field_names(self, declared_fields, info):
-        """
-        Serialize all relations in the model, as well as the "layout_object"
-        field.
-        """
-        field_names = super().get_field_names(declared_fields, info)
-        relations = get_field_info(self.Meta.model).relations
-        for field_name, relation_info in relations.items():
-            field_names.append(field_name)
-        if hasattr(self.Meta.model, "layout_object"):
-            field_names.append("layout_object")
-        return field_names
     def build_field(self, field_name, info, model_class, nested_depth):
         if field_name == "layout_object":
             model_field = model_class.layout_object.field
@@ -83,26 +76,17 @@ class LayoutObjectSubSerializer(serializers.HyperlinkedModelSerializer):
         else:
             return super().build_field(field_name, info, model_class,
                     nested_depth)
-    def build_nested_field(self, field_name, relation_info, nested_depth):
-        if field_name == "parent":
-            return self.build_relational_field(field_name, relation_info)
-        elif field_name == "children":
-            class NestedSerializer(LayoutObjectSerializer):
-                class Meta:
-                    model = relation_info.related_model
-                    depth = nested_depth - 1
-            field_class = NestedSerializer
-            field_kwargs = get_nested_relation_kwargs(relation_info)
-            return field_class, field_kwargs
-        else:
-            return super().build_nested_field(field_name, relation_info,
-                    nested_depth)
     def create(self, validated_data):
         obj = super().create(validated_data)
         if "name" in validated_data and validated_data["name"] is "":
             obj.name = "{} {}".format(self.Meta.model_name, obj.pk)
             obj.save()
         return obj
+
+class TraySerializer(LayoutObjectSubSerializer):
+    def create(self, validated_data):
+        print("Creating plant sites")
+        return super().create(validated_data)
 
 all_serializers = {}
 for schema_name, curr_models in all_models.items():
@@ -112,10 +96,18 @@ for schema_name, curr_models in all_models.items():
             class Serializer(LayoutObjectSerializer):
                 class Meta:
                     model = model
+        elif model_name == "tray":
+            class Serializer(TraySerializer):
+                class Meta:
+                    model = model
+                    extra_fields = ["plant_sites"]
+                    never_nest = ["parent"]
         else:
             class Serializer(LayoutObjectSubSerializer):
                 class Meta:
                     model = model
                     model_name = model_name
+                    extra_fields = ["children"]
+                    never_nest = ["parent"]
         curr_serializers[model_name] = Serializer
     all_serializers[schema_name] = curr_serializers

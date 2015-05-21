@@ -41,6 +41,7 @@ INSTALLED_APPS = (
     'rest_framework',
     'farms',
     'layout',
+    'plants',
 )
 
 MIDDLEWARE_CLASSES = (

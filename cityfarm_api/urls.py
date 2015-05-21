@@ -7,12 +7,17 @@ from cityfarm_api.errors import InvalidNodeType
 from farms import views as farm_views
 from farms.models import Farm
 from layout import views as layout_views
+from plants import views as plant_views
 
 
 def base_router():
     base_router = DefaultRouter()
     base_router.register(r'farms', farm_views.FarmViewSet)
     base_router.register(r'model3D', layout_views.Model3DViewset)
+    base_router.register(r'trayLayout', layout_views.TrayLayoutViewset)
+    base_router.register(r'plantSiteLayout',
+            layout_views.PlantSiteLayoutViewset)
+    base_router.register(r'plantSite', plant_views.PlantSiteViewset)
     return base_router
 
 def urls_for_farm(farm):

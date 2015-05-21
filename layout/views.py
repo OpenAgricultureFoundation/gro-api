@@ -1,13 +1,23 @@
 from solo.models import SingletonModel
 from django.shortcuts import render
 from rest_framework import viewsets, generics, mixins
-from layout.models import all_models, schemata_to_use, Model3D
-from layout.serializers import all_serializers, Model3DSerializer
+from layout.models import all_models, Model3D, TrayLayout, PlantSiteLayout
+from layout.serializers import all_serializers
+from layout.serializers import (Model3DSerializer, TrayLayoutSerializer,
+        PlantSiteLayoutSerializer)
 from cityfarm_api.viewsets import SingletonViewSet
 
 class Model3DViewset(viewsets.ModelViewSet):
     queryset = Model3D.objects.all()
     serializer_class = Model3DSerializer
+
+class TrayLayoutViewset(viewsets.ModelViewSet):
+    queryset = TrayLayout.objects.all()
+    serializer_class = TrayLayoutSerializer
+
+class PlantSiteLayoutViewset(viewsets.ModelViewSet):
+    queryset = PlantSiteLayout.objects.all()
+    serializer_class = PlantSiteLayoutSerializer
 
 all_viewsets = {}
 for schema_name, curr_serializers in all_serializers.items():
