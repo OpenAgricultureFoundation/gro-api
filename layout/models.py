@@ -43,19 +43,19 @@ class Object3D(models.Model):
 class Enclosure(SingletonModel):
     class Meta:
         abstract = True
-    length = models.FloatField(null=True)
-    width = models.FloatField(null=True)
-    height = models.FloatField(null=True)
+    length = models.FloatField(default=0)
+    width = models.FloatField(default=0)
+    height = models.FloatField(default=0)
 
 class LocationMixin(models.Model):
     class Meta:
         abstract = True
-    length = models.FloatField(null=True)
-    width = models.FloatField(null=True)
-    height = models.FloatField(null=True)
-    x = models.FloatField(null=True)
-    y = models.FloatField(null=True)
-    z = models.FloatField(null=True)
+    length = models.FloatField(default=0)
+    width = models.FloatField(default=0)
+    height = models.FloatField(default=0)
+    x = models.FloatField(default=0)
+    y = models.FloatField(default=0)
+    z = models.FloatField(default=0)
 
 def NameMixin(default=None):
     class NameMixin(models.Model):
@@ -78,7 +78,7 @@ for schema_name, schema in schemata_to_use().items():
     # Create the Enclosure model
     enclosure_name = "{}_enclosure".format(schema_name)
     default_name = "{} enclosure".format(Farm.get_solo().name)
-    enclosure_classes = (Enclosure, Object3D, NameMixin(default_name))
+    enclosure_classes = (NameMixin(default_name), Enclosure, Object3D)
     enclosure_attrs = {
         "__module__": __name__,
         "__str__": to_string_method("Enclosure", "name"),
@@ -91,7 +91,7 @@ for schema_name, schema in schemata_to_use().items():
         name_mixin = NameMixin("{} Tray".format(Farm.get_solo().name))
     else:
         name_mixin = NameMixin()
-    tray_classes = (LayoutObject, LocationMixin, Object3D, name_mixin)
+    tray_classes = (LayoutObject, name_mixin, LocationMixin, Object3D)
     tray_parent = "{}_{}".format(schema_name, schema["tray-parent"])
     tray_attrs = {
         "__module__": __name__,
@@ -114,7 +114,7 @@ for schema_name, schema in schemata_to_use().items():
                 entity["name"]))
         else:
             name_mixin = NameMixin()
-        model_classes = (LayoutObject, LocationMixin, Object3D, name_mixin)
+        model_classes = (LayoutObject, name_mixin, LocationMixin, Object3D)
         model_parent = "{}_{}".format(schema_name, entity["parent"])
         model_attrs = {
             "__module__": __name__,
