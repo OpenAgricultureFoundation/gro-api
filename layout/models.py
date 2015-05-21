@@ -3,6 +3,7 @@ from django.conf import settings
 from model_utils.managers import InheritanceManager
 from solo.models import SingletonModel
 from cityfarm_api.errors import InvalidNodeType
+from farms.models import Farm
 from layout.schemata import all_schemata
 
 def schemata_to_use():
@@ -39,9 +40,11 @@ class Object3D(models.Model):
         abstract = True
     model = models.ForeignKey(Model3D, null=True)
 
+enclosure_name = "{} enclosure".format(Farm.get_solo().name)
 class Enclosure(SingletonModel):
     class Meta:
         abstract = True
+    name = models.CharField(max_length=100, blank=True, default=enclosure_name)
     length = models.FloatField(null=True)
     width = models.FloatField(null=True)
     height = models.FloatField(null=True)
@@ -93,6 +96,7 @@ for schema_name, schema in schemata_to_use().items():
     if schema["tray-parent"] == "enclosure":
         tray_classes = tray_classes + (SingletonModel,)
         tray_attrs["parent"].default = 1
+        tray_attrs["name"].default = "{} Tray".format(Farm.get_solo().name)
     Tray = type(tray_name, tray_classes, tray_attrs)
     curr_models["tray"] = Tray
     # Create the rest of the models
@@ -111,5 +115,8 @@ for schema_name, schema in schemata_to_use().items():
             model_classes = model_classes + (SingletonModel,)
             model_attrs["parent"].default = 1
         CurrModel = type(model_name, model_classes, model_attrs)
+        if entity["parent"] == "enclosure":
+            CurrModel.name.default = "{} {}".format(Farm.get_solo().name,
+                    entity["name"])
         curr_models[entity["name"]] = CurrModel
     all_models[schema_name] = curr_models
