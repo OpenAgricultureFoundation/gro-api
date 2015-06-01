@@ -18,6 +18,8 @@ def base_router():
     base_router.register(r'plantSiteLayout',
             layout_views.PlantSiteLayoutViewset)
     base_router.register(r'plantSite', plant_views.PlantSiteViewset)
+    base_router.register(r'plantType', plant_views.PlantTypeViewset)
+    base_router.register(r'plant', plant_views.PlantViewset)
     return base_router
 
 def urls_for_farm(farm):

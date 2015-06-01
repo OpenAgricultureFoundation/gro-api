@@ -101,6 +101,7 @@ for schema_name, curr_models in all_models.items():
                 class Meta:
                     model = model
                     extra_fields = ["plant_sites"]
+                    always_nest = ["model"]
                     never_nest = ["parent"]
         else:
             class Serializer(LayoutObjectSubSerializer):
@@ -108,6 +109,7 @@ for schema_name, curr_models in all_models.items():
                     model = model
                     model_name = model_name
                     extra_fields = ["children"]
+                    always_nest = ["model"]
                     never_nest = ["parent"]
         curr_serializers[model_name] = Serializer
     all_serializers[schema_name] = curr_serializers

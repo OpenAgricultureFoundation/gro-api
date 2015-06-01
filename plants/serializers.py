@@ -1,6 +1,15 @@
-from rest_framework import serializers
-from plants.models import PlantSite
+from cityfarm_api.serializers import BaseSerializer
+from plants.models import PlantSite, PlantType, Plant
 
-class PlantSiteSerializer(serializers.HyperlinkedModelSerializer):
+class PlantSiteSerializer(BaseSerializer):
     class Meta:
         model = PlantSite
+
+class PlantTypeSerializer(BaseSerializer):
+    class Meta:
+        model = PlantType
+
+class PlantSerializer(BaseSerializer):
+    class Meta:
+        model = Plant
+        always_nest = ["type"]
