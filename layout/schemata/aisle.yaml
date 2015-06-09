@@ -1,9 +1,7 @@
 name: Single Aisle
 entities:
     - name: Aisle
-      orientation: X
       parent: Enclosure
     - name: Bay
-      orientation: Z
       parent: Aisle
 tray-parent: Bay

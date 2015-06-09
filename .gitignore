@@ -59,7 +59,11 @@ target/
 # Database
 db.*
 
+env
 .env
+fifo
 *.swp
-media/*
 migrations
+uwsgi/enabled/*
+cityfarm_api/media/*
+cityfarm_api/static/*

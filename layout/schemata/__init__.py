@@ -34,38 +34,35 @@ def NotIn(container, msg=None):
     return validator
 
 # Metaschema used to parse the layout schemata in this module
-# TODO: Add the entity names from all other apps to this list
-RESERVED_ENTITY_NAMES = ["tray", "enclosure", "layout_object"]
 entity = {
-    Required('name'): All(Lower, NotIn(RESERVED_ENTITY_NAMES)),
-    Required('orientation'): All(Lower, In(["x", "y", "z"])),
-    Required('parent'): Lower,
+    Required('name'): str,
+    Required('parent'): str,
 }
 metaschema = Schema({
-    Required('name'): Lower,
+    Required('name'): str,
     Required('entities', default=[]): [entity],
-    Required('tray-parent', default="enclosure"): Lower,
+    Required('tray-parent', default="Enclosure"): str,
 })
 
 
 def validate_schema(schema):
     # A dictionary that maps entity names to entity dictionaries
     entities = {entity["name"]: entity for entity in schema["entities"]}
-    entities["tray"] = {
+    entities["Tray"] = {
         "parent": schema["tray-parent"],
     }
-    entities["enclosure"] = {}
+    entities["Enclosure"] = {}
     # A dictionary of all of the entities without children. It is initialized to
     # the full set of entities and should be emptied by the end of this function
     entities_without_children = entities.copy()
-    entities_without_children.pop("tray")  # Trays shouldn't have children
+    entities_without_children.pop("Tray")  # Trays shouldn't have children
     # Maps the name of an entity to the name of that entity's child
     entity_children = {}
     for entity_name, entity in entities.items():
-        if entity_name == "enclosure":
+        if entity_name == "Enclosure":
             continue
         entity_parent = entity["parent"]
-        if entity_parent == "tray":
+        if entity_parent == "Tray":
             raise SchemaError("Trays aren't allowed to have children")
         elif entity_parent in entities_without_children:
             entities_without_children.pop(entity_parent)

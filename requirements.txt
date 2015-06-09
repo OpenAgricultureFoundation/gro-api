@@ -1,7 +1,15 @@
+awesome-slugify==1.6.5
 Django==1.8.1
 django-cors-headers==1.1.0
 django-model-utils==2.2
 django-solo==1.1.0
 djangorestframework==3.1.1
+Flask==0.10.1
+itsdangerous==0.24
+Jinja2==2.7.3
+MarkupSafe==0.23
 PyYAML==3.11
+regex==2015.6.4
+Unidecode==0.4.17
 voluptuous==0.8.7
+Werkzeug==0.10.4

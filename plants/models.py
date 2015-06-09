@@ -1,12 +1,9 @@
 from django.db import models
 from farms.models import Farm
-from layout.models import all_models
+from layout.models import Tray
 
-# TODO This won't work on root. Use a generic foreignkey field and select the
-# queryset in serializers.py
-tray_class = all_models[Farm.get_solo().layout]["tray"]
 class PlantSite(models.Model):
-    parent = models.ForeignKey(tray_class, related_name="plant_sites")
+    parent = models.ForeignKey(Tray, related_name="plant_sites")
     row = models.IntegerField()
     col = models.IntegerField()
     def __str__(self):

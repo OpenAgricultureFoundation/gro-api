@@ -1,15 +1,30 @@
 from django.test import TestCase
+from django.core.exceptions import ValidationError
 from farms.models import Farm
 
 
 class FarmTestCase(TestCase):
-    def test_farm_id_null(self):
-        Farm.get_solo().delete()
+    def test_invalid_layout(self):
         farm = Farm.get_solo()
-        assert not farm.is_configured()
+        farm.layout = 'test'
+        self.assertRaises(ValidationError, farm.full_clean)
 
-    def test_farm_id_nonzero(self):
-        Farm.get_solo().delete()
+    def test_valid_layout(self):
         farm = Farm.get_solo()
-        farm.farm_id = 69
-        assert farm.is_configured()
+        farm.layout = 'aisle'
+        farm.save()
+
+    def test_empty_slug(self):
+        farm = Farm.get_solo()
+        farm.slug = ''
+        farm.name = 'Test Farm'
+        farm.save()
+        self.assertEqual(farm.name, 'Test Farm')
+        self.assertEqual(farm.slug, 'test-farm')
+
+    def test_non_empty_slug(self):
+        farm = Farm.get_solo()
+        farm.slug = 'test'
+        farm.name = 'Test Farm'
+        self.assertEqual(farm.name, 'Test Farm')
+        self.assertEqual(farm.slug, 'test')

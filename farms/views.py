@@ -3,7 +3,7 @@ from farms.models import Farm
 from farms.serializers import FarmSerializer
 
 
-class FarmViewSet(SingletonViewSet):
+class FarmViewset(SingletonViewSet):
     model = Farm
     queryset = Farm.objects.all()
     serializer_class = FarmSerializer
