@@ -7,6 +7,7 @@ class InvalidFilePath(Exception):
         super().__init__()
         self.filepath = filepath
 
+
 class InvalidFifoPath(InvalidFilePath):
     """
     This exception should be thrown if this server fails to find the Master FIFO
@@ -15,6 +16,7 @@ class InvalidFifoPath(InvalidFilePath):
     @property
     def message(self):
         return 'FIFO file "%s" does not exist' % self.filepath
+
 
 class InvalidManagerPath(InvalidFilePath):
     """
