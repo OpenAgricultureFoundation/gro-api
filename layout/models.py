@@ -5,7 +5,7 @@ from solo.models import SingletonModel
 from django.db.utils import OperationalError
 from model_utils.managers import InheritanceManager
 
-from cityfarm_api.errors import InvalidNodeType
+from cityfarm_api.exceptions import InvalidNodeType
 from farms.models import Farm
 from layout.schemata import all_schemata
 from layout.fields import ParentField, ChildrenRelation

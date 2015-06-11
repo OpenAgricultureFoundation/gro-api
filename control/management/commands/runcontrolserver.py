@@ -1,10 +1,12 @@
+import os
 from django.core.management.base import BaseCommand, CommandError
 
 class Command(BaseCommand):
     help = 'Runs the control server'
     def add_arguments(self, parser):
-        parser.add_argument('-p', '--port', dest='port', type=int, default=8080,
-            help='The port on which to run the control server')
+        parser.add_argument('-p', '--port', dest='port', type=int,
+            help='The port on which to run the control server',
+            default=os.environ['CITYFARM_API_CONTROL_PORT'])
         parser.add_argument('-f', '--fifo', '--fifo-path', dest='fifo',
             help='Filepath of the Master FIFO of the CityFARM API server')
         parser.add_argument('-m', '--manager', '--manager-path', dest='manager',
