@@ -12,9 +12,22 @@ https://docs.djangoproject.com/en/1.8/ref/settings/
 
 import os
 
-BASE_DIR = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+LEAF = "leaf"
+ROOT = "root"
 
-# Application definition
+SERVER_TYPE = os.environ['CITYFARM_API_SERVER_TYPE']
+if not SERVER_TYPE in [LEAF, ROOT]:
+    raise ValueError('Invalid server type read from environment')
+
+DEVELOPMENT = "development"
+PRODUCTION = "production"
+
+SERVER_MODE = os.environ['CITYFARM_API_SERVER_MODE']
+if not SERVER_MODE in [DEVELOPMENT, PRODUCTION]:
+    raise ValueError('Invalid server mode read from environment')
+
+BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+
 
 INSTALLED_APPS = (
     'django.contrib.admin',
@@ -29,6 +42,10 @@ INSTALLED_APPS = (
     'layout',
     'plants',
 )
+if SERVER_TYPE == LEAF:
+    INSTALLED_APPS = INSTALLED_APPS + ('control',)
+if SERVER_TYPE == ROOT:
+    INSTALLED_APPS = INSTALLED_APPS + ('root',)
 
 MIDDLEWARE_CLASSES = (
     'django.contrib.sessions.middleware.SessionMiddleware',
@@ -41,6 +58,10 @@ MIDDLEWARE_CLASSES = (
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
     'django.middleware.security.SecurityMiddleware',
 )
+if SERVER_TYPE == ROOT:
+    MIDDLEWARE_CLASSES = MIDDLEWARE_CLASSES + (
+        'cityfarm_api.middleware.FarmRoutingMiddleware'
+    )
 
 ROOT_URLCONF = 'cityfarm_api.urls'
 
@@ -60,6 +81,21 @@ TEMPLATES = [
     },
 ]
 
+if SERVER_TYPE == LEAF:
+    DATABASES = {
+        'default': {
+            'ENGINE': 'django.db.backends.sqlite3',
+            'NAME': os.path.join(BASE_DIR, 'db.sqlite3'),
+        }
+    }
+if SERVER_TYPE == ROOT:
+    DATABASES = {
+        'root': {
+            'ENGINE': 'django.db.backends.sqlite3',
+            'NAME': os.path.join(BASE_DIR, 'db.sqlite3'),
+        },
+    }
+
 WSGI_APPLICATION = 'cityfarm_api.wsgi.application'
 
 # Internationalization
@@ -74,7 +110,6 @@ USE_I18N = True
 USE_L10N = True
 
 USE_TZ = True
-
 
 # Static files (CSS, JavaScript, Images)
 # https://docs.djangoproject.com/en/1.8/howto/static-files/
@@ -96,3 +131,32 @@ MEDIA_ROOT = os.path.join(BASE_DIR, 'cityfarm_api', 'media')
 REST_FRAMEWORK = {
     'TEST_REQUEST_DEFAULT_FORMAT': 'json'
 }
+
+# Deployment Configuration
+
+if SERVER_MODE == DEVELOPMENT:
+    DEBUG = True
+    ALLOWED_HOSTS = []
+    SECRET_KEY = '))r--wwm1h@2n7x^b(o)e(*ziq+_l2*lxfpd7tdnq9qgtwlq@_'
+else:
+    DEBUG = False
+    ALLOWED_HOSTS = [
+        ".media.mit.edu",
+        ".media.mit.edu.",
+    ]
+    SECRET_FILE = os.path.join(BASE_DIR, 'secret.txt')
+    try:
+        SECRET_KEY = open(SECRET_FILE).read().strip()
+    except IOError:
+        try:
+            import random
+            SECRET_KEY = ''.join([random.SystemRandom().choice('abcdefghijklmnopqrstuvwxyz0123456789!@#$%^&*(-_=+)') for i in range(50)])
+            secret = file(SECRET_FILE, 'w')
+            secret.write(SECRET_KEY)
+            secret.close()
+        except IOError:
+            raise Exception("Failed to write secret key to secret file at %s" %
+                    SECRET_FILE)
+    CSRF_COOKIE_SECURE = True
+    SESSION_COOKIE_SECURE = True
+    CONN_MAX_AGE = None

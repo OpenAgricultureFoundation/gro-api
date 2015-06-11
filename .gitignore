@@ -64,6 +64,5 @@ env
 fifo
 *.swp
 migrations
-uwsgi/enabled/*
 cityfarm_api/media/*
 cityfarm_api/static/*
