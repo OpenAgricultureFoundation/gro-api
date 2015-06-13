@@ -5,14 +5,13 @@ from solo.models import SingletonModel
 from django.db.utils import OperationalError
 from model_utils.managers import InheritanceManager
 
-from cityfarm_api.exceptions import InvalidNodeType
 from farms.models import Farm
 from layout.schemata import all_schemata
 from layout.fields import ParentField, ChildrenRelation
 
 
 def schemata_to_use():
-    if settings.NODE_TYPE == "LEAF":
+    if settings.SERVER_TYPE == settings.LEAF:
         # On a leaf server, we only need to generate models for the layout the
         # current farm uses
         from farms.models import Farm
@@ -24,10 +23,8 @@ def schemata_to_use():
         except OperationalError:
             return {}
         return {farm.layout: all_schemata[farm.layout]} if farm.layout else {}
-    elif settings.NODE_TYPE == "ROOT":
+    if settings.SERVER_TYPE == settings.ROOT:
         return all_schemata
-    else:
-        raise InvalidNodeType()
 
 
 class Model3D(models.Model):

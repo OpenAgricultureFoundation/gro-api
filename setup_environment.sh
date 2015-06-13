@@ -46,10 +46,14 @@ echo "export CITYFARM_API_SERVER_MODE=$SERVER_MODE" >> .env
 echo "export DJANGO_SETTINGS_MODULE=cityfarm_api.settings" >> .env
 case $SERVER_MODE in
     development)
-        echo "export CITYFARM_API_MASTER_FIFO=$(pwd -P)/fifo" >> .env
+        echo "export UWSGI_PROCESSES=1" >> .env
+        echo "export UWSGI_MASTER_FIFO=$(pwd -P)/fifo" >> .env
+        echo "export UWSGI_HTTP=127.0.0.1:8000" >> .env
         ;;
     production)
-        echo "export CITYFARM_API_MASTER_FIFO=/etc/cityfarm_api_fifo" >> .env
+        echo "export UWSGI_PROCESSES=4" >> .env
+        echo "export UWSGI_MASTER_FIFO=/etc/cityfarm_api_fifo" >> .env
+        echo "export UWSGI_HTTP=0.0.0.0:8000" >> .env
 esac
 
 echo "Wrote configuration to ./.env file. To use it, run \"source .env\""

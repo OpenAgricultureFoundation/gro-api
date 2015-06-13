@@ -11,19 +11,20 @@ https://docs.djangoproject.com/en/1.8/ref/settings/
 """
 
 import os
+import string
 
 LEAF = "leaf"
 ROOT = "root"
 
 SERVER_TYPE = os.environ['CITYFARM_API_SERVER_TYPE']
-if not SERVER_TYPE in [LEAF, ROOT]:
+if SERVER_TYPE not in [LEAF, ROOT]:
     raise ValueError('Invalid server type read from environment')
 
 DEVELOPMENT = "development"
 PRODUCTION = "production"
 
 SERVER_MODE = os.environ['CITYFARM_API_SERVER_MODE']
-if not SERVER_MODE in [DEVELOPMENT, PRODUCTION]:
+if SERVER_MODE not in [DEVELOPMENT, PRODUCTION]:
     raise ValueError('Invalid server mode read from environment')
 
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
@@ -134,13 +135,57 @@ REST_FRAMEWORK = {
 
 # Deployment Configuration
 
+LOGGING = {
+    'version': 1,
+    'disable_existing_loggers': False,
+    'formatters': {
+        'verbose': {
+            'format': '%(levelname)s %(asctime)s %(module)s %(process)d' +
+                      '%(thread)d %(message)s',
+        },
+        'simple': {
+            'format': '%(levelname)s %(message)s',
+        }
+    },
+    'handlers': {
+        'console': {
+            'level': 'INFO',
+            'class': 'logging.StreamHandler',
+            'formatter': 'simple',
+        },
+        'file': {
+            'level': 'DEBUG',
+            'class': 'logging.FileHandler',
+            'formatter': 'verbose',
+        },
+    },
+}
 if SERVER_MODE == DEVELOPMENT:
     DEBUG = True
+    LOGGING['handlers']['file']['filename'] = \
+        os.path.join(BASE_DIR, 'debug.log')
+    LOGGING['loggers'] = {
+        'cityfarm_api': {
+            'handlers': ['console', 'file'],
+            'level': 'DEBUG',
+            'propagate': True,
+        },
+    }
     ALLOWED_HOSTS = []
     SECRET_KEY = '))r--wwm1h@2n7x^b(o)e(*ziq+_l2*lxfpd7tdnq9qgtwlq@_'
+
 else:
     DEBUG = False
+    LOGGING['handlers']['file']['filename'] = '/var/log/cityfarm_api.log'
+    LOGGING['loggers'] = {
+        'control': {
+            'handlers': ['file'],
+            'level': 'DEBUG',
+            'propagate': True,
+        }
+    }
     ALLOWED_HOSTS = [
+        "localhost",
         ".media.mit.edu",
         ".media.mit.edu.",
     ]
@@ -150,13 +195,21 @@ else:
     except IOError:
         try:
             import random
-            SECRET_KEY = ''.join([random.SystemRandom().choice('abcdefghijklmnopqrstuvwxyz0123456789!@#$%^&*(-_=+)') for i in range(50)])
-            secret = file(SECRET_FILE, 'w')
+            valid_characters = "{}{}{}".format(
+                string.ascii_letters,
+                string.digits,
+                string.punctuation,
+            )
+            character = lambda: random.SystemRandom().choice(valid_characters)
+            SECRET_KEY = ''.join([character() for i in range(50)])
+            secret = open(SECRET_FILE, 'w')
             secret.write(SECRET_KEY)
             secret.close()
         except IOError:
-            raise Exception("Failed to write secret key to secret file at %s" %
-                    SECRET_FILE)
+            raise Exception(
+                'Failed to write secret key to secret file at '
+                '{}'.format(SECRET_FILE)
+            )
     CSRF_COOKIE_SECURE = True
     SESSION_COOKIE_SECURE = True
     CONN_MAX_AGE = None

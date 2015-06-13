@@ -1,4 +1,8 @@
 """
+This app defines a set of routes that give a Django server the ability to
+control itself. The :mod:`~control.sa
+"""
+"""
 This app defines a Flask server and a set of views that together give a Django
 server the ability to control itself. The Flask control server in the
 :mod:`~control.server` module can send commands to the Django project's uWSGI
