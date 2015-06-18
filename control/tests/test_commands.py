@@ -1,101 +1,104 @@
 #!/usr/bin/env python
 import os
+import sys
 import tempfile
 from django.test import TestCase
-import control.exceptions
 import control.commands
+from control.models import *
+from control.commands import *
+from control.exceptions import *
 
 
 class CommandTestCase(TestCase):
     def test_command(self):
-        command = control.commands.Command()
+        command = Command()
         self.assertEqual(command.title, 'Unnamed Command')
         self.assertRaises(NotImplementedError, command.run)
 
-
-class FifoCommandTestCase(TestCase):
+class FifoMixin:
     @classmethod
     def setUpClass(cls):
-        cls.mock_fifo_fd, cls.mock_fifo_path = tempfile.mkstemp()
-        cls.FirstCommand = control.commands.FifoCommand('First', '1')
-        cls.SecondCommand = control.commands.FifoCommand('Second', '2')
-        cls.ThirdCommand = control.commands.FifoCommand('Third', '3')
+        cls.old_fifo_path = fifo_path
+        cls.mock_fifo_path = os.path.join(tempfile.gettempdir(), 'fifo')
+        if os.path.exists(cls.mock_fifo_path):
+            os.remove(cls.mock_fifo_path)
+        os.mkfifo(cls.mock_fifo_path)
 
     @classmethod
     def tearDownClass(cls):
+        control.commands.fifo_path = cls.old_fifo_path
         os.remove(cls.mock_fifo_path)
 
     def setUp(self):
         control.commands.fifo_path = self.mock_fifo_path
-        os.ftruncate(self.mock_fifo_fd, 0)
+        os.truncate(self.mock_fifo_path, 0)
 
-    def test_command_creation(self):
-        test_command = self.FirstCommand()
-        self.assertEqual(test_command.title, 'First')
-        self.assertFalse(hasattr(test_command, 'returncode'))
+    def installInvalidPath(self):
+        control.commands.fifo_path = '/invalid/fifo/path'
 
-    def test_single_command_once(self):
-        test_command = self.FirstCommand()
-        list(test_command.run())
-        with open(self.mock_fifo_path, 'r') as f:
-            content = f.read()
-        self.assertEqual(content, '1')
-        self.assertEqual(test_command.returncode, 0)
+    def installInvalidFifo(self):
+        mock_fifo_fd, control.commands.fifo_path = tempfile.mkstemp()
 
-    def test_single_command_repeated(self):
-        test_command = self.FirstCommand()
-        [list(test_command.run()) for i in range(5)]
-        with open(self.mock_fifo_path, 'r') as f:
-            content = f.read()
-        self.assertEqual(content, '11111')
-        self.assertEqual(test_command.returncode, 0)
+class FifoCommandTestCase(FifoMixin, TestCase):
+    def test_check_invalid_path(self):
+        self.installInvalidPath()
+        self.assertRaises(InvalidFifoPath, FifoCommand.check)
+        errors = check_fifo_path(None)
+        self.assertEqual(len(errors), 1)
+        expected_message = 'Failed to find FIFO file'
+        self.assertEqual(errors[0].msg, expected_message)
 
-    def test_multiple_commands_once(self):
-        test_command_1 = self.FirstCommand()
-        test_command_2 = self.SecondCommand()
-        test_command_3 = self.ThirdCommand()
-        list(test_command_1.run())
-        list(test_command_2.run())
-        list(test_command_3.run())
-        with open(self.mock_fifo_path, 'r') as f:
-            content = f.read()
-        self.assertEqual(content, '123')
-        self.assertEqual(test_command_1.returncode, 0)
-        self.assertEqual(test_command_2.returncode, 0)
-        self.assertEqual(test_command_3.returncode, 0)
+    def test_check_invalid_file(self):
+        self.installInvalidFifo()
+        self.assertRaises(InvalidFifoFile, FifoCommand.check)
+        errors = check_fifo_path(None)
+        self.assertEqual(len(errors), 1)
+        expected_message = 'FIFO file is invalid'
+        self.assertEqual(errors[0].msg, expected_message)
 
-    def test_multiple_commands_repeated(self):
-        test_command_1 = self.FirstCommand()
-        test_command_2 = self.SecondCommand()
-        test_command_3 = self.ThirdCommand()
-        [list(test_command_1.run()) for i in range(2)]
-        [list(test_command_2.run()) for i in range(2)]
-        [list(test_command_3.run()) for i in range(2)]
-        [list(test_command_1.run()) for i in range(3)]
-        [list(test_command_2.run()) for i in range(3)]
-        [list(test_command_3.run()) for i in range(3)]
-        with open(self.mock_fifo_path, 'r') as f:
-            content = f.read()
-        self.assertEqual(content, '112233111222333')
-        self.assertEqual(test_command_1.returncode, 0)
-        self.assertEqual(test_command_2.returncode, 0)
-        self.assertEqual(test_command_3.returncode, 0)
+    def test_run_not_being_read(self):
+        class TestCommand(FifoCommand):
+            fifo_command = b't'
+        command = TestCommand()
+        result = command.to_json()
+        self.assertEqual(result['returncode'], 1)
 
-    def test_invalid_fifo_file(self):
-        control.commands.fifo_path = "/invalid/fifo/path"
-        command = self.FirstCommand()
-        try:
-            list(command.run())
-        except control.exceptions.InvalidFifoPath as e:
-            self.assertEquals(
-                e.message,
-                'FIFO file "/invalid/fifo/path" does not exist'
-            )
-        else:
-            self.fail('InvalidFifoPath exception not thrown')
+class ReloadWorkersTestCase(FifoMixin, TestCase):
+    def test_success(self):
+        fifo = os.open(self.mock_fifo_path, os.O_RDONLY | os.O_NONBLOCK)
+        command = ReloadWorkers()
+        result = command.to_json()
+        self.assertEqual(result['title'], 'Reload Workers')
+        self.assertEqual(result['returncode'], 0)
+        line = os.read(fifo, 1)
+        self.assertEqual(line, b'c')
+        line = os.read(fifo, 1)
+        self.assertEqual(line, b'')
 
+    def test_multiple_success(self):
+        fifo = os.open(self.mock_fifo_path, os.O_RDONLY | os.O_NONBLOCK)
+        for i in range(5):
+            command = ReloadWorkers()
+            result = command.to_json()
+            self.assertEqual(result['title'], 'Reload Workers')
+            self.assertEqual(result['returncode'], 0)
+        line = os.read(fifo, 5)
+        self.assertEqual(line, b'ccccc')
+        line = os.read(fifo, 1)
+        self.assertEqual(line, b'')
 
-class ManagerCommandsTestCase(TestCase):
+    def test_failure_not_read(self):
+        os.environ['RUN_MAIN'] = 'false'
+        command = ReloadWorkers()
+        result = command.to_json()
+        self.assertEqual(result['returncode'], 1)
+        # Simulate running behind Django development server
+        os.environ['RUN_MAIN'] = 'true'
+        command = ReloadWorkers()
+        result = command.to_json()
+        self.assertEqual(result['returncode'], 0)
+
+class ShellCommandTestCase(TestCase):
     success_manager_code = b"""#!/usr/bin/env python3
 import sys
 print('Ran command "{}"'.format(' '.join(sys.argv)))
@@ -108,6 +111,7 @@ sys.exit('Failed to run command "{}"'.format(' '.join(sys.argv)))
 
     @classmethod
     def setUpClass(cls):
+        cls.old_manager_path = manager_path
         cls.mock_success_fd, cls.mock_success_path = tempfile.mkstemp()
         os.write(cls.mock_success_fd, cls.success_manager_code)
         cls.mock_failure_fd, cls.mock_failure_path = tempfile.mkstemp()
@@ -115,6 +119,7 @@ sys.exit('Failed to run command "{}"'.format(' '.join(sys.argv)))
 
     @classmethod
     def tearDownClass(cls):
+        control.commands.manager_path = cls.old_manager_path
         os.remove(cls.mock_success_path)
         os.remove(cls.mock_failure_path)
 
@@ -124,78 +129,37 @@ sys.exit('Failed to run command "{}"'.format(' '.join(sys.argv)))
     def activate_failure_manager(self):
         control.commands.manager_path = self.mock_failure_path
 
-    def test_command_creation(self):
-        command = control.commands.ManagerCommand('Test', '')()
-        self.assertEqual(command.title, 'Test')
-        self.assertFalse(hasattr(command, 'returncode'))
-
-    def test_successful_command_single_argument(self):
+    def test_successful_command(self):
         self.activate_success_manager()
-        command = control.commands.ManagerCommand('Command', 'arg1')()
+        class TestCommand(ManagerCommand):
+            args = ('arg1',)
         line_count = 0
         expected_output = 'Ran command "{} arg1"\n'.format(
             self.mock_success_path
         )
-        line_count = 0
-        for line in command.run():
-            line_count += 1
-            self.assertLessEqual(line_count, 1)  # There should only be 1 line
-            self.assertEqual(line, expected_output)
-            self.assertFalse(line.is_error)
-        self.assertEqual(command.returncode, 0)
+        result = TestCommand().to_json()
+        self.assertEqual(result['log'], expected_output)
+        self.assertEqual(result['error'], '')
+        self.assertEqual(result['returncode'], 0)
 
-    def test_successful_command_multiple_arguments(self):
-        self.activate_success_manager()
-        command = control.commands.ManagerCommand('Command', 'arg1', '--flag')()
-        line_count = 0
-        expected_output = 'Ran command "{} arg1 --flag"\n'.format(
-            self.mock_success_path
-        )
-        line_count = 0
-        for line in command.run():
-            line_count += 1
-            self.assertLessEqual(line_count, 1)  # There should only be 1 line
-            self.assertEqual(line, expected_output)
-            self.assertFalse(line.is_error)
-        self.assertEqual(command.returncode, 0)
-
-    def test_failed_command_single_argument(self):
+    def test_failed_command(self):
         self.activate_failure_manager()
-        command = control.commands.ManagerCommand('Command', 'arg1')()
+        class TestCommand(ManagerCommand):
+            args = ('arg1',)
         line_count = 0
         expected_output = 'Failed to run command "{} arg1"\n'.format(
             self.mock_failure_path
         )
-        for line in command.run():
-            line_count += 1
-            self.assertLessEqual(line_count, 1)  # There should only be 1 line
-            self.assertEqual(line, expected_output)
-            self.assertTrue(line.is_error)
-        self.assertEqual(command.returncode, 1)
-
-    def test_failed_command_multiple_arguments(self):
-        self.activate_failure_manager()
-        command = control.commands.ManagerCommand('Command', 'arg1', '--flag')()
-        line_count = 0
-        expected_output = 'Failed to run command "{} arg1 --flag"\n'.format(
-            self.mock_failure_path
-        )
-        for line in command.run():
-            line_count += 1
-            self.assertLessEqual(line_count, 1)  # There should only be 1 line
-            self.assertEqual(line, expected_output)
-            self.assertTrue(line.is_error)
-        self.assertEqual(command.returncode, 1)
+        result = TestCommand().to_json()
+        self.assertEqual(result['log'], expected_output)
+        self.assertEqual(result['error'], expected_output)
+        self.assertEqual(result['returncode'], 1)
 
     def test_invalid_manager_file(self):
         control.commands.manager_path = "/invalid/manager/path"
-        command = control.commands.ManagerCommand('Test', 'arg1')()
-        try:
-            list(command.run())
-        except control.exceptions.InvalidManagerPath as e:
-            self.assertEquals(
-                e.message,
-                'manage.py file "/invalid/manager/path" does not exist'
-            )
-        else:
-            self.fail('InvalidManagerPath exception not thrown')
+        command = Migrate()
+        self.assertRaises(InvalidManagerPath, command.to_json)
+        errors = check_manager_path(None)
+        self.assertEqual(len(errors), 1)
+        expected_message = 'Failed to find manage.py file'
+        self.assertEqual(errors[0].msg, expected_message)

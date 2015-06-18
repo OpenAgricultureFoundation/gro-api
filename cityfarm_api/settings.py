@@ -157,33 +157,29 @@ LOGGING = {
             'level': 'DEBUG',
             'class': 'logging.FileHandler',
             'formatter': 'verbose',
+            'filename': '',
         },
     },
+    'loggers': {
+        'cityfarm_api': {
+            'handlers': ['file'],
+            'level': 'DEBUG',
+            'propagate': True,
+        },
+    }
+
 }
 if SERVER_MODE == DEVELOPMENT:
     DEBUG = True
     LOGGING['handlers']['file']['filename'] = \
         os.path.join(BASE_DIR, 'debug.log')
-    LOGGING['loggers'] = {
-        'cityfarm_api': {
-            'handlers': ['console', 'file'],
-            'level': 'DEBUG',
-            'propagate': True,
-        },
-    }
+    LOGGING['loggers']['cityfarm_api']['handlers'].append('console')
     ALLOWED_HOSTS = []
     SECRET_KEY = '))r--wwm1h@2n7x^b(o)e(*ziq+_l2*lxfpd7tdnq9qgtwlq@_'
 
 else:
     DEBUG = False
     LOGGING['handlers']['file']['filename'] = '/var/log/cityfarm_api.log'
-    LOGGING['loggers'] = {
-        'control': {
-            'handlers': ['file'],
-            'level': 'DEBUG',
-            'propagate': True,
-        }
-    }
     ALLOWED_HOSTS = [
         "localhost",
         ".media.mit.edu",
@@ -213,3 +209,4 @@ else:
     CSRF_COOKIE_SECURE = True
     SESSION_COOKIE_SECURE = True
     CONN_MAX_AGE = None
+    ADMINS = ['Douglas Chambers', 'dougiefresh@mit.edu']

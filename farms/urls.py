@@ -1,7 +1,8 @@
 from rest_framework.routers import DefaultRouter
 from farms import views
 
-router = DefaultRouter()
-router.register(r'farms', views.FarmViewset)
+def register_static_patterns(router):
+    router.register(r'farms', views.FarmViewset)
 
-urlpatterns = router.urls
+def register_dynamic_patterns(router, layout):
+    pass

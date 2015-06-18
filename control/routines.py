@@ -20,7 +20,6 @@ class Routine:
     title = 'Unnamed Routine'
 
     def __init__(self):
-        self.check()
         self.commands = [CommandCls() for CommandCls in self.command_classes]
 
     @classmethod

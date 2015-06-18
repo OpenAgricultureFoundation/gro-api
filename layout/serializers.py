@@ -28,7 +28,7 @@ class PlantSiteLayoutSerializer(BaseSerializer):
 
 class LayoutObjectSerializer(BaseSerializer):
     class Meta:
-        models = LayoutObject
+        model = LayoutObject
     layout_object = serializers.SerializerMethodField()
     def get_layout_object(self, obj):
         return self.Meta.model.objects.get_subclass()
@@ -73,10 +73,16 @@ class LayoutObjectSubSerializer(BaseSerializer):
 class EnclosureSerializer(LayoutObjectSubSerializer):
     class Meta:
         model = Enclosure
+        model_name = 'enclosure'
+        nest_if_recursive = ["model"]
+        never_nest = ['parent', 'layout_object']
 
 class TraySerializer(LayoutObjectSubSerializer):
     class Meta:
         model = Tray
+        model_name = 'tray'
+        nest_if_recursive = ["model"]
+        never_nest = ['parent', 'layout_object']
     def create(self, validated_data):
         # TODO: Create plant sites here
         return super().create(validated_data)
@@ -87,7 +93,6 @@ for entity_name, entity_model in dynamic_models.items():
         class Meta:
             model = entity_model
             model_name = entity_name
-            extra_fields = ["children"]
-            always_nest = ["model"]
-            never_nest = ["parent"]
+            nest_if_recursive = ["model"]
+            never_nest = ["parent", "layout_object"]
     dynamic_serializers[entity_name] = Serializer

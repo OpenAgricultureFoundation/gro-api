@@ -25,7 +25,7 @@ import importlib
 import subprocess
 from rest_framework.exceptions import APIException
 from control.exceptions import (
-    InvalidFifoPath, InvalidFifoFile, InvalidManagerPath
+    InvalidFile, InvalidFifoPath, InvalidFifoFile, InvalidManagerPath
 )
 
 fifo_path = os.environ['UWSGI_MASTER_FIFO']
@@ -80,6 +80,7 @@ class Command:
         command), and 'returncode' (the return code of the command).
         """
         log = []
+        logger.debug('"{}" command output: '.format(self.title))
         for item in self.run():
             logger.debug(item)
             log.append(item)
@@ -137,6 +138,11 @@ class FifoCommand(Command):
             )
             self.returncode = 0
         logger.debug('{} returned {}'.format(self.title, self.returncode))
+try:
+    FifoCommand.check()
+except InvalidFile as e:
+    if not os.path.exists(fifo_path):
+        os.mkfifo(fifo_path)
 
 
 class ReloadWorkers(FifoCommand):
@@ -149,7 +155,7 @@ class ReloadWorkers(FifoCommand):
             'We are probably not running behind uWSGI. Assuming Django '
             'development server and attempting touch reload.', True
         )
-        if os.environ['RUN_MAIN'] == 'true':
+        if os.environ.get('RUN_MAIN') == 'true':
             touch_reload = TouchReload()
             yield from touch_reload.run()
             self.returncode = touch_reload.returncode
@@ -167,17 +173,7 @@ class ShellCommand(Command):
     Subclasses of this class must define the attribute :attr:`command`, which is
     the command to run as a string.
     """
-    @classmethod
-    def check(self):
-        """
-        Ensures that the :program:`manage.py` file to call exists. Throws an
-        :exception:`~control.exceptions.InvalidManagerPath` exception if not.
-        """
-        if not os.path.isfile(manager_path):
-            raise InvalidManagerPath(manager_path)
-
     def run(self):
-        self.check()
         logger.debug('Running shell command "{}"'.format(self.command))
         proc = subprocess.Popen(
             self.command,
@@ -214,6 +210,19 @@ class ManagerCommand(ShellCommand):
     attribute :attr:`args`, which is a list of arguments to pass to the
     :program:`manage.py` file.
     """
+    @classmethod
+    def check(self):
+        """
+        Ensures that the :program:`manage.py` file to call exists. Throws an
+        :exception:`~control.exceptions.InvalidManagerPath` exception if not.
+        """
+        if not os.path.isfile(manager_path):
+            raise InvalidManagerPath(manager_path)
+
+    def run(self):
+        self.check()
+        yield from super().run()
+
     @property
     def command(self):
         return ' '.join(('python', manager_path) + self.args)
@@ -222,7 +231,7 @@ class ManagerCommand(ShellCommand):
 class MakeMigrations(ManagerCommand):
     """ Create new migrations(s) for apps """
     title = 'Make Migrations'
-    args = ('makemigrations',)
+    args = ('makemigrations', '--noinput')
 
 
 class Migrate(ManagerCommand):

@@ -18,18 +18,12 @@ cityfarm_api_apps = [control, farms, layout, plants]
 # farm layouts
 base_router = HybridRouter()
 for app in cityfarm_api_apps:
-    try:
-        app.urls = importlib.import_module('.urls', app.__package__)
-    except ImportError as e:
-        warnings.warn(
-            'App {} should define "urls" module'.format(app.__name__)
-        )
-        continue
+    app.urls = importlib.import_module('.urls', app.__package__)
     if hasattr(app.urls, 'register_static_patterns'):
         app.urls.register_static_patterns(base_router)
     else:
         warnings.warn(
-            'App {} should define function '
+            'App {}.urls should define function '
             '"register_static_patterns"'.format(app.__name__)
         )
 
@@ -38,8 +32,6 @@ for app in cityfarm_api_apps:
 def urlconf_for_layout(layout):
     router = copy.deepcopy(base_router)
     for app in cityfarm_api_apps:
-        if not hasattr(app, 'urls'):
-            continue
         if hasattr(app.urls, 'register_dynamic_patterns'):
             app.urls.register_dynamic_patterns(router, layout)
         else:

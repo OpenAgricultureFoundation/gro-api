@@ -7,4 +7,3 @@ class Farm(models.Model):
     ip = models.GenericIPAddressField(null=True)
     layout = models.SlugField(choices=LAYOUT_CHOICES,
             validators=[layout_validator, ])
-
