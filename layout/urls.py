@@ -5,8 +5,8 @@ from .schemata import all_schemata
 
 def register_static_patterns(router):
     router.register(r'model3D', views.Model3DViewSet)
-    router.register(r'trayLayout', views.TrayLayoutViewSet)
-    router.register(r'plantSiteLayout', views.PlantSiteLayoutViewSet)
+    # router.register(r'trayLayout', views.TrayLayoutViewSet)
+    # router.register(r'plantSiteLayout', views.PlantSiteLayoutViewSet)
     router.register(r'layoutObject', views.LayoutObjectViewSet)
 
 def register_dynamic_patterns(router, layout):

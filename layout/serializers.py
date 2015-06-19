@@ -6,6 +6,7 @@ from rest_framework.utils.field_mapping import get_nested_relation_kwargs
 from cityfarm_api.serializers import BaseSerializer
 from layout.models import (Model3D, TrayLayout, PlantSiteLayout, LayoutObject,
         Enclosure, Tray, dynamic_models)
+from plants.serializers import PlantSiteSerializer
 
 ######################
 # Static Serializers #
@@ -70,29 +71,44 @@ class LayoutObjectSubSerializer(BaseSerializer):
             return super().build_field(field_name, info, model_class,
                     nested_depth)
 
+dynamic_serializers = {}
+
 class EnclosureSerializer(LayoutObjectSubSerializer):
     class Meta:
         model = Enclosure
-        model_name = 'enclosure'
-        nest_if_recursive = ["model"]
-        never_nest = ['parent', 'layout_object']
+        nest_if_recursive = ('model',)
+        never_nest = ('parent', 'layout_object')
+        nested_serializers = dynamic_serializers
 
 class TraySerializer(LayoutObjectSubSerializer):
     class Meta:
         model = Tray
-        model_name = 'tray'
-        nest_if_recursive = ["model"]
-        never_nest = ['parent', 'layout_object']
+        extra_fields = ('plant_sites',)
+        nest_if_recursive = ('model',)
+        never_nest = ('parent', 'layout_object')
+        nested_serializers = {'plantsite': PlantSiteSerializer}
     def create(self, validated_data):
         # TODO: Create plant sites here
         return super().create(validated_data)
 
-dynamic_serializers = {}
+class NestedTraySerializer(LayoutObjectSubSerializer):
+    class Meta:
+        model = Tray
+        extra_fields = ('plant_sites',)
+        nest_if_recursive = ('model',)
+        never_nest = ('parent', 'layout_object', 'plant_sites')
+
 for entity_name, entity_model in dynamic_models.items():
     class Serializer(LayoutObjectSubSerializer):
         class Meta:
             model = entity_model
-            model_name = entity_name
-            nest_if_recursive = ["model"]
-            never_nest = ["parent", "layout_object"]
+            nest_if_recursive = ('model',)
+            never_nest = ('parent', 'layout_object')
     dynamic_serializers[entity_name] = Serializer
+
+nested_serializers = dynamic_serializers.copy()
+nested_serializers.update({
+    'tray': NestedTraySerializer,
+})
+for Serializer in dynamic_serializers.values():
+    Serializer.Meta.nested_serializers = nested_serializers

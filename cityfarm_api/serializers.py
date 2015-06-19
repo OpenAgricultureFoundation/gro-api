@@ -61,22 +61,41 @@ class BaseSerializer(serializers.HyperlinkedModelSerializer):
         super().__init__(*args, **kwargs)
         request = self.context.get('request', None)
         if request:
-            depth = request.query_params.get('depth', '0')
-            try:
-                depth = int(depth)
-            except:
-                depth = 0
-            depth = min(max(depth, 0), 10)
-            self.Meta.depth = depth
-        if not hasattr(self.Meta, 'depth'):
-            self.Meta.depth = 0
-        self.extra_fields = getattr(self.Meta, 'extra_fields', [])
-        self.always_nest = getattr(self.Meta, 'always_nest', [])
-        self.nest_if_recursive = getattr(self.Meta, 'nest_if_recursive', [])
-        self.never_nest = getattr(self.Meta, 'never_nest', [])
-        self.is_recursive = getattr(self.Meta, 'is_recursive', bool(self.Meta.depth))
-        if self.is_recursive:
-            self.always_nest = self.always_nest + self.nest_if_recursive
+            if 'depth' in request.query_params:
+                val = request.query_params['depth']
+                try:
+                    val = int(val)
+                except TypeError:
+                    pass
+                else:
+                    val = min(max(val, 0), 10)
+                    self.Meta.depth = val
+            list_fields = ['extra_fields', 'nest_if_recursive', 'never_nest']
+            for field_name in list_fields:
+                if field_name in request.query_params:
+                    val = request.query_params[field_name]
+                    try:
+                        val = tuple(val)
+                    except TypeError:
+                        pass
+                    else:
+                        setattr(self.Meta, field_name, val)
+            if 'is_recursive' in request.query_params:
+                self.Meta.is_recursive = True
+        field_defaults = {
+            'depth': 0,
+            'extra_fields': (),
+            'nest_if_recursive': (),
+            'never_nest': (),
+            'is_recursive': False,
+            'nested_serializers': {},
+        }
+        for field_name, default in field_defaults.items():
+            if not hasattr(self.Meta, field_name) or \
+                    getattr(self.Meta, field_name) is None:
+                setattr(self.Meta, field_name, default)
+        if self.Meta.depth > 0:
+            self.Meta.is_recursive = True
 
     def create(self, validated_data):
         # TODO: I don't like having to override this
@@ -123,12 +142,11 @@ class BaseSerializer(serializers.HyperlinkedModelSerializer):
 
     def get_field_names(self, declared_fields, info):
         field_names = super().get_field_names(declared_fields, info)
-        field_names = list(field_names)
-        extra_fields = getattr(self.Meta, 'extra_fields', [])
-        return field_names + extra_fields
+        field_names = tuple(field_names)
+        return field_names + self.Meta.extra_fields
 
     def build_field(self, field_name, info, model_class, nested_depth):
-        if field_name in self.always_nest:
+        if self.Meta.is_recursive and field_name in self.Meta.nest_if_recursive:
             relation_info = info.relations[field_name]
             field_class, field_kwargs = self.build_nested_field(
                 field_name,
@@ -160,6 +178,12 @@ class BaseSerializer(serializers.HyperlinkedModelSerializer):
                 field_class, field_kwargs = self.build_nested_field(
                     field_name, relation_info, nested_depth
                 )
+            # Don't allow writes to relations resulting from foreign keys
+            # pointing to this class
+            if relation_info.model_field is None:
+                field_kwargs['read_only'] = True
+                if 'queryset' in field_kwargs:
+                    field_kwargs.pop('queryset')
         elif hasattr(model_class, field_name):
             field_class, field_kwargs = \
                     self.build_property_field(field_name, model_class)
@@ -169,9 +193,11 @@ class BaseSerializer(serializers.HyperlinkedModelSerializer):
         else:
             field_class, field_kwargs = \
                     self.build_unknown_field(field_name, model_class)
-        # Disable posting in recursive queries
-        if self.is_recursive:
+        # Disable writes in recursive queries
+        if self.Meta.is_recursive:
             field_kwargs['read_only'] = True
+            if 'queryset' in field_kwargs:
+                field_kwargs.pop('queryset')
         return field_class, field_kwargs
 
     def build_dynamic_foreign_key_field(self, field_name, model_field):
@@ -185,7 +211,7 @@ class BaseSerializer(serializers.HyperlinkedModelSerializer):
         return field_class, field_kwargs
 
     def build_dynamic_relation_field(self, field_name, model_field, nested_depth):
-        if field_name in self.never_nest or nested_depth == 0:
+        if field_name in self.Meta.never_nest or nested_depth == 0:
             field_class = DynamicRelationField
             field_kwargs = {
                 'model_field': model_field,
@@ -194,16 +220,8 @@ class BaseSerializer(serializers.HyperlinkedModelSerializer):
                 'many': True,
             }
         else:
-            class NestedSerializer(BaseSerializer):
-                class Meta:
-                    model = model_field.related_model
-                    depth = nested_depth - 1
-            NestedSerializer.Meta.always_nest = self.always_nest
-            NestedSerializer.Meta.never_nest = self.never_nest
-            sub_extra_fields = [field for field in self.extra_fields if
-                                hasattr(NestedSerializer.Meta.model, field)]
-            NestedSerializer.Meta.extra_fields = sub_extra_fields
-            field_class = NestedSerializer
+            field_class = self.build_nested_serializer_class(field_name,
+                    model_field.related_model, nested_depth)
             field_kwargs = {
                 'many': True,
                 'read_only': True,
@@ -211,17 +229,18 @@ class BaseSerializer(serializers.HyperlinkedModelSerializer):
         return field_class, field_kwargs
 
     def build_nested_field(self, field_name, relation_info, nested_depth):
-        if field_name in self.never_nest:
+        if field_name in self.Meta.never_nest:
             return super().build_relational_field(field_name, relation_info)
-        class NestedSerializer(BaseSerializer):
-            class Meta:
-                model = relation_info.related_model
-                depth = nested_depth - 1
-        NestedSerializer.Meta.always_nest = self.always_nest
-        NestedSerializer.Meta.never_nest = self.never_nest
-        sub_extra_fields = [field for field in self.extra_fields if
-                            hasattr(NestedSerializer.Meta.model, field)]
-        NestedSerializer.Meta.extra_fields = sub_extra_fields
-        field_class = NestedSerializer
+        field_class = self.build_nested_serializer_class(field_name,
+                relation_info.related_model, nested_depth)
         field_kwargs = get_nested_relation_kwargs(relation_info)
         return field_class, field_kwargs
+
+    def build_nested_serializer_class(self, field_name, related_model, nested_depth):
+        NestedBase = self.Meta.nested_serializers.get(related_model._meta.model_name, BaseSerializer)
+        class NestedSerializer(NestedBase):
+            class Meta(getattr(NestedBase, 'Meta', object)):
+                model = related_model
+                depth = nested_depth - 1
+                is_recursive = self.Meta.is_recursive
+        return NestedSerializer
