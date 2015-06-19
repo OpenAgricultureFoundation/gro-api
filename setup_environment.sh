@@ -53,7 +53,7 @@ case $SERVER_MODE in
     production)
         echo "export UWSGI_PROCESSES=4" >> .env
         echo "export UWSGI_MASTER_FIFO=/etc/cityfarm_api_fifo" >> .env
-        echo "export UWSGI_HTTP=0.0.0.0:8000" >> .env
+        echo "export UWSGI_HTTP=0.0.0.0:80" >> .env
 esac
 
 echo "Wrote configuration to ./.env file. To use it, run \"source .env\""

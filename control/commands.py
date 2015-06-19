@@ -225,7 +225,7 @@ class ManagerCommand(ShellCommand):
 
     @property
     def command(self):
-        return ' '.join(('python', manager_path) + self.args)
+        return ' '.join(('python3', manager_path) + self.args)
 
 
 class MakeMigrations(ManagerCommand):
