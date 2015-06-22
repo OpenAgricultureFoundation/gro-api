@@ -60,6 +60,14 @@ class BaseSerializer(serializers.HyperlinkedModelSerializer):
         self.serializer_field_mapping[DynamicForeignKey] = DynamicForeignKeyField
         super().__init__(*args, **kwargs)
         request = self.context.get('request', None)
+        field_defaults = {
+            'depth': 0,
+            'extra_fields': (),
+            'nest_if_recursive': (),
+            'never_nest': (),
+            'is_recursive': False,
+            'nested_serializers': {},
+        }
         if request:
             if 'depth' in request.query_params:
                 val = request.query_params['depth']
@@ -70,6 +78,8 @@ class BaseSerializer(serializers.HyperlinkedModelSerializer):
                 else:
                     val = min(max(val, 0), 10)
                     self.Meta.depth = val
+            else:
+                self.Meta.depth = field_defaults['depth']
             list_fields = ['extra_fields', 'nest_if_recursive', 'never_nest']
             for field_name in list_fields:
                 if field_name in request.query_params:
@@ -80,16 +90,12 @@ class BaseSerializer(serializers.HyperlinkedModelSerializer):
                         pass
                     else:
                         setattr(self.Meta, field_name, val)
+                else:
+                    setattr(self.Meta, field_name, field_defaults[field_name])
             if 'is_recursive' in request.query_params:
                 self.Meta.is_recursive = True
-        field_defaults = {
-            'depth': 0,
-            'extra_fields': (),
-            'nest_if_recursive': (),
-            'never_nest': (),
-            'is_recursive': False,
-            'nested_serializers': {},
-        }
+            else:
+                self.Meta.is_recursive = field_defaults['is_recursive']
         for field_name, default in field_defaults.items():
             if not hasattr(self.Meta, field_name) or \
                     getattr(self.Meta, field_name) is None:
