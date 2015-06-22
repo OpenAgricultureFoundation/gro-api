@@ -80,22 +80,6 @@ class BaseSerializer(serializers.HyperlinkedModelSerializer):
                     self.Meta.depth = val
             else:
                 self.Meta.depth = field_defaults['depth']
-            list_fields = ['extra_fields', 'nest_if_recursive', 'never_nest']
-            for field_name in list_fields:
-                if field_name in request.query_params:
-                    val = request.query_params[field_name]
-                    try:
-                        val = tuple(val)
-                    except TypeError:
-                        pass
-                    else:
-                        setattr(self.Meta, field_name, val)
-                else:
-                    setattr(self.Meta, field_name, field_defaults[field_name])
-            if 'is_recursive' in request.query_params:
-                self.Meta.is_recursive = True
-            else:
-                self.Meta.is_recursive = field_defaults['is_recursive']
         for field_name, default in field_defaults.items():
             if not hasattr(self.Meta, field_name) or \
                     getattr(self.Meta, field_name) is None:
