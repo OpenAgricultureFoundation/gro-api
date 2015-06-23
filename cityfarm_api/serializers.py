@@ -80,12 +80,11 @@ class BaseSerializer(serializers.HyperlinkedModelSerializer):
                     self.Meta.depth = val
             else:
                 self.Meta.depth = field_defaults['depth']
+            self.Meta.is_recursive = self.Meta.depth > 0
         for field_name, default in field_defaults.items():
             if not hasattr(self.Meta, field_name) or \
                     getattr(self.Meta, field_name) is None:
                 setattr(self.Meta, field_name, default)
-        if self.Meta.depth > 0:
-            self.Meta.is_recursive = True
 
     def create(self, validated_data):
         # TODO: I don't like having to override this
