@@ -4,8 +4,8 @@ install:
     - bash setup_environment.sh
     - pip install coverage
     - pip install coveralls
-before-script: source .env
+before_script: source .env
 script:
-    - coverage run --source=. --omit=env,*test*,*migrations* manage.py test
+    - python `which coverage`--source=. --omit=env,*test*,*migrations* manage.py test
     - coverage report -m
 after-success: coveralls --verbose
