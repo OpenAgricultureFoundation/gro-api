@@ -1,7 +1,7 @@
 language: python
 python: 3.4
 install:
-    - bash setup_environment.sh
+    - bash setup_environment.sh -d
     - source .env
     - pip install coverage
     - pip install coveralls
