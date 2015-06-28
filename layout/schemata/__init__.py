@@ -19,13 +19,12 @@ For some examples of schema files, see the ``layout/schemata`` directory.
 """
 
 import os
+import copy
 import yaml
+import voluptuous
 from slugify import slugify
-from voluptuous import Required, Schema, SchemaError
 
 __all__ = ['all_schemata']
-all_schemata = {}  # Global registry for loaded schemata
-
 
 def to_slug(string):
     """
@@ -33,81 +32,76 @@ def to_slug(string):
     """
     return slugify(str(string).lower())
 
-# Metaschema used to parse the layout schemata in this module
-ENTITY = {
-    Required('name'): to_slug,
-    Required('parent'): to_slug,
-}
-METASCHEMA = Schema({
-    Required('name'): str,
-    Required('entities', default=[]): [ENTITY],
-    Required('tray-parent', default='enclosure'): to_slug,
-})
+class Entity:
+    schema = voluptuous.Schema({
+        voluptuous.Required('name'): to_slug,
+        voluptuous.Required('parent'): to_slug,
+    })
+    def __init__(self, attrs={}, **kwargs):
+        attrs.update(kwargs)
+        attrs = self.schema(attrs)
+        self.name = attrs['name']
+        self.parent = attrs['parent']
 
+class Schema:
+    schema = voluptuous.Schema({
+        voluptuous.Required('name'): str,
+        voluptuous.Required('entities', default=[]): [Entity.schema],
+        voluptuous.Required('tray-parent', default='enclosure'): to_slug,
+    })
+    def __init__(self, attrs={}, **kwargs):
+        attrs.update(kwargs)
+        attrs = self.schema(attrs)
+        self.name = attrs['name']
+        self.entities = {}
+        for entity_attrs in attrs['entities']:
+            entity = Entity(entity_attrs)
+            self.entities[entity.name] = entity
+        self.dynamic_entities = copy.deepcopy(self.entities)
+        self.entities['tray'] = Entity(name='tray', parent=attrs['tray-parent'])
+        self.entities['enclosure'] = Entity(name='enclosure', parent=None)
+        for entity in self.entities.values():
+            if hasattr(self, entity.name):
+                raise RuntimeError('Schema {} contained an entity with invalid '
+                    'name {}'.format(self.name, entity.name))
+            setattr(self, entity.name, entity)
+        self.check()
 
-def validate_schema(schema):
-    """
-    Make sure that the passed-in schema is valid
-    """
-    # A dictionary that maps entity names to entity dictionaries
-    entities = {entity['name']: entity for entity in schema['entities']}
-    entities['tray'] = {
-        'parent': schema['tray-parent'],
-    }
-    entities['enclosure'] = {}
-    # A dictionary of all of the entities without children. It is initialized to
-    # the full set of entities and should be emptied by the end of this function
-    entities_without_children = entities.copy()
-    entities_without_children.pop('tray')  # Trays shouldn't have children
-    # Maps the name of an entity to the name of that entity's child
-    entity_children = {}
-    for entity_name, entity in entities.items():
-        if entity_name == 'enclosure':
-            continue
-        entity_parent = entity['parent']
-        if entity_parent == 'tray':
-            raise SchemaError('Trays aren\'t allowed to have children')
-        elif entity_parent in entities_without_children:
-            entities_without_children.pop(entity_parent)
-            entity_children[entity_parent] = entity_name
-        else:
-            if entity_parent in entity_children:
-                msg = 'Entity "{}" has multiple children: "{}" and "{}"'
-                msg = msg.format(entity_parent, entity_children[entity_parent],
-                                 entity_name)
-                raise SchemaError(msg)
+    def check(self):
+        entities_without_children = self.entities.copy() # A dictionary of all
+        # of the entities without children. It is initialized to the full set of
+        # entities and should be emptied by the end of this function
+        entities_without_children.pop('tray')  # Trays shouldn't have children
+        # Maps the name of an entity to the name of that entity's child
+        entity_children = {}
+        for entity in self.entities.values():
+            if entity.name == 'enclosure':
+                continue
+            if entity.parent == 'tray':
+                raise SchemaError('Trays aren\'t allowed to have children')
+            elif entity.parent in entities_without_children:
+                entities_without_children.pop(entity.parent)
+                entity_children[entity.parent] = entity.name
             else:
-                msg = 'Entity "{}" references nonexistant parent "{}"'
-                msg = msg.format(entity_name, entity_parent)
-                raise SchemaError(msg)
-    # In practice, this can never happen, but we check it anyway to be safe
-    if len(entities_without_children) != 0:
-        tmp = ', '.join('"{}"'.format(entity_name) for entity_name in
-                        entities_without_children.keys())
-        msg = 'The following entities do not have children: {}'.format(tmp)
-        raise SchemaError(msg)
+                if entity.parent in entity_children:
+                    msg = 'Entity "{}" has multiple children: "{}" and "{}"'
+                    msg = msg.format(
+                        entity.parent, entity_children[entity_parent],
+                        entity.name
+                    )
+                    raise SchemaError(msg)
+                else:
+                    msg = 'Entity "{}" references nonexistant parent "{}"'
+                    msg = msg.format(entity_name, entity_parent)
+                    raise SchemaError(msg)
+        # In practice, this can never happen, but we check it anyway to be safe
+        if len(entities_without_children) != 0:
+            tmp = ', '.join('"{}"'.format(entity_name) for entity_name in
+                            entities_without_children.keys())
+            msg = 'The following entities do not have children: {}'.format(tmp)
+            raise SchemaError(msg)
 
-
-def load_schema_from_dict(schema_name, schema):
-    """
-    Interpret the dictionary ``schema`` as a schema named ``schema_name``,
-    validate it,  and save it in the ``all_schemata`` dictionary.
-    """
-    if schema_name in all_schemata:
-        msg = 'A schema by the name {} has already been loaded'
-        msg = msg.format(schema_name)
-        raise ValueError(msg)
-    schema = METASCHEMA(schema)
-    validate_schema(schema)
-
-    # Reform schema to simplify lookups
-    entities = schema['entities']
-    entities = {entity['name']: entity for entity in entities}
-    schema['entities'] = entities
-
-    all_schemata[schema_name] = schema
-    return schema
-
+all_schemata = {} # Global registry for loaded schemata
 
 def load_schema_from_file(schema_filename):
     """
@@ -117,7 +111,7 @@ def load_schema_from_file(schema_filename):
     file_path = os.path.join(os.path.dirname(__file__), schema_filename)
     with open(file_path, 'r') as schema_file:
         schema = yaml.load(schema_file)
-    return load_schema_from_dict(schema_name, schema)
+    all_schemata[schema_name] = Schema(schema)
 
 # Load all of the schema files from this directory
 for filename in os.listdir(os.path.dirname(__file__)):
