@@ -4,7 +4,7 @@ from solo.models import SingletonModel
 from django.core.exceptions import ValidationError
 from layout.schemata import all_schemata
 
-LAYOUT_CHOICES = ((key, val["name"]) for key, val in all_schemata.items())
+LAYOUT_CHOICES = ((key, val.name) for key, val in all_schemata.items())
 LAYOUT_CHOICES = sorted(LAYOUT_CHOICES, key=lambda choice: choice[0])
 
 

@@ -4,18 +4,19 @@ from rest_framework.settings import api_settings
 from rest_framework.relations import HyperlinkedRelatedField
 from rest_framework.serializers import raise_errors_on_nested_writes
 from rest_framework.utils.field_mapping import (
-    get_detail_view_name, get_nested_relation_kwargs
+    get_detail_view_name, get_relation_kwargs, get_nested_relation_kwargs
 )
-from layout.fields import DynamicForeignKey, DynamicRelation
 
 DUMMY_VIEW_NAME = 'dummy_view_name'
 
-class DynamicForeignKeyField(HyperlinkedRelatedField):
+class DynamicHyperlinkedRelatedField(HyperlinkedRelatedField):
     def __init__(self, model_field, **kwargs):
         # Store the field so that we can dynamically get the queryset and
         # view_name from it
         self.model_field = model_field
         self.read_only = kwargs.get('read_only', False)
+        kwargs['queryset'] = None
+        kwargs['view_name'] = DUMMY_VIEW_NAME
         super().__init__(**kwargs)
 
     @property
@@ -26,7 +27,7 @@ class DynamicForeignKeyField(HyperlinkedRelatedField):
 
     @queryset.setter
     def queryset(self, val):
-        # we should never be assigning an actual value to this property
+        # We should never be assigning an actual value to this property
         assert val == None
 
     @property
@@ -38,26 +39,30 @@ class DynamicForeignKeyField(HyperlinkedRelatedField):
         # We should never be assigning an actual value to this property
         assert val == DUMMY_VIEW_NAME
 
-class DynamicRelationField(HyperlinkedRelatedField):
+class SmartHyperlinkedRelatedField:
     def __init__(self, model_field, **kwargs):
-        self.model_field = model_field
-        super().__init__(**kwargs)
-
-    @property
-    def view_name(self):
-        return get_detail_view_name(self.model_field.related_model)
-
-    @view_name.setter
-    def view_name(self, val):
-        assert val == DUMMY_VIEW_NAME
+        if getattr(model_field, 'is_dynamic', False):
+            self.field = DynamicHyperlinkedRelatedField(model_field, **kwargs)
+        else:
+            self.field = HyperlinkedRelatedField(**kwargs)
+    def __getattribute__(self, name):
+        if name == 'field':
+            return object.__getattribute__(self, 'field')
+        else:
+            return getattr(object.__getattribute__(self, 'field'), name)
+    def __setattribute__(self, name, val):
+        if name == 'field':
+            return object.__setattribute__(self, 'field', val)
+        else:
+            return setattr(object.__getattribute__(self, 'field'), name, val)
 
 class BaseSerializer(serializers.HyperlinkedModelSerializer):
     # TODO: Describe these options
     """
     Base class used for all serializers in this project.
     """
+    serializer_related_field = SmartHyperlinkedRelatedField
     def __init__(self, *args, **kwargs):
-        self.serializer_field_mapping[DynamicForeignKey] = DynamicForeignKeyField
         super().__init__(*args, **kwargs)
         request = self.context.get('request', None)
         field_defaults = {
@@ -144,25 +149,15 @@ class BaseSerializer(serializers.HyperlinkedModelSerializer):
             )
         elif field_name in info.fields_and_pk:
             model_field = info.fields_and_pk[field_name]
-            # DynamicForeignKeys do not appear as relations in ``info`` but
-            # should be treated as relations, so we have to handle them in a
-            # special way
-            if isinstance(model_field, DynamicForeignKey):
-                field_class, field_kwargs = self.build_dynamic_foreign_key_field(
-                    field_name, model_field
-                )
-            elif isinstance(model_field, DynamicRelation):
-                field_class, field_kwargs = self.build_dynamic_relation_field(
-                    field_name, model_field, nested_depth
-                )
-            else:
-                field_class, field_kwargs = \
-                        self.build_standard_field(field_name, model_field)
+            field_class, field_kwargs = self.build_standard_field(
+                field_name, model_field
+            )
         elif field_name in info.relations:
             relation_info = info.relations[field_name]
             if not nested_depth:
-                field_class, field_kwargs = \
-                        self.build_relational_field(field_name, relation_info)
+                field_class, field_kwargs = self.build_relational_field(
+                    field_name, relation_info
+                )
             else:
                 field_class, field_kwargs = self.build_nested_field(
                     field_name, relation_info, nested_depth
@@ -174,14 +169,17 @@ class BaseSerializer(serializers.HyperlinkedModelSerializer):
                 if 'queryset' in field_kwargs:
                     field_kwargs.pop('queryset')
         elif hasattr(model_class, field_name):
-            field_class, field_kwargs = \
-                    self.build_property_field(field_name, model_class)
+            field_class, field_kwargs = self.build_property_field(
+                field_name, model_class
+            )
         elif field_name == api_settings.URL_FIELD_NAME:
-            field_class, field_kwargs = \
-                    self.build_url_field(field_name, model_class)
+            field_class, field_kwargs = self.build_url_field(
+                field_name, model_class
+            )
         else:
-            field_class, field_kwargs = \
-                    self.build_unknown_field(field_name, model_class)
+            field_class, field_kwargs = self.build_unknown_field(
+                field_name, model_class
+            )
         # Disable writes in recursive queries
         if self.Meta.is_recursive:
             field_kwargs['read_only'] = True
@@ -189,32 +187,16 @@ class BaseSerializer(serializers.HyperlinkedModelSerializer):
                 field_kwargs.pop('queryset')
         return field_class, field_kwargs
 
-    def build_dynamic_foreign_key_field(self, field_name, model_field):
-        field_class = DynamicForeignKeyField
-        field_kwargs = {
-            'model_field': model_field,
-            # The view_name has to be generated dynamically, so we provide a
-            # dummy value here and throw it away later
-            'view_name': DUMMY_VIEW_NAME,
-        }
-        return field_class, field_kwargs
+    def build_relational_field(self, field_name, relation_info):
+        field_class = self.serializer_related_field
+        field_kwargs = get_relation_kwargs(field_name, relation_info)
 
-    def build_dynamic_relation_field(self, field_name, model_field, nested_depth):
-        if field_name in self.Meta.never_nest or nested_depth == 0:
-            field_class = DynamicRelationField
-            field_kwargs = {
-                'model_field': model_field,
-                'view_name': DUMMY_VIEW_NAME,
-                'read_only': True,
-                'many': True,
-            }
-        else:
-            field_class = self.build_nested_serializer_class(field_name,
-                    model_field.related_model, nested_depth)
-            field_kwargs = {
-                'many': True,
-                'read_only': True,
-            }
+        # `view_name` is only valid for hyperlinked relationships.
+        if not issubclass(field_class, SmartHyperlinkedRelatedField) and \
+                not issubclass(field_class, HyperlinkedRelatedField):
+            field_kwargs.pop('view_name', None)
+        field_kwargs['model_field'] = relation_info.model_field
+
         return field_class, field_kwargs
 
     def build_nested_field(self, field_name, relation_info, nested_depth):
@@ -225,6 +207,7 @@ class BaseSerializer(serializers.HyperlinkedModelSerializer):
         field_kwargs = get_nested_relation_kwargs(relation_info)
         return field_class, field_kwargs
 
+    # TODO: This can now be included in build_nested_field (I think)
     def build_nested_serializer_class(self, field_name, related_model, nested_depth):
         NestedBase = self.Meta.nested_serializers.get(related_model._meta.model_name, BaseSerializer)
         class NestedSerializer(NestedBase):

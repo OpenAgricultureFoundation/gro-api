@@ -1,0 +1,2 @@
+class FarmNotConfiguredError(Exception):
+    pass

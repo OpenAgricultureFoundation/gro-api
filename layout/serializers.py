@@ -66,7 +66,9 @@ class LayoutObjectSubSerializer(BaseSerializer):
                 to_many = False,
                 has_through_model = True
             )
-            return self.build_relational_field(field_name, relation_info)
+            return self.build_relational_field(
+                field_name, relation_info
+            )
         else:
             return super().build_field(field_name, info, model_class,
                     nested_depth)

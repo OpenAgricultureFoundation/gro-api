@@ -6,68 +6,21 @@ from django.db.utils import OperationalError
 from django.utils.functional import cached_property
 from model_utils.managers import InheritanceManager
 
+from cityfarm_api.state import StateVariable
+from cityfarm_api.models import DynamicModelBase
+from cityfarm_api.fields import (
+    state_dependent_cached_property, dynamic_foreign_key
+)
 from farms.models import Farm
 from layout.schemata import all_schemata
-from layout.fields import (
-    per_layout_cached_property, DynamicForeignKey, DynamicRelation
-)
-
-
-class ParentField(DynamicForeignKey):
-    @per_layout_cached_property
-    def available_models(self):
-        models = dynamic_models.copy()
-        models.update({
-            'enclosure': Enclosure
-        })
-        return models
-
-    @per_layout_cached_property
-    def related_model(self):
-        farm_layout = Farm.get_solo().layout
-        layout_schema = all_schemata[farm_layout]
-        if self.model_name == 'tray':
-            parent_name = layout_schema['tray-parent']
-        else:
-            parent_name = layout_schema['entities'][self.model_name]['parent']
-        parent_name = slugify(parent_name.lower())
-        return self.available_models[parent_name]
-
-
-class ChildrenRelation(DynamicRelation):
-    remote_field_name = 'parent'
-
-    @per_layout_cached_property
-    def available_models(self):
-        models = dynamic_models.copy()
-        models.update({
-            'tray': Tray,
-        })
-        return models
-
-    @per_layout_cached_property
-    def related_model(self):
-        farm_layout = Farm.get_solo().layout
-        layout_schema = all_schemata[farm_layout]
-        if slugify(layout_schema['tray-parent'].lower()) == self.model_name:
-            child_name = 'Tray'
-        else:
-            for entity_name, entity in layout_schema['entities'].items():
-                parent_name = slugify(entity['parent'].lower())
-                if parent_name == self.model_name:
-                    child_name = entity_name
-                    break
-        child_name = slugify(child_name.lower())
-        return self.available_models[child_name]
 
 def schemata_to_use():
     if settings.SERVER_TYPE == settings.LEAF:
         # On a leaf server, we only need to generate models for the layout the
         # current farm uses
-        from farms.models import Farm
         # If the Farm table in the database has not yet been created, we
-        # shouldn't generate any models. This is detected by catching an
-        # OperationalError
+        # shouldn't generate any dynamic models. This is detected by catching an
+        # OperationalError.
         try:
             farm = Farm.get_solo()
         except OperationalError:
@@ -76,6 +29,30 @@ def schemata_to_use():
     if settings.SERVER_TYPE == settings.ROOT:
         return all_schemata
 
+class LayoutVariable(StateVariable):
+    def current_value(self):
+        return Farm.get_solo().layout
+    def allowed_values(self):
+        return schemata_to_use().keys()
+
+class LayoutModelBase(DynamicModelBase):
+    state_var = LayoutVariable()
+
+class LayoutModel(models.Model, metaclass=LayoutModelBase):
+    class Meta:
+        abstract = True
+
+per_layout_cached_property = state_dependent_cached_property(LayoutVariable())
+LayoutForeignKey = dynamic_foreign_key(LayoutVariable())
+
+class ParentField(LayoutForeignKey):
+    def to_for_state(self, state):
+        layout = state
+        model_name = self.opts.model_name
+        if model_name == 'tray':
+            return all_schemata[layout].tray.parent
+        else:
+            return getattr(all_schemata[layout], self.opts.model_name).parent
 
 class Model3D(models.Model):
     name = models.CharField(max_length=100)
@@ -104,7 +81,7 @@ class PlantSiteLayout(models.Model):
         return "(r={}, c={}) in {}".format(self.row, self.col, self.parent.name)
 
 
-class LayoutObject(models.Model):
+class LayoutObject(LayoutModel):
     objects = InheritanceManager()
 
     def save(self, *args, **kwargs):
@@ -121,9 +98,7 @@ class LayoutObject(models.Model):
             kwargs['force_insert'] = False
         return super().save(*args, **kwargs)
 
-
 class Enclosure(LayoutObject, SingletonModel):
-    model_name = "Enclosure"
     enclosure_num = models.AutoField(primary_key=True)
     layout_object = models.OneToOneField(
         LayoutObject, parent_link=True, editable=False
@@ -136,14 +111,12 @@ class Enclosure(LayoutObject, SingletonModel):
     width = models.FloatField(default=0)
     height = models.FloatField(default=0)
     model = models.ForeignKey(Model3D, null=True)
-    children = ChildrenRelation()
 
     def __str__(self):
         return self.name
 
 
 class Tray(LayoutObject):
-    model_name = "Tray"
     tray_num = models.AutoField(primary_key=True)
     layout_object = models.OneToOneField(
         LayoutObject, parent_link=True, editable=False
@@ -168,20 +141,19 @@ class Tray(LayoutObject):
 dynamic_models = {}
 
 for schema_name, schema in schemata_to_use().items():
-    for entity in schema['entities'].values():
-        entity_name = entity["name"]
-        entity_slug = slugify(entity_name.lower())
+    for entity in schema.dynamic_entities.values():
+        entity_slug = slugify(entity.name.lower())
         if entity_slug not in dynamic_models:
             # A model by this name has not been created yet, so create it
             subid_field = "{}_num".format(entity_slug)
-            name_format_string = "{} " + entity_name + " {}"
+            name_format_string = "{} " + entity.name + " {}"
 
             def __str__(self):
                 return getattr(self, 'name', '%s object' % self.model_name)
                 return self.name or '%s object' % self.model_name
             model_attrs = {
                 "__module__": __name__,
-                "model_name": entity_name,
+                "model_name": entity.name,
                 subid_field: models.AutoField(primary_key=True),
                 "layout_object": models.OneToOneField(
                     LayoutObject, parent_link=True, editable=False
@@ -195,7 +167,6 @@ for schema_name, schema in schemata_to_use().items():
                 "height": models.FloatField(default=0),
                 "model": models.ForeignKey(Model3D, null=True),
                 "parent": ParentField(),
-                "children": ChildrenRelation(),
                 "__str__": __str__,
             }
             Model = type(entity_slug, (LayoutObject,), model_attrs)
