@@ -3,14 +3,12 @@ from rest_framework.serializers import ValidationError
 from rest_framework.utils.model_meta import _resolve_model
 from rest_framework.utils.model_meta import get_field_info, RelationInfo
 from rest_framework.utils.field_mapping import get_nested_relation_kwargs
-from cityfarm_api.serializers import BaseSerializer
-from layout.models import (Model3D, TrayLayout, PlantSiteLayout, LayoutObject,
-        Enclosure, Tray, dynamic_models)
 from plants.serializers import PlantSiteSerializer
-
-######################
-# Static Serializers #
-######################
+from cityfarm_api.serializers import BaseSerializer
+from layout.models import (
+    Model3D, TrayLayout, PlantSiteLayout, LayoutObject, Enclosure, Tray,
+    dynamic_models
+)
 
 class Model3DSerializer(BaseSerializer):
     class Meta:
@@ -20,12 +18,13 @@ class Model3DSerializer(BaseSerializer):
 class TrayLayoutSerializer(BaseSerializer):
     class Meta:
         model = TrayLayout
-        depth = 1
 
 
 class PlantSiteLayoutSerializer(BaseSerializer):
     class Meta:
         model = PlantSiteLayout
+
+
 
 class LayoutObjectSerializer(BaseSerializer):
     class Meta:

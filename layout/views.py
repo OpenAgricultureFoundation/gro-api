@@ -1,12 +1,15 @@
 from solo.models import SingletonModel
-from django.shortcuts import render
-from rest_framework import viewsets, generics, mixins
-from layout.models import (Model3D, TrayLayout, PlantSiteLayout, LayoutObject,
-        Enclosure, Tray, dynamic_models)
-from layout.serializers import  (Model3DSerializer, TrayLayoutSerializer,
-        PlantSiteLayoutSerializer, LayoutObjectSerializer, EnclosureSerializer,
-        TraySerializer, dynamic_serializers)
+from rest_framework import viewsets
 from cityfarm_api.viewsets import SingletonViewSet
+from layout.models import (
+    Model3D, TrayLayout, PlantSiteLayout, LayoutObject, Enclosure, Tray,
+    dynamic_models
+)
+from layout.serializers import (
+    Model3DSerializer, TrayLayoutSerializer, PlantSiteLayoutSerializer,
+    LayoutObjectSerializer, EnclosureSerializer, TraySerializer,
+    dynamic_serializers
+)
 
 class Model3DViewSet(viewsets.ModelViewSet):
     queryset = Model3D.objects.all()

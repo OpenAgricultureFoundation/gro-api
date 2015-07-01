@@ -44,7 +44,11 @@ def state_dependent_attribute(state_var):
         def get_for_state(self, instance, state):
             internal_name = self.internal_name_for_state(state)
             if hasattr(self, 'default'):
-                return getattr(instance, internal_name, self.default)
+                if callable(self.default):
+                    default = self.default(instance, state)
+                else:
+                    default = default
+                return getattr(instance, internal_name, default)
             else:
                 return getattr(instance, internal_name)
 
@@ -57,7 +61,7 @@ def state_dependent_attribute(state_var):
             setattr(instance, self.internal_name_for_state(state), value)
 
         def set_for_all_states(self, instance, value):
-            for state in state_var.allowed_states():
+            for state in state_var.allowed_values():
                 self.set_for_state(instance, value, state)
 
         def __set__(self, instance, value):
@@ -109,11 +113,29 @@ def dynamic_related_field(state_var):
     StateDependentAttribute = state_dependent_attribute(state_var)
     class Class(RelatedField):
         is_dynamic = True
-        name = StateDependentAttribute('name')
-        verbose_name = StateDependentAttribute('verbose_name')
-        to  = StateDependentAttribute('to').set_default(None)
+        to  = StateDependentAttribute('to')
         def __init__(self, *args, **kwargs):
+            # Django requires a value `to` attribute to be set on the field upon
+            # initialization because some of the migration logic constructs the
+            # field without installing it in a model and then checks the
+            # `rel.to` attribute to figure out things about this field. Django
+            # also assumes that the deconstruction of a RelatedField will have a
+            # value for `to` in it's deconstruction, so we save the actual value
+            # in :meth:`deconstruct` just to be safe and ignore it here. We will
+            # set and actually resolve the attribute in :meth:`set_for_state`.
+            kwargs.pop('to', None)
+            self.to = self.to_for_state(state_var.current_value())
             RelatedField.__init__(self, *args, **kwargs)
+
+        def deconstruct(self):
+            name, path, args, kwargs = RelatedField.deconstruct(self)
+            if isinstance(self.to, str):
+                kwargs['to'] = self.to
+            else:
+                kwargs['to'] = '%s.%s' % (
+                    self.to._meta.app_label, self.to._meta.object_name
+                )
+            return name, path, args, kwargs
 
         @property
         def related_model(self):
@@ -127,7 +149,9 @@ def dynamic_related_field(state_var):
             pass
 
         def contribute_to_class(self, cls, name, virtual_only=False):
-            Field.contribute_to_class(self, cls, name, virtual_only=virtual_only)
+            Field.contribute_to_class(
+                self, cls, name, virtual_only=virtual_only
+            )
             self.opts = cls._meta
             if not cls._meta.abstract and self.rel.related_name:
                 related_name = force_text(self.rel.related_name) % {
@@ -135,32 +159,33 @@ def dynamic_related_field(state_var):
                     'app_label': cls._meta.app_label.lower()
                 }
                 self.rel.related_name = related_name
+            for state in state_var.allowed_values():
+                self.init_for_state(cls, name, state, virtual_only=False)
 
         def init_for_state(self, cls, name, state, virtual_only=False):
             other = self.to_for_state(state)
+            # Regardless of whether or not we have resolved this reference, we
+            # have to store something in `to` on initialization so Django sees
+            # that this field is pointing to something and treats it as a normal
+            # ForeignKey
             if isinstance(other, str) or other._meta.pk is None:
-                # Even though we haven't resolved this reference, we have to
-                # store something in `to` on initialization so Django sees that
-                # this field is pointing to something and treats it as a normal
-                # ForeignKey
-                Class.to.set_for_state(self, other, state)
                 def resolve_related_class(field, model, cls):
                     Class.to.set_for_state(self, model, state)
                     field.do_related_class(model, cls, state)
                 add_lazy_relation(cls, self, other, resolve_related_class)
             else:
-                self.do_related_class(model, cls, state)
+                self.do_related_class(other, cls, state)
 
         def set_attributes_from_rel(self, state):
-            if Class.name.get_for_state(self, state) is None:
+            if self.name is None:
                 to = Class.to.get_for_state(self, state)
                 name = to._meta.model_name + '_' + to._meta.pk.name,
-                Class.name.set_for_state(self, name, state)
-            if Class.verbose_name.get_for_state(self, state) is None:
+                self.name = name
+            if self.verbose_name is None:
                 to = Class.to.get_for_state(self, state)
                 verbose_name = to._meta.verbose_name
                 Class.verbose_name.set_for_state(self, verbose_name, state)
-            self.rel.set_field_name()
+            self.rel.set_field_name(state)
 
         def do_related_class(self, other, cls, state):
             self.set_attributes_from_rel(state)
@@ -201,14 +226,16 @@ def dynamic_foreign_object_rel(state_var):
 def dynamic_many_to_one_rel(state_var):
     assert isinstance(state_var, StateVariable)
     DynamicForeignObjectRel = dynamic_foreign_object_rel(state_var)
+    StateDependentAttribute = state_dependent_attribute(state_var)
     class Class(DynamicForeignObjectRel):
+        field_name = StateDependentAttribute('field_name')
         def __init__(self, field, field_name, related_name=None,
                 limit_choices_to=None, parent_link=False, on_delete=None,
                 related_query_name=None):
             super().__init__(field, related_name=related_name,
                     limit_choices_to=limit_choices_to, parent_link=parent_link,
                     on_delete=on_delete, related_query_name=related_query_name)
-            self.field_name = field_name
+            Class.field_name.set_for_all_states(self, field_name)
 
         def get_related_field(self):
             """
@@ -221,8 +248,10 @@ def dynamic_many_to_one_rel(state_var):
                         self.field_name)
             return field
 
-        def set_field_name(self):
-            self.field_name = self.field_name or self.to._meta.pk.name
+        def set_field_name(self, state):
+            field_name = Class.field_name.get_for_state(self, state) or \
+                self.to._meta.pk.name
+            Class.field_name.set_for_state(self, field_name, state)
     return Class
 
 def dynamic_reverse_single_related_object_descriptor(state_var):

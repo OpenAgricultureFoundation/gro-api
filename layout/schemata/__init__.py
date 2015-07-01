@@ -30,7 +30,7 @@ def to_slug(string):
     """
     Clean the name of a layout object by making it lowercase and slugifying it.
     """
-    return slugify(str(string).lower())
+    return slugify(str(string))
 
 class Entity:
     schema = voluptuous.Schema({
@@ -47,7 +47,7 @@ class Schema:
     schema = voluptuous.Schema({
         voluptuous.Required('name'): str,
         voluptuous.Required('entities', default=[]): [Entity.schema],
-        voluptuous.Required('tray-parent', default='enclosure'): to_slug,
+        voluptuous.Required('tray-parent', default='Enclosure'): to_slug,
     })
     def __init__(self, attrs={}, **kwargs):
         attrs.update(kwargs)
@@ -58,8 +58,8 @@ class Schema:
             entity = Entity(entity_attrs)
             self.entities[entity.name] = entity
         self.dynamic_entities = copy.deepcopy(self.entities)
-        self.entities['tray'] = Entity(name='tray', parent=attrs['tray-parent'])
-        self.entities['enclosure'] = Entity(name='enclosure', parent=None)
+        self.entities['Tray'] = Entity(name='Tray', parent=attrs['tray-parent'])
+        self.entities['Enclosure'] = Entity(name='Enclosure', parent=None)
         for entity in self.entities.values():
             if hasattr(self, entity.name):
                 raise RuntimeError('Schema {} contained an entity with invalid '
@@ -71,13 +71,13 @@ class Schema:
         entities_without_children = self.entities.copy() # A dictionary of all
         # of the entities without children. It is initialized to the full set of
         # entities and should be emptied by the end of this function
-        entities_without_children.pop('tray')  # Trays shouldn't have children
+        entities_without_children.pop('Tray')  # Trays shouldn't have children
         # Maps the name of an entity to the name of that entity's child
         entity_children = {}
         for entity in self.entities.values():
-            if entity.name == 'enclosure':
+            if entity.name == 'Enclosure':
                 continue
-            if entity.parent == 'tray':
+            if entity.parent == 'Tray':
                 raise SchemaError('Trays aren\'t allowed to have children')
             elif entity.parent in entities_without_children:
                 entities_without_children.pop(entity.parent)
@@ -92,8 +92,8 @@ class Schema:
                     raise SchemaError(msg)
                 else:
                     msg = 'Entity "{}" references nonexistant parent "{}"'
-                    msg = msg.format(entity_name, entity_parent)
-                    raise SchemaError(msg)
+                    msg = msg.format(entity.name, entity.parent)
+                    raise voluptuous.SchemaError(msg)
         # In practice, this can never happen, but we check it anyway to be safe
         if len(entities_without_children) != 0:
             tmp = ', '.join('"{}"'.format(entity_name) for entity_name in
