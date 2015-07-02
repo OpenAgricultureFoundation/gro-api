@@ -39,7 +39,7 @@ fi
 
 # Install a pre-push hook for linting
 PRE_PUSH="#!/usr/bin/env bash
-git ls-files | xargs pylint -E"
+git ls-files '*.py' | xargs pylint -E"
 if [[ -d ".git" && ! ! -e ".git/hooks/pre-push" ]]; then
     $VERBODE && echo "Installing pre-push hook"
     echo "$PRE_PUSH" > .git/hooks/pre-push

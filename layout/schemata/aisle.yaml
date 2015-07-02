@@ -1,4 +1,5 @@
-name: Single Aisle
+name: aisle
+description: Single Aisle
 entities:
     - name: Aisle
       parent: Enclosure

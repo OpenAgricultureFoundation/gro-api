@@ -13,7 +13,8 @@ from layout.schemata import all_schemata
 LAYOUT_CHOICES = ((key, val.name) for key, val in all_schemata.items())
 LAYOUT_CHOICES = sorted(LAYOUT_CHOICES, key=lambda choice: choice[0])
 DEFAULT_LAYOUT = 'tray'
-UNCONFIGURED = 'Unconfigured'
+UNCONFIGURED_NAME = 'Unconfigured'
+UNCONFIGURED_SLUG = slugify(UNCONFIGURED_NAME.lower())
 
 
 def layout_validator(value):
@@ -36,13 +37,14 @@ class Farm(SingletonModel):
     root_id = RootIdField(**root_id_kwargs)
     name = models.CharField(
         max_length=100, blank=(settings.SERVER_TYPE == settings.LEAF),
-        default=UNCONFIGURED
+        default=UNCONFIGURED_NAME
     )
     slug = models.SlugField(
         max_length=100, blank=(settings.SERVER_TYPE == settings.LEAF),
         unique=True
     )
-    root_server = models.URLField(default="http://cityfarm.media.mit.edu")
+    root_server = models.URLField(default="http://cityfarm.media.mit.edu",
+            null=True)
     ip = models.GenericIPAddressField(
         editable=(settings.SERVER_TYPE == settings.ROOT),
         null=(settings.SERVER_TYPE == settings.LEAF)
@@ -57,16 +59,22 @@ class Farm(SingletonModel):
         self._old_slug = self.slug
         self._old_layout = self.layout
 
+    @property
+    def is_configured(self):
+        return self.slug and self.slug != UNCONFIGURED_SLUG
+
     def clean(self):
         if settings.SERVER_TYPE == settings.LEAF:
-            if not self.slug or self.slug == slugify(UNCONFIGURED.lower()):
+            if not self.is_configured:
                 self.slug = slugify(self.name.lower())
             self.check_network()
 
     def check_network(self):
-        s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-        s.connect((urlparse(self.root_server).netloc, 80))
-        self.ip = s.getsockname()[0]
+        url_to_check = self.root_server or '8.8.8.8'
+        if self.root_server:
+            s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+            s.connect((urlparse(self.root_server).netloc, 80))
+            self.ip = s.getsockname()[0]
 
     def save(self, *args, **kwargs):
         self.clean()
@@ -76,9 +84,8 @@ class Farm(SingletonModel):
             return self.root_save(*args, **kwargs)
 
     def leaf_save(self, *args, **kwargs):
-        is_configured = self.slug and self.slug != slugify(UNCONFIGURED.lower())
         root_api = tortilla.wrap(self.root_server, debug=True)
-        if is_configured:
+        if self.is_configured:
             data = {field.name: getattr(self, field.name) for field in
                     self._meta.fields}
             data.pop(self._meta.pk.name)

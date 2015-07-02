@@ -1,4 +1,5 @@
-name: Single Bay
+name: bay
+description: Single Bay
 entities:
     - name: Bay
       parent: Enclosure

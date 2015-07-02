@@ -6,9 +6,11 @@ module exports a single variable, "all_schemata", which is a dictionary that
 maps all valid schema names to their respective schema dictionaries.
 
 Schema files are written in YAML. Each file must define a ``name`` attribute,
-which is the name of the schema, a ``tray-parent`` attribute, which is the name
-of the parent model for the trays (defaults to "enclosure"), and an ``entities``
-attribute, which is a list of entities that define a system.
+which is a short, preferably one word name of the schema, a ``description``
+attribute, which a one line description of the schema, a ``tray-parent``
+attribute, which is the name of the parent model for the trays (defaults to
+"enclosure"), and an ``entities`` attribute, which is a list of entities that
+define a system.
 
 Each entity should have a ``name`` attribute, which is the name of the entity,
 and a ``parent`` attribute, which is the name of the parent entity. The ``Tray``
@@ -24,7 +26,8 @@ import yaml
 import voluptuous
 from slugify import slugify
 
-__all__ = ['all_schemata']
+__all__ = ['all_schemata', 'Entity', 'Schema', 'register_schema',
+'load_schema_from_file']
 
 def to_slug(string):
     """
@@ -46,6 +49,7 @@ class Entity:
 class Schema:
     schema = voluptuous.Schema({
         voluptuous.Required('name'): str,
+        voluptuous.Required('description'): str,
         voluptuous.Required('entities', default=[]): [Entity.schema],
         voluptuous.Required('tray-parent', default='Enclosure'): to_slug,
     })
@@ -53,6 +57,7 @@ class Schema:
         attrs.update(kwargs)
         attrs = self.schema(attrs)
         self.name = attrs['name']
+        self.description = attrs['description']
         self.entities = {}
         for entity_attrs in attrs['entities']:
             entity = Entity(entity_attrs)
@@ -86,10 +91,10 @@ class Schema:
                 if entity.parent in entity_children:
                     msg = 'Entity "{}" has multiple children: "{}" and "{}"'
                     msg = msg.format(
-                        entity.parent, entity_children[entity_parent],
+                        entity.parent, entity_children[entity.parent],
                         entity.name
                     )
-                    raise SchemaError(msg)
+                    raise voluptuous.SchemaError(msg)
                 else:
                     msg = 'Entity "{}" references nonexistant parent "{}"'
                     msg = msg.format(entity.name, entity.parent)
@@ -103,15 +108,11 @@ class Schema:
 
 all_schemata = {} # Global registry for loaded schemata
 
-def load_schema_from_file(schema_filename):
-    """
-    Load the schema from the file with the given filename.
-    """
-    schema_name = os.path.splitext(schema_filename)[0]
-    file_path = os.path.join(os.path.dirname(__file__), schema_filename)
-    with open(file_path, 'r') as schema_file:
-        schema = yaml.load(schema_file)
-    all_schemata[schema_name] = Schema(schema)
+def register_schema(schema):
+    if schema.name in all_schemata:
+        raise ValueError("Tried to register a schema named '%s', but a schema "
+                "by that name has already been registered" % schema.name)
+    all_schemata[schema.name] = schema
 
 # Load all of the schema files from this directory
 for filename in os.listdir(os.path.dirname(__file__)):
@@ -119,4 +120,7 @@ for filename in os.listdir(os.path.dirname(__file__)):
     # Only process yaml files
     if not file_ext == '.yaml':
         continue
-    load_schema_from_file(filename)
+    file_path = os.path.join(os.path.dirname(__file__), filename)
+    with open(file_path, 'r') as schema_file:
+        schema = yaml.load(schema_file)
+    register_schema(Schema(schema))

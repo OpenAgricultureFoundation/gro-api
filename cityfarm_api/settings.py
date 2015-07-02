@@ -130,7 +130,7 @@ MEDIA_ROOT = os.path.join(BASE_DIR, 'cityfarm_api', 'media')
 # REST Framework
 
 REST_FRAMEWORK = {
-    'TEST_REQUEST_DEFAULT_FORMAT': 'json'
+    'TEST_REQUEST_DEFAULT_FORMAT': 'json',
 }
 
 # Deployment Configuration

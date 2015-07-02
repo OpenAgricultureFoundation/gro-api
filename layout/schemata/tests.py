@@ -1,43 +1,82 @@
 from voluptuous import Invalid, SchemaError
 from django.test import TestCase
-from layout.schemata import all_schemata, load_schema_from_dict
+from layout.schemata import all_schemata, Entity, Schema, register_schema
 
 
 class InvalidSchemaTestCase(TestCase):
     def test_missing_name(self):
-        schema = {}
         with self.assertRaises(Invalid):
-            load_schema_from_dict("test", schema)
+            Schema({'description': 'Test Schema'})
 
-    def test_duplicate_name(self):
-        schema1 = {"name": "test"}
-        schema2 = schema1.copy()
-        load_schema_from_dict("test_duplicate", schema1)
-        with self.assertRaises(ValueError):
-            load_schema_from_dict("test_duplicate", schema2)
+    def test_missing_description(self):
+        with self.assertRaises(Invalid):
+            Schema({'name': 'test'})
 
     def test_invalid_tray_parent(self):
-        schema = {"name": "test", "tray-parent": "test"}
+        schema = {
+            'name': 'test',
+            'description': 'Test Schema',
+            'tray-parent': 'test'
+        }
         with self.assertRaises(SchemaError):
-            load_schema_from_dict("test", schema)
+            Schema(schema)
 
     def test_entity_with_parent_tray(self):
-        entity = {"name": "test", "parent": "tray"}
-        schema = {"name": "test", "entities": [entity]}
+        schema = {
+            'name': 'test',
+            'description': 'Test Schema',
+            'entities': [{
+                'name': 'test',
+                'parent': 'tray'
+            }],
+            'tray-parent': 'enclosure'
+        }
         with self.assertRaises(SchemaError):
-            load_schema_from_dict("test", schema)
+            Schema(schema)
 
     def test_entity_with_multiple_children(self):
-        entity1 = {"name": "test1", "parent": "Enclosure"}
-        entity2 = {"name": "test2", "parent": "test1"}
-        entity3 = {"name": "test3", "parent": "test1"}
-        schema = {"name": "test", "entities": [entity1, entity2, entity3],
-                  "tray-parent": "test2"}
+        schema = {
+            'name': 'test',
+            'description': 'Test Schema',
+            'entities': [
+                {
+                    'name': 'Test1',
+                    'parent': 'Enclosure'
+                },
+                {
+                    'name': 'Test2',
+                    'parent': 'Test1',
+                },
+                {
+                    'name': 'Test3',
+                    'parent': 'Test1',
+                },
+            ],
+            'tray-parent': 'Test1',
+        }
         with self.assertRaises(SchemaError):
-            load_schema_from_dict("test", schema)
+            Schema(schema)
 
     def test_entity_with_nonexistant_parent(self):
-        entity = {"name": "test", "parent": "parent"}
-        schema = {"name": "test", "entities": [entity], "tray-parent": "test"}
+        schema = {
+            'name': 'test',
+            'description': 'Test Schema',
+            'entities': [{
+                'name': 'Test',
+                'parent': 'FakeParent',
+            }],
+            'tray-parent': 'Test',
+        }
         with self.assertRaises(SchemaError):
-            load_schema_from_dict("test", schema)
+            Schema(schema)
+
+    def test_duplicate_name(self):
+        schema_attrs = {
+            'name': 'test',
+            'description': 'Test Schema'
+        }
+        schema1 = Schema(schema_attrs)
+        schema2 = Schema(schema_attrs)
+        register_schema(schema1)
+        with self.assertRaises(ValueError):
+            register_schema(schema2)

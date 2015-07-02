@@ -91,49 +91,6 @@ class BaseSerializer(serializers.HyperlinkedModelSerializer):
                     getattr(self.Meta, field_name) is None:
                 setattr(self.Meta, field_name, default)
 
-    def create(self, validated_data):
-        # TODO: I don't like having to override this
-        raise_errors_on_nested_writes('create', self, validated_data)
-
-        ModelClass = self.Meta.model
-
-        # Remove many-to-many relationships from validated_data.
-        # They are not valid arguments to the default `.create()` method,
-        # as they require that the instance has already been saved.
-        info = model_meta.get_field_info(ModelClass)
-        many_to_many = {}
-        for field_name, relation_info in info.relations.items():
-            if relation_info.to_many and (field_name in validated_data):
-                many_to_many[field_name] = validated_data.pop(field_name)
-
-        # Deal with DynamicForeignKey fields here for now because Django doesn't
-        # realize that they are relations, so it doesn't know to extract the
-        # model ID and assign it to the correct attribute (e.g. model.parent_id
-        # = model.parent.pk). Hopefully we can find a better way to do that so
-        # that Django actually sees our relations as relations
-        fields_iter = iter(ModelClass._meta.concrete_fields)
-        fields_hacked = {}
-        for field in fields_iter:
-            # Django is going to expect a pk and use field.attname as the key
-            if isinstance(field, DynamicForeignKey):
-                rel_obj = validated_data.pop(field.name)
-                # Save the object so that we can repeat the assignment through
-                # the descriptor after the object is created so it is cached.
-                fields_hacked[field] = rel_obj
-                validated_data[field.attname] = rel_obj.pk
-
-        instance = ModelClass.objects.create(**validated_data)
-
-        for field, obj in fields_hacked.items():
-            setattr(instance, field.name, obj)
-
-        # Save many-to-many relationships after the instance is created.
-        if many_to_many:
-            for field_name, value in many_to_many.items():
-                setattr(instance, field_name, value)
-
-        return instance
-
     def get_field_names(self, declared_fields, info):
         field_names = super().get_field_names(declared_fields, info)
         field_names = tuple(field_names)

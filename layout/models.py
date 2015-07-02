@@ -72,11 +72,9 @@ class LayoutObject(models.Model):
 
     def save(self, *args, **kwargs):
         # Generate pk to include in default name
-        farm = Farm.get_solo()
-        if not farm.is_configured:
-            raise FarmNotConfiguredError()
         res = super().save(*args, **kwargs)
         if self._meta.get_field('name') and not self.name:
+            farm = Farm.get_solo()
             self.name = "{} {} {}".format(
                 Farm.get_solo().name,
                 self.__class__.__name__,
