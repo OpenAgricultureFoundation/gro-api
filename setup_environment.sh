@@ -9,10 +9,12 @@ Options:
 -p  : Configure the API instance in production mode (This is the default)
 -h  : Print this help message"
 
+# Globals
 VERBOSE=false
 SERVER_TYPE=leaf
 SERVER_MODE=production
 
+# Parse options
 while getopts "vlrdph" OPTION; do
     case $OPTION in
         v) VERBOSE=true ;;
@@ -24,21 +26,46 @@ while getopts "vlrdph" OPTION; do
     esac
 done
 
-$VERBOSE && [ -n "$SERVER_TYPE" ] && echo "Selected $SERVER_TYPE server type"
-$VERBOSE && [ -n "$SERVER_MODE" ] && echo "Selected $SERVER_MODE server mode"
+# Display selected run configuration
+$VERBOSE && [[ -n "$SERVER_TYPE" ]] && echo "Selected $SERVER_TYPE server type"
+$VERBOSE && [[ -n "$SERVER_MODE" ]] && echo "Selected $SERVER_MODE server mode"
 
-$VERBOSE && echo "Changing to script directory"
-cd ${0%/*}
-
-if [ ! -d "./env" ]; then
-    $VERBOSE && echo "Creating virtual environment"
-    virtualenv -p python3 --system-site-packages env
-    $VERBOSE && echo "Activating virtual environment"
-    source env/bin/activate
-    echo "Installing project dependencies"
-    pip install -r requirements.txt
+# If we are not in the directory that contains this script, switch to the
+# directory that contains this script
+if [[ $0 =~ "/" ]]; then
+    $VERBOSE && echo "Changing to script directory"
+    cd ${0%/*}
 fi
 
+# Install a pre-push hook for linting
+PRE_PUSH="#!/usr/bin/env bash
+git ls-files | xargs pylint -E"
+if [[ -d ".git" && ! ! -e ".git/hooks/pre-push" ]]; then
+    $VERBODE && echo "Installing pre-push hook"
+    echo "$PRE_PUSH" > .git/hooks/pre-push
+    chmod 755 .git/hooks/pre-push
+fi
+
+
+# Create the virtual environment if it doesn't exist yet
+if [[ ! -d "./env" ]]; then
+    $VERBOSE && echo "Creating virtual environment"
+    if $VERBOSE; then
+        virtualenv -p python3 --system-site-packages env
+    else
+        virtualenv -p python3 --system-site-packages env -q
+    fi
+    $VERBOSE && echo "Activating virtual environment"
+    source env/bin/activate
+    $VERBOSE && echo "Installing project dependencies..."
+    if $VERBOSE; then
+        pip install -r requirements.txt
+    else
+        pip install -r requirements.txt -q
+    fi
+fi
+
+# Write the .env file
 echo "source env/bin/activate" > .env
 echo "export CITYFARM_API_ROOT=$(pwd -P)" >> .env
 echo "export CITYFARM_API_SERVER_TYPE=$SERVER_TYPE" >> .env
