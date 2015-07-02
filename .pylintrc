@@ -1,1 +1,2 @@
-generated-members=objects
+[MASTER]
+generated-members=objects,Meta,_meta
