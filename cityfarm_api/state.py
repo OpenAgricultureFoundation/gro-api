@@ -1,3 +1,7 @@
+"""
+This module defines a single class, :class:`StateVariable`.
+"""
+
 class StateVariable:
     """
     Abastraction of an application-level state variable. Subclasses of

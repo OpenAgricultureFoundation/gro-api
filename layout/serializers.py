@@ -25,15 +25,7 @@ class PlantSiteLayoutSerializer(BaseSerializer):
         model = PlantSiteLayout
 
 
-
 class LayoutObjectSerializer(BaseSerializer):
-    class Meta:
-        model = LayoutObject
-    layout_object = serializers.SerializerMethodField()
-    def get_layout_object(self, obj):
-        return self.Meta.model.objects.get_subclass()
-
-class LayoutObjectSubSerializer(BaseSerializer):
     """
     A Serializer for subclasses of LayoutObject
     """
@@ -56,32 +48,17 @@ class LayoutObjectSubSerializer(BaseSerializer):
             return self.validate_location(attrs)
         else:
             return attrs
-    def build_field(self, field_name, info, model_class, nested_depth):
-        if field_name == "layout_object":
-            model_field = model_class.layout_object.field
-            relation_info = RelationInfo(
-                model_field = model_field,
-                related_model = _resolve_model(model_field.rel.to),
-                to_many = False,
-                has_through_model = True
-            )
-            return self.build_relational_field(
-                field_name, relation_info
-            )
-        else:
-            return super().build_field(field_name, info, model_class,
-                    nested_depth)
 
 dynamic_serializers = {}
 
-class EnclosureSerializer(LayoutObjectSubSerializer):
+class EnclosureSerializer(LayoutObjectSerializer):
     class Meta:
         model = Enclosure
         nest_if_recursive = ('model',)
         never_nest = ('parent', 'layout_object')
         nested_serializers = dynamic_serializers
 
-class TraySerializer(LayoutObjectSubSerializer):
+class TraySerializer(LayoutObjectSerializer):
     class Meta:
         model = Tray
         extra_fields = ('plant_sites',)
@@ -92,7 +69,7 @@ class TraySerializer(LayoutObjectSubSerializer):
         # TODO: Create plant sites here
         return super().create(validated_data)
 
-class NestedTraySerializer(LayoutObjectSubSerializer):
+class NestedTraySerializer(LayoutObjectSerializer):
     class Meta:
         model = Tray
         extra_fields = ('plant_sites',)
@@ -100,7 +77,7 @@ class NestedTraySerializer(LayoutObjectSubSerializer):
         never_nest = ('parent', 'layout_object', 'plant_sites')
 
 for entity_name, entity_model in dynamic_models.items():
-    class Serializer(LayoutObjectSubSerializer):
+    class Serializer(LayoutObjectSerializer):
         class Meta:
             model = entity_model
             nest_if_recursive = ('model',)

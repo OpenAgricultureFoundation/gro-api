@@ -191,16 +191,16 @@ else:
     except IOError:
         try:
             import random
-            valid_characters = "{}{}{}".format(
+            VALID_CHARACTERS = "{}{}{}".format(
                 string.ascii_letters,
                 string.digits,
                 string.punctuation,
             )
-            character = lambda: random.SystemRandom().choice(valid_characters)
-            SECRET_KEY = ''.join([character() for i in range(50)])
-            secret = open(SECRET_FILE, 'w')
-            secret.write(SECRET_KEY)
-            secret.close()
+            CHARACTER = lambda: random.SystemRandom().choice(VALID_CHARACTERS)
+            SECRET_KEY = ''.join([CHARACTER() for i in range(50)])
+            SECRET = open(SECRET_FILE, 'w')
+            SECRET.write(SECRET_KEY)
+            SECRET.close()
         except IOError:
             raise Exception(
                 'Failed to write secret key to secret file at '

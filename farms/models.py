@@ -1,6 +1,7 @@
-import env
+import os
 import socket
 import tortilla
+import requests
 from slugify import slugify
 from django.db import models
 from django.conf import settings
@@ -8,6 +9,7 @@ from solo.models import SingletonModel
 from urllib.parse import urlparse
 from django.core.exceptions import ValidationError
 
+from cityfarm_api.models import Model
 from layout.schemata import all_schemata
 
 LAYOUT_CHOICES = ((key, val.name) for key, val in all_schemata.items())
@@ -33,7 +35,7 @@ if settings.SERVER_TYPE == settings.ROOT:
         'primary_key': True
     }
 
-class Farm(SingletonModel):
+class Farm(Model, SingletonModel):
     root_id = RootIdField(**root_id_kwargs)
     name = models.CharField(
         max_length=100, blank=(settings.SERVER_TYPE == settings.LEAF),
@@ -105,7 +107,7 @@ class Farm(SingletonModel):
         if self.layout != self._old_layout:
             print("Restarting")
             # Restart the server so the new models can load
-            url = env['UWSGI_HTTP'] + '/restart'
+            url = 'http://' + os.environ['UWSGI_HTTP'] + '/restart'
             requests.get(url)
         return res
 

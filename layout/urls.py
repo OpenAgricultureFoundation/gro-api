@@ -7,9 +7,8 @@ def register_static_patterns(router):
     # router.register(r'plantSiteLayout', views.PlantSiteLayoutViewSet)
 
 def register_dynamic_patterns(router, layout):
-    router.register(r'layoutObject', views.LayoutObjectViewSet)
     router.register(r'enclosure', views.EnclosureViewSet)
     router.register(r'tray', views.TrayViewSet)
     for entity_slug, entity_model in models.dynamic_models.items():
         entity_viewset = views.dynamic_viewsets[entity_slug]
-        router.register(entity_slug, entity_viewset)
+        router.register(entity_slug.lower(), entity_viewset)

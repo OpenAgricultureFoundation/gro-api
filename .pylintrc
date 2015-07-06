@@ -1,2 +1,11 @@
 [MASTER]
-generated-members=objects,Meta,_meta
+attr-rgx=[a-z_][a-z0-9_]+$
+class-attribute-rgx=([A-Za-z_][A-Za-z0-9_]+|(__.*__))$
+disable=attribute-defined-outside-init,no-self-use,super-init-not-called,too-few-public-methods,too-many-ancestors,too-many-arguments,too-many-instance-attributes,no-init,unused-wildcard-import
+docstring-min-length=10
+exclude-protected=_meta,_default_manager
+function-rgx=[a-z_][a-z0-9_]+$
+generated-members=objects,Meta,_meta,__package__
+good-names=application,urlpatterns,_
+method-rgx=[a-z_][a-z0-9_]+$
+variable-rgx=[a-z_][a-z0-9_]+$

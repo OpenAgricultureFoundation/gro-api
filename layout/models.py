@@ -1,9 +1,9 @@
 from django.db import models
 from solo.models import SingletonModel
-from model_utils.managers import InheritanceManager
 from cityfarm_api.utils import get_current_layout
 from cityfarm_api.state import StateVariable
 from cityfarm_api.errors import FarmNotConfiguredError
+from cityfarm_api.models import Model
 from cityfarm_api.fields import (
     state_dependent_cached_property, dynamic_foreign_key
 )
@@ -11,7 +11,7 @@ from farms.models import Farm
 from .utils import schemata_to_use
 from .schemata import all_schemata
 
-class Model3D(models.Model):
+class Model3D(Model):
     name = models.CharField(max_length=100)
     file = models.FileField(upload_to="3D_models")
     width = models.FloatField()
@@ -21,13 +21,13 @@ class Model3D(models.Model):
     def __str__(self):
         return self.name
 
-class TrayLayout(models.Model):
+class TrayLayout(Model):
     name = models.CharField(max_length=100)
 
     def __str__(self):
         return self.name
 
-class PlantSiteLayout(models.Model):
+class PlantSiteLayout(Model):
     parent = models.ForeignKey(TrayLayout, related_name="plant_sites")
     row = models.IntegerField()
     col = models.IntegerField()
@@ -49,6 +49,7 @@ LayoutForeignKey = dynamic_foreign_key(LayoutVariable())
 class ParentField(LayoutForeignKey):
     def __init__(self, *args, **kwargs):
         self.model_name = kwargs.pop('model_name', None)
+        kwargs['related_name'] = 'children'
         super().__init__(*args, **kwargs)
 
     def deconstruct(self):
@@ -66,9 +67,9 @@ class ParentField(LayoutForeignKey):
         else:
             return None
 
-
-class LayoutObject(models.Model):
-    objects = InheritanceManager()
+class LayoutObject(Model):
+    class Meta(Model.Meta):
+        abstract = True
 
     def save(self, *args, **kwargs):
         # Generate pk to include in default name
@@ -87,10 +88,6 @@ class LayoutObject(models.Model):
         return res
 
 class Enclosure(LayoutObject, SingletonModel):
-    enclosure_num = models.AutoField(primary_key=True)
-    layout_object = models.OneToOneField(
-        LayoutObject, parent_link=True, editable=False
-    )
     name = models.CharField(max_length=100, blank=True)
     x = models.FloatField(default=0)
     y = models.FloatField(default=0)
@@ -104,10 +101,6 @@ class Enclosure(LayoutObject, SingletonModel):
         return self.name
 
 class Tray(LayoutObject):
-    tray_num = models.AutoField(primary_key=True)
-    layout_object = models.OneToOneField(
-        LayoutObject, parent_link=True, editable=False
-    )
     name = models.CharField(max_length=100, blank=True)
     x = models.FloatField(default=0)
     y = models.FloatField(default=0)
@@ -127,32 +120,35 @@ class Tray(LayoutObject):
 # so we can be sure not to create a class that has already been created
 dynamic_models = {}
 
-for schema_name, schema in schemata_to_use().items():
-    for entity in schema.dynamic_entities.values():
-        if entity.name not in dynamic_models:
-            # A model by this name has not been created yet, so create it
-            subid_field = "{}_num".format(entity.name)
-            name_format_string = "{} " + entity.name + " {}"
+def generate_model_from_entity(entity, managed):
+    class Meta:
+        managed = managed
+    def __str__(self):
+        return self.name
+    model_attrs = {
+        "__module__": __name__,
+        "model_name": entity.name,
+        "name": models.CharField(max_length=100, blank=True),
+        "x": models.FloatField(default=0),
+        "y": models.FloatField(default=0),
+        "z": models.FloatField(default=0),
+        "length": models.FloatField(default=0),
+        "width": models.FloatField(default=0),
+        "height": models.FloatField(default=0),
+        "model": models.ForeignKey(Model3D, null=True),
+        "parent": ParentField(),
+        "__str__": __str__,
+    }
+    return type(entity.name, (LayoutObject,), model_attrs)
 
-            def __str__(self):
-                return self.name
-            model_attrs = {
-                "__module__": __name__,
-                "model_name": entity.name,
-                subid_field: models.AutoField(primary_key=True),
-                "layout_object": models.OneToOneField(
-                    LayoutObject, parent_link=True, editable=False
-                ),
-                "name": models.CharField(max_length=100, blank=True),
-                "x": models.FloatField(default=0),
-                "y": models.FloatField(default=0),
-                "z": models.FloatField(default=0),
-                "length": models.FloatField(default=0),
-                "width": models.FloatField(default=0),
-                "height": models.FloatField(default=0),
-                "model": models.ForeignKey(Model3D, null=True),
-                "parent": ParentField(),
-                "__str__": __str__,
-            }
-            Model = type(entity.name, (LayoutObject,), model_attrs)
-            dynamic_models[entity.mname] = Model
+if settings.SERVER_TYPE == settings.LEAF:
+    # Generate managed models for all entities in the schema for the current
+    # layout
+    schema = all_schemata[get_current_layout()]
+    for entity in schema.dynamic_entities.values():
+        dynamic_models[entity.name] = generate_model_from_entity(entity, True)
+# Generate unmanaged models for all other entities
+for schema_name, schema in all_schemata.items():
+    for entity in schema.dynamic_entities.values():
+        if not entity.name in dynamic_models:
+            _ = generate_model_from_entity(entity, False)
