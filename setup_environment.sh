@@ -47,16 +47,17 @@ if [[ -d ".git" && ! ! -e ".git/hooks/pre-push" ]]; then
 fi
 
 
-# Create the virtual environment if it doesn't exist yet
 if [[ ! -d "./env" ]]; then
-    $VERBOSE && echo "Creating virtual environment"
-    if $VERBOSE; then
-        virtualenv -p python3 --system-site-packages env
-    else
-        virtualenv -p python3 --system-site-packages env -q
+    if [[ ! $TRAVIS ]]; then
+        $VERBOSE && echo "Creating virtual environment"
+        if $VERBOSE; then
+            virtualenv -p python3 --system-site-packages env
+        else
+            virtualenv -p python3 --system-site-packages env -q
+        fi
+        $VERBOSE && echo "Activating virtual environment"
+        source env/bin/activate
     fi
-    $VERBOSE && echo "Activating virtual environment"
-    source env/bin/activate
     $VERBOSE && echo "Installing project dependencies..."
     if $VERBOSE; then
         pip install -r requirements.txt
@@ -66,7 +67,10 @@ if [[ ! -d "./env" ]]; then
 fi
 
 # Write the .env file
-echo "source env/bin/activate" > .env
+: > .env # Truncate the file
+if [[ ! $TRAVIS ]]; then
+    echo "source env/bin/activate" >> .env
+fi
 echo "export CITYFARM_API_ROOT=$(pwd -P)" >> .env
 echo "export CITYFARM_API_SERVER_TYPE=$SERVER_TYPE" >> .env
 echo "export CITYFARM_API_SERVER_MODE=$SERVER_MODE" >> .env

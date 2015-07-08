@@ -88,8 +88,11 @@ class SerializerRegistry(ModelDict):
     default, :class:`BaseSerializer` is used.
     """
     def register(self, serializer):
-        if hasattr(serializer.Meta, 'model'):
+        # This may fail if serializer is abstract, such as BaseSerializer
+        try:
             self[serializer.Meta.model] = serializer
+        except:
+            pass
 
     def get_for_model(self, model):
         """
@@ -127,10 +130,6 @@ class MySerializerMetaclass(SerializerMetaclass):
                 if getattr(meta, attr_name, None) is None:
                     setattr(meta, attr_name, attr_val)
             meta.models_being_nested = set()
-        else:
-            raise ValueError(
-                'BaseSerializer instantiated without a Meta member'
-            )
         model_serializers.register(cls)
 
 class BaseSerializer(serializers.HyperlinkedModelSerializer,
@@ -139,9 +138,6 @@ class BaseSerializer(serializers.HyperlinkedModelSerializer,
     Base class used for all serializers in this project.
     """
     serializer_related_field = SmartHyperlinkedRelatedField
-
-    class Meta:
-        pass
 
     def __init__(self, *args, **kwargs):
         # We can't access self.context until super().__init__ has been called,
@@ -168,7 +164,6 @@ class BaseSerializer(serializers.HyperlinkedModelSerializer,
         if hasattr(self.Meta, 'model'):
             model_key = model_serializers.get_key_for_model(self.Meta.model)
             self.Meta.models_already_nested.add(model_key)
-        print(self.Meta.models_already_nested)
 
     def get_default_field_names(self, declared_fields, model_info):
         return (

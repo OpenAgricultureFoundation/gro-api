@@ -9,19 +9,17 @@ from layout.models import (
 )
 
 class TrayLayoutSerializer(BaseSerializer):
-    class Meta(BaseSerializer.Meta):
+    class Meta:
         model = TrayLayout
-    # TODO: Kwargs stuffs
+        # TODO: Kwargs stuffs
 
 class EnclosureSerializer(BaseSerializer):
-    class Meta(BaseSerializer.Meta):
+    class Meta:
         model = Enclosure
         nest_if_recursive = ('model',)
 
 class LayoutObjectSerializer(BaseSerializer):
     """ A Serializer for subclasses of LayoutObject """
-    class Meta(BaseSerializer.Meta):
-        pass
     def validate_location(self, attrs):
         """ Ensure that this object fits inside it's parent """
         total_length = (attrs['x'] or 0) + (attrs['length'] or 0)
@@ -41,8 +39,9 @@ class LayoutObjectSerializer(BaseSerializer):
         return self.validate_location(attrs)
 
 class TraySerializer(LayoutObjectSerializer):
-    class Meta(LayoutObjectSerializer.Meta):
+    class Meta:
         model = Tray
+        never_nest = ('parent',)
         nest_if_recursive = ('model',)
 
     def create(self, validated_data):
@@ -51,6 +50,7 @@ class TraySerializer(LayoutObjectSerializer):
 
 for entity_name, entity_model in dynamic_models.items():
     class Serializer(LayoutObjectSerializer):
-        class Meta(LayoutObjectSerializer.Meta):
+        class Meta:
             model = entity_model
+            never_nest = ('parent',)
             nest_if_recursive = ('model',)
