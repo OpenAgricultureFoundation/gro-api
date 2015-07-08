@@ -11,6 +11,7 @@ from django.core.exceptions import ValidationError
 
 from cityfarm_api.models import Model
 from layout.schemata import all_schemata
+from control.routines import Restart
 
 LAYOUT_CHOICES = ((key, val.name) for key, val in all_schemata.items())
 LAYOUT_CHOICES = sorted(LAYOUT_CHOICES, key=lambda choice: choice[0])
@@ -88,29 +89,27 @@ class Farm(Model, SingletonModel):
     def leaf_save(self, *args, **kwargs):
         root_api = tortilla.wrap(self.root_server, debug=True)
         if self.is_configured:
-            data = {field.name: getattr(self, field.name) for field in
-                    self._meta.fields}
-            data.pop(self._meta.pk.name)
-            try:
+            # Register this farm with the root server
+            if settings.SERVER_MODE == settings.DEVELOPMENT:
+                # Jk, don't actually contact the server, just pretend we did
+                self.root_id = 1
+                super().save(*args, **kwargs)
+            else:
+                # Actually contact the server
+                data = {field.name: getattr(self, field.name) for field in
+                        self._meta.fields}
+                data.pop(self._meta.pk.name)
                 if self.root_id:
                     res = root_api.farms(self.farm_id).put(data=data)
                 else:
                     res = root_api.farms.post(data=data)
-                # TODO: Update any parameters on the model that were rejected or
-                # modified by the root server
-            except Exception as e:
-                # TODO: Actually handle these exceptions. For now, we'll just
-                # ignore them because we don't actually have a root server to
-                # setup things with
-                print(e)
-        res = super().save(*args, **kwargs)
+                assert res.status_code == 200
+                # TODO: Update any parameters on the model that were
+                # rejected or modified by the root server
+                super().save(*args, **kwargs)
         if self.layout != self._old_layout:
-            print("Restarting")
-            # Restart the server so the new models can load
-            url = 'http://' + os.environ['UWSGI_HTTP'] + '/restart'
-            requests.get(url)
-        return res
+            Restart().to_json()
 
     def root_save(self, *args, **kwargs):
         # TODO: Set up database mirroring here
-        return super().save(*args, **kwargs)
+        super().save(*args, **kwargs)

@@ -41,7 +41,7 @@ fi
 PRE_PUSH="#!/usr/bin/env bash
 git ls-files '*.py' | xargs pylint -E --rcfile .pylintrc"
 if [[ -d ".git" && ! ! -e ".git/hooks/pre-push" ]]; then
-    $VERBODE && echo "Installing pre-push hook"
+    $VERBOSE && echo "Installing pre-push hook"
     echo "$PRE_PUSH" > .git/hooks/pre-push
     chmod 755 .git/hooks/pre-push
 fi
