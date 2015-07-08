@@ -38,4 +38,4 @@ class Routine:
 
 class Restart(Routine):
     title = 'Restart'
-    command_classes = [MakeMigrations, Migrate, ReloadWorkers]
+    command_classes = [MakeMigrations, MakeMigrations, Migrate, ReloadWorkers]

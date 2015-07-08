@@ -2,6 +2,9 @@
 This module defines a set of classes that together allow models in this project
 to be serialized correctly.
 """
+import logging
+import importlib
+from django.conf import settings
 from rest_framework import serializers
 from rest_framework.settings import api_settings
 from rest_framework.relations import HyperlinkedRelatedField
@@ -11,6 +14,9 @@ from rest_framework.serializers import (
 from rest_framework.utils.field_mapping import (
     get_detail_view_name, get_relation_kwargs, get_nested_relation_kwargs
 )
+from .utils import ModelDict
+
+logger = logging.getLogger(__name__)
 
 # HyperlinkedRelatedField.__init__ requires view_name != None, so we pass this
 # constant in and ignore it in the setter for view_name
@@ -74,10 +80,38 @@ class SmartHyperlinkedRelatedField:
         else:
             return setattr(object.__getattribute__(self, 'field'), name, val)
 
+class SerializerRegistry(ModelDict):
+    """
+    A registry that keeps track of all of the serializer that have been
+    registered for this project. :class:`BaseSerializer` will read from the
+    registry when determining what serializer to use for nested relations. By
+    default, :class:`BaseSerializer` is used.
+    """
+    def register(self, serializer):
+        if hasattr(serializer.Meta, 'model'):
+            self[serializer.Meta.model] = serializer
+
+    def get_for_model(self, model):
+        """
+        Gets the serializer associated with the model `model`. If no serializer
+        has been registered for the model, returns a :class:`BaseSerializer`
+        subclass that can operate on the given model.
+        """
+        if not model in self:
+            _model = model # Scoping is weird
+            class Serializer(BaseSerializer): # pylint: disable=used-before-assignment
+                class Meta:
+                    model = _model
+            self[model] = Serializer
+        return self[model]
+
+model_serializers = SerializerRegistry()
+
 class MySerializerMetaclass(SerializerMetaclass):
     """
     Modify :class:`~rest_framework.serializer.SerializerMetaclass` to also
-    provide default value for a set of attributes on the Meta.
+    provide default values for a set of attributes on the Meta and automatically
+    register the serializer with `model_serializers`.
     """
     def __init__(cls, name, bases, attrs):
         super().__init__(name, bases, attrs)
@@ -85,15 +119,19 @@ class MySerializerMetaclass(SerializerMetaclass):
             'extra_fields': (),
             'nest_if_recursive': (),
             'never_nest': (),
-            'nested_serializers': {},
             'models_already_nested': set(),
-            'models_being_nested': set(),
         }
         if 'Meta' in attrs:
             meta = attrs['Meta']
             for attr_name, attr_val in meta_defaults.items():
                 if getattr(meta, attr_name, None) is None:
                     setattr(meta, attr_name, attr_val)
+            meta.models_being_nested = set()
+        else:
+            raise ValueError(
+                'BaseSerializer instantiated without a Meta member'
+            )
+        model_serializers.register(cls)
 
 class BaseSerializer(serializers.HyperlinkedModelSerializer,
                      metaclass=MySerializerMetaclass):
@@ -101,6 +139,9 @@ class BaseSerializer(serializers.HyperlinkedModelSerializer,
     Base class used for all serializers in this project.
     """
     serializer_related_field = SmartHyperlinkedRelatedField
+
+    class Meta:
+        pass
 
     def __init__(self, *args, **kwargs):
         # We can't access self.context until super().__init__ has been called,
@@ -124,6 +165,10 @@ class BaseSerializer(serializers.HyperlinkedModelSerializer,
             self.is_recursive = self.Meta.depth > 0
         else:
             self.is_recursive = is_recursive
+        if hasattr(self.Meta, 'model'):
+            model_key = model_serializers.get_key_for_model(self.Meta.model)
+            self.Meta.models_already_nested.add(model_key)
+        print(self.Meta.models_already_nested)
 
     def get_default_field_names(self, declared_fields, model_info):
         return (
@@ -153,9 +198,11 @@ class BaseSerializer(serializers.HyperlinkedModelSerializer,
             )
         elif field_name in info.relations:
             relation_info = info.relations[field_name]
-            to_model_name = relation_info.related_model._meta.model_name
+            to_model_key = model_serializers.get_key_for_model(
+                relation_info.related_model
+            )
             if not nested_depth or field_name in self.Meta.never_nest or \
-                    to_model_name in self.Meta.models_already_nested:
+                    to_model_key in self.Meta.models_already_nested:
                 field_class, field_kwargs = self.build_relational_field(
                     field_name, relation_info
                 )
@@ -201,18 +248,23 @@ class BaseSerializer(serializers.HyperlinkedModelSerializer,
         return field_class, field_kwargs
 
     def build_nested_field(self, field_name, relation_info, nested_depth):
-        to_model_name = relation_info.related_model._meta.model_name
-        self.Meta.models_being_nested.add(to_model_name)
-        NestedBase = self.Meta.nested_serializers.get(
-            to_model_name, BaseSerializer
+        NestedBase = model_serializers.get_for_model(
+            relation_info.related_model
         )
         class NestedSerializer(NestedBase):
             class Meta(getattr(NestedBase, 'Meta', object)):
                 model = relation_info.related_model
                 depth = nested_depth - 1
-                models_already_nests = self.Meta.models_already_nested + \
-                        self.Meta.models_being_nested
+                models_already_nested = self.Meta.models_already_nested.copy()
         field_class = NestedSerializer
         field_kwargs = get_nested_relation_kwargs(relation_info)
         field_kwargs['is_recursive'] = self.is_recursive
         return field_class, field_kwargs
+
+# Populate the serializer registry by making sure all serializer modules in this
+# project have been imported
+for app_name in settings.CITYFARM_API_APPS:
+    try:
+        importlib.import_module('.serializers', app_name)
+    except (ImportError, SyntaxError) as err:
+        logger.warn(err)

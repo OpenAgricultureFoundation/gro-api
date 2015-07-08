@@ -1,6 +1,6 @@
 """
-This module defines a base model class that all models in this project should
-inherit from.
+This module defines a base model class form which all models in this project
+should inherit.
 """
 import django.db.models as django_models
 from django.conf import settings
@@ -8,7 +8,7 @@ from django.conf import settings
 class Model(django_models.Model):
     """
     Base model class from which all database models in this project should
-    inherit.
+    inherit. By default, these models will be managed only on leaf servers.
     """
     class Meta:
         abstract = True

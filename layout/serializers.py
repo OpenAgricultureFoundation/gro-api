@@ -1,35 +1,29 @@
-from rest_framework import serializers
+"""
+This module creates serializers for some of the models defines in the
+layout.models module
+"""
 from rest_framework.serializers import ValidationError
-from rest_framework.utils.model_meta import _resolve_model
-from rest_framework.utils.model_meta import get_field_info, RelationInfo
-from rest_framework.utils.field_mapping import get_nested_relation_kwargs
-from plants.serializers import PlantSiteSerializer
 from cityfarm_api.serializers import BaseSerializer
 from layout.models import (
-    Model3D, TrayLayout, PlantSiteLayout, LayoutObject, Enclosure, Tray,
-    dynamic_models
+    Enclosure, Tray, dynamic_models, TrayLayout
 )
 
-class Model3DSerializer(BaseSerializer):
-    class Meta:
-        model = Model3D
-
-
 class TrayLayoutSerializer(BaseSerializer):
-    class Meta:
+    class Meta(BaseSerializer.Meta):
         model = TrayLayout
+    # TODO: Kwargs stuffs
 
-
-class PlantSiteLayoutSerializer(BaseSerializer):
-    class Meta:
-        model = PlantSiteLayout
-
+class EnclosureSerializer(BaseSerializer):
+    class Meta(BaseSerializer.Meta):
+        model = Enclosure
+        nest_if_recursive = ('model',)
 
 class LayoutObjectSerializer(BaseSerializer):
-    """
-    A Serializer for subclasses of LayoutObject
-    """
+    """ A Serializer for subclasses of LayoutObject """
+    class Meta(BaseSerializer.Meta):
+        pass
     def validate_location(self, attrs):
+        """ Ensure that this object fits inside it's parent """
         total_length = (attrs['x'] or 0) + (attrs['length'] or 0)
         parent_length = attrs['parent'].length
         if parent_length and not total_length <= parent_length:
@@ -44,49 +38,19 @@ class LayoutObjectSerializer(BaseSerializer):
             raise ValidationError("Model is too tall to fit in its parent")
         return attrs
     def validate(self, attrs):
-        if getattr(self.Meta, 'validate_location', False):
-            return self.validate_location(attrs)
-        else:
-            return attrs
-
-dynamic_serializers = {}
-
-class EnclosureSerializer(LayoutObjectSerializer):
-    class Meta:
-        model = Enclosure
-        nest_if_recursive = ('model',)
-        never_nest = ('parent', 'layout_object')
-        nested_serializers = dynamic_serializers
+        return self.validate_location(attrs)
 
 class TraySerializer(LayoutObjectSerializer):
-    class Meta:
+    class Meta(LayoutObjectSerializer.Meta):
         model = Tray
-        extra_fields = ('plant_sites',)
         nest_if_recursive = ('model',)
-        never_nest = ('parent', 'layout_object')
-        nested_serializers = {'plantsite': PlantSiteSerializer}
+
     def create(self, validated_data):
         # TODO: Create plant sites here
         return super().create(validated_data)
 
-class NestedTraySerializer(LayoutObjectSerializer):
-    class Meta:
-        model = Tray
-        extra_fields = ('plant_sites',)
-        nest_if_recursive = ('model',)
-        never_nest = ('parent', 'layout_object', 'plant_sites')
-
 for entity_name, entity_model in dynamic_models.items():
     class Serializer(LayoutObjectSerializer):
-        class Meta:
+        class Meta(LayoutObjectSerializer.Meta):
             model = entity_model
             nest_if_recursive = ('model',)
-            never_nest = ('parent', 'layout_object')
-    dynamic_serializers[entity_name] = Serializer
-
-nested_serializers = dynamic_serializers.copy()
-nested_serializers.update({
-    'tray': NestedTraySerializer,
-})
-for Serializer in dynamic_serializers.values():
-    Serializer.Meta.nested_serializers = nested_serializers

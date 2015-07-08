@@ -1,14 +1,22 @@
-from django.db import models
+"""
+This module defines the Django models that describe the layout of a farm. A
+model is generated for every possible layout object name. Only the ones used for
+the current farm layout are marked as managed in a leaf server. In a root
+server, none of the models are managed.
+"""
+from django.apps import apps
+from django.db import connections, models
+from django.db.models import ForeignKey, PositiveIntegerField
+from django.db.models.signals import pre_migrate
+from django.conf import settings
 from solo.models import SingletonModel
 from cityfarm_api.utils import get_current_layout
 from cityfarm_api.state import StateVariable
-from cityfarm_api.errors import FarmNotConfiguredError
 from cityfarm_api.models import Model
 from cityfarm_api.fields import (
     state_dependent_cached_property, dynamic_foreign_key
 )
 from farms.models import Farm
-from .utils import schemata_to_use
 from .schemata import all_schemata
 
 class Model3D(Model):
@@ -35,47 +43,74 @@ class PlantSiteLayout(Model):
     def __str__(self):
         return "(r={}, c={}) in {}".format(self.row, self.col, self.parent.name)
 
-class LayoutVariable(StateVariable):
-    @classmethod
-    def current_value(_=None):
-        return get_current_layout()
-    @classmethod
-    def allowed_values(_=None):
-        return schemata_to_use().keys()
-
-per_layout_cached_property = state_dependent_cached_property(LayoutVariable())
-LayoutForeignKey = dynamic_foreign_key(LayoutVariable())
-
-class ParentField(LayoutForeignKey):
-    def __init__(self, *args, **kwargs):
-        self.model_name = kwargs.pop('model_name', None)
-        kwargs['related_name'] = 'children'
-        super().__init__(*args, **kwargs)
-
-    def deconstruct(self):
-        name, path, args, kwargs = super().deconstruct()
-        kwargs['model_name'] = self.model_name
-        return name, path, args, kwargs
-
-    def contribute_to_class(self, cls, name, virtual_only=False):
-        self.model_name = cls.__name__
-        super().contribute_to_class(cls, name, virtual_only=virtual_only)
-
-    def to_for_state(self, state):
-        if self.model_name:
-            return getattr(all_schemata[state], self.model_name).parent
+if settings.SERVER_TYPE == settings.LEAF:
+    def parent_field_for_model(model_name):
+        curr_schema = all_schemata[get_current_layout()]
+        if model_name in curr_schema.entities:
+            return ForeignKey(curr_schema.entities[model_name].parent,
+                    related_name="children")
         else:
-            return None
+            return PositiveIntegerField()
+else:
+    class LayoutVariable(StateVariable):
+        """
+        This state variable represents the layout of the current farm. The current
+        value is read from the singleton farm instance. In a leaf server, the only
+        allowed value is the current one because the server is restarted whenever
+        the farm layout is changed. In a leaf server, all farm layouts are allowed.
+        """
+        @staticmethod
+        def current_value():
+            return get_current_layout()
+        @staticmethod
+        def allowed_values():
+            if settings.SERVER_TYPE == settings.LEAF:
+                return get_current_layout()
+            else:
+                return all_schemata.keys()
+
+    per_layout_cached_property = state_dependent_cached_property(LayoutVariable())
+    LayoutForeignKey = dynamic_foreign_key(LayoutVariable())
+
+    class ParentField(LayoutForeignKey):
+        """
+        This class is the version of ForeignKey to be used on root servers. It
+        can dynamically decide which model it is pointing to based on the layout
+        of the farm being viewed.
+        """
+        def __init__(self, *args, **kwargs):
+            kwargs.pop('model')
+            self.model_name = kwargs.pop('model_name', None)
+            kwargs['related_name'] = 'children'
+            super().__init__(*args, **kwargs)
+
+        def deconstruct(self):
+            name, path, args, kwargs = super().deconstruct()
+            kwargs['model_name'] = self.model_name
+            return name, path, args, kwargs
+
+        def contribute_to_class(self, cls, name, virtual_only=False):
+            self.model_name = cls.__name__
+            super().contribute_to_class(cls, name, virtual_only=virtual_only)
+
+        def to_for_state(self, state):
+            if self.model_name:
+                return getattr(all_schemata[state], self.model_name).parent
+            else:
+                return None
+
+    def parent_field_for_model(model_name):
+        return ParentField(model_name=model_name)
 
 class LayoutObject(Model):
     class Meta(Model.Meta):
         abstract = True
 
     def save(self, *args, **kwargs):
+        # pylint: disable=access-member-before-definition
         # Generate pk to include in default name
         res = super().save(*args, **kwargs)
         if self._meta.get_field('name') and not self.name:
-            farm = Farm.get_solo()
             self.name = "{} {} {}".format(
                 Farm.get_solo().name,
                 self.__class__.__name__,
@@ -95,7 +130,7 @@ class Enclosure(LayoutObject, SingletonModel):
     length = models.FloatField(default=0)
     width = models.FloatField(default=0)
     height = models.FloatField(default=0)
-    model = models.ForeignKey(Model3D, null=True)
+    model = models.ForeignKey(Model3D, null=True, related_name='+')
 
     def __str__(self):
         return self.name
@@ -108,10 +143,10 @@ class Tray(LayoutObject):
     length = models.FloatField(default=0)
     width = models.FloatField(default=0)
     height = models.FloatField(default=0)
-    model = models.ForeignKey(Model3D, null=True)
+    model = models.ForeignKey(Model3D, null=True, related_name='+')
     num_rows = models.IntegerField(default=0)
     num_cols = models.IntegerField(default=0)
-    parent = ParentField()
+    parent = parent_field_for_model('Tray')
 
     def __str__(self):
         return self.name
@@ -121,12 +156,18 @@ class Tray(LayoutObject):
 dynamic_models = {}
 
 def generate_model_from_entity(entity, managed):
+    """
+    :param entity: The entity for which to generate a model
+    :param bool managed: Whether or not the returned model should be managed
+    """
+    _managed = managed # Scoping is weird
     class Meta:
-        managed = managed
+        managed = _managed
     def __str__(self):
         return self.name
     model_attrs = {
         "__module__": __name__,
+        "Meta": Meta,
         "model_name": entity.name,
         "name": models.CharField(max_length=100, blank=True),
         "x": models.FloatField(default=0),
@@ -135,8 +176,8 @@ def generate_model_from_entity(entity, managed):
         "length": models.FloatField(default=0),
         "width": models.FloatField(default=0),
         "height": models.FloatField(default=0),
-        "model": models.ForeignKey(Model3D, null=True),
-        "parent": ParentField(),
+        "model": models.ForeignKey(Model3D, null=True, related_name='+'),
+        "parent": parent_field_for_model(entity.name),
         "__str__": __str__,
     }
     return type(entity.name, (LayoutObject,), model_attrs)
@@ -146,9 +187,24 @@ if settings.SERVER_TYPE == settings.LEAF:
     # layout
     schema = all_schemata[get_current_layout()]
     for entity in schema.dynamic_entities.values():
-        dynamic_models[entity.name] = generate_model_from_entity(entity, True)
+        model = generate_model_from_entity(entity, True)
+        dynamic_models[entity.name] = model
+        # When we switch models from unmanaged to managed, we break some of the
+        # migration logic because Django expects the model to have a table in
+        # the database already, and that might not be true. Thus, we listen for
+        # a pre_migration signal and create an empty table for this model if it
+        # hasn't already been created.
+        def create_table(sender, app_config, verbosity, interactive, using,
+                         model=model, **kwargs):
+            with connections[using].schema_editor() as schema_editor:
+                schema_editor.create_model(model)
+        sender = apps.get_app_config(model._meta.app_label)
+        uid = 'create_table_for_%s' % entity.name.lower()
+        pre_migrate.connect(
+            create_table, sender=sender, weak=False, dispatch_uid=uid
+        )
 # Generate unmanaged models for all other entities
 for schema_name, schema in all_schemata.items():
     for entity in schema.dynamic_entities.values():
         if not entity.name in dynamic_models:
-            _ = generate_model_from_entity(entity, False)
+            dynamic_models[entity.name] = generate_model_from_entity(entity, False)

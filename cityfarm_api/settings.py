@@ -30,7 +30,7 @@ if SERVER_MODE not in [DEVELOPMENT, PRODUCTION]:
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
 
-INSTALLED_APPS = (
+FRAMEWORK_APPS = (
     'django.contrib.admin',
     'django.contrib.auth',
     'django.contrib.contenttypes',
@@ -39,14 +39,20 @@ INSTALLED_APPS = (
     'django.contrib.staticfiles',
     'corsheaders',
     'rest_framework',
+)
+
+CITYFARM_API_APPS = (
     'farms',
     'layout',
     'plants',
 )
+
 if SERVER_TYPE == LEAF:
-    INSTALLED_APPS = INSTALLED_APPS + ('control',)
+    CITYFARM_API_APPS = CITYFARM_API_APPS + ('control',)
 if SERVER_TYPE == ROOT:
-    INSTALLED_APPS = INSTALLED_APPS + ('root',)
+    CITYFARM_API_APPS = CITYFARM_API_APPS + ('root',)
+
+INSTALLED_APPS = FRAMEWORK_APPS + CITYFARM_API_APPS
 
 MIDDLEWARE_CLASSES = (
     'django.contrib.sessions.middleware.SessionMiddleware',
@@ -167,13 +173,21 @@ LOGGING = {
             'propagate': True,
         },
     }
-
 }
+for app_name in CITYFARM_API_APPS:
+    LOGGING['loggers'][app_name] = {
+        'handlers': ['file'],
+        'level': 'DEBUG',
+        'propagate': True,
+    }
+
 if SERVER_MODE == DEVELOPMENT:
     DEBUG = True
     LOGGING['handlers']['file']['filename'] = \
         os.path.join(BASE_DIR, 'debug.log')
     LOGGING['loggers']['cityfarm_api']['handlers'].append('console')
+    for app_name in CITYFARM_API_APPS:
+        LOGGING['loggers'][app_name]['handlers'].append('console')
     ALLOWED_HOSTS = []
     SECRET_KEY = '))r--wwm1h@2n7x^b(o)e(*ziq+_l2*lxfpd7tdnq9qgtwlq@_'
 

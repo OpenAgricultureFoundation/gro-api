@@ -1,15 +1,16 @@
 from django.db import models
+from cityfarm_api.models import Model
 from farms.models import Farm
 from layout.models import Tray
 
-class PlantSite(models.Model):
+class PlantSite(Model):
     parent = models.ForeignKey(Tray, related_name='plant_sites')
     row = models.IntegerField()
     col = models.IntegerField()
     def __str__(self):
         return '{} (r={}, c={})'.format(str(self.parent), self.row, self.col)
 
-class PlantType(models.Model):
+class PlantType(Model):
     common_name = models.CharField(max_length=100)
     latin_name = models.CharField(max_length=100)
     size_choices = (('short-leafy', 'Short Leafy'),
@@ -22,7 +23,7 @@ class PlantType(models.Model):
     def __str__(self):
         return self.common_name
 
-class Plant(models.Model):
+class Plant(Model):
     plant_type = models.ForeignKey(PlantType, related_name='plants')
     site = models.ForeignKey(PlantSite, related_name='plant')
     sown_date = models.DateTimeField()

@@ -1,7 +1,6 @@
-from rest_framework import serializers
+from cityfarm_api.serializers import BaseSerializer
 from .models import Farm
 
-
-class FarmSerializer(serializers.HyperlinkedModelSerializer):
+class FarmSerializer(BaseSerializer):
     class Meta:
         model = Farm

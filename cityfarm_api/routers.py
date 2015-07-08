@@ -55,11 +55,10 @@ class HybridRouter(routers.DefaultRouter):
         api_view_urls = self._api_view_urls
 
         class APIRoot(views.APIView):
-            """ The view class to return """
             _ignore_model_permissions = True
 
             def get(self, request, **kwargs):
-                """ Get the root view """
+                """ GET the root view """
                 ret = {}
                 for key, url_name in api_root_dict.items():
                     ret[key] = reverse.reverse(
