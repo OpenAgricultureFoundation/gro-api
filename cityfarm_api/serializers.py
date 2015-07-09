@@ -261,5 +261,7 @@ class BaseSerializer(serializers.HyperlinkedModelSerializer,
 for app_name in settings.CITYFARM_API_APPS:
     try:
         importlib.import_module('.serializers', app_name)
-    except (ImportError, SyntaxError) as err:
+    except ImportError as err:
+        logger.info(err)
+    except SyntaxError as err:
         logger.warn(err)

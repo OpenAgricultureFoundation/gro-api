@@ -37,16 +37,6 @@ if [[ $0 =~ "/" ]]; then
     cd ${0%/*}
 fi
 
-# Install a pre-push hook for linting
-PRE_PUSH="#!/usr/bin/env bash
-git ls-files '*.py' | xargs pylint -E --rcfile .pylintrc"
-if [[ -d ".git" && ! ! -e ".git/hooks/pre-push" ]]; then
-    $VERBOSE && echo "Installing pre-push hook"
-    echo "$PRE_PUSH" > .git/hooks/pre-push
-    chmod 755 .git/hooks/pre-push
-fi
-
-
 if [[ ! -d "./env" ]]; then
     if [[ ! $TRAVIS ]]; then
         $VERBOSE && echo "Creating virtual environment"
