@@ -88,8 +88,8 @@ class SerializerRegistry(ModelDict):
     default, :class:`BaseSerializer` is used.
     """
     def register(self, serializer):
-        # This may fail if serializer is abstract, such as BaseSerializer
         try:
+            # This may fail if serializer is abstract, such as BaseSerializer
             self[serializer.Meta.model] = serializer
         except:
             pass
@@ -129,6 +129,9 @@ class MySerializerMetaclass(SerializerMetaclass):
             for attr_name, attr_val in meta_defaults.items():
                 if getattr(meta, attr_name, None) is None:
                     setattr(meta, attr_name, attr_val)
+            if hasattr(meta, 'model'):
+                model_key = model_serializers.get_key_for_model(meta.model)
+                meta.models_already_nested.add(model_key)
             meta.models_being_nested = set()
         model_serializers.register(cls)
 
@@ -161,9 +164,6 @@ class BaseSerializer(serializers.HyperlinkedModelSerializer,
             self.is_recursive = self.Meta.depth > 0
         else:
             self.is_recursive = is_recursive
-        if hasattr(self.Meta, 'model'):
-            model_key = model_serializers.get_key_for_model(self.Meta.model)
-            self.Meta.models_already_nested.add(model_key)
 
     def get_default_field_names(self, declared_fields, model_info):
         return (

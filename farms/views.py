@@ -1,6 +1,5 @@
 from django.conf import settings
 from farms.models import Farm
-from farms.serializers import FarmSerializer
 if settings.SERVER_TYPE == settings.LEAF:
     from cityfarm_api.viewsets import SingletonViewSet as FarmViewSetBase
 else:

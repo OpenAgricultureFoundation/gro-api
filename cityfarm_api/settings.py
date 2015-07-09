@@ -37,6 +37,7 @@ FRAMEWORK_APPS = (
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
+    'django_cron',
     'corsheaders',
     'rest_framework',
 )
@@ -53,6 +54,10 @@ if SERVER_TYPE == ROOT:
     CITYFARM_API_APPS = CITYFARM_API_APPS + ('root',)
 
 INSTALLED_APPS = FRAMEWORK_APPS + CITYFARM_API_APPS
+
+CRON_CLASSES = (
+    'farms.cron.UpdateFarmIp',
+)
 
 MIDDLEWARE_CLASSES = (
     'django.contrib.sessions.middleware.SessionMiddleware',

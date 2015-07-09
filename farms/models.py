@@ -1,7 +1,10 @@
-import os
+"""
+This module defines a single model :class:`Farm` that represents an instance of
+a CityFARM. This module handles the logic for contacting the remote server when
+the farm is created and settings a farm layout.
+"""
 import socket
 import tortilla
-import requests
 from slugify import slugify
 from django.db import models
 from django.conf import settings
@@ -46,8 +49,9 @@ class Farm(Model, SingletonModel):
         max_length=100, blank=(settings.SERVER_TYPE == settings.LEAF),
         unique=True
     )
-    root_server = models.URLField(default="http://cityfarm.media.mit.edu",
-            null=True)
+    root_server = models.URLField(
+        default="http://cityfarm.media.mit.edu", null=True
+    )
     ip = models.GenericIPAddressField(
         editable=(settings.SERVER_TYPE == settings.ROOT),
         null=(settings.SERVER_TYPE == settings.LEAF)
@@ -75,9 +79,9 @@ class Farm(Model, SingletonModel):
     def check_network(self):
         url_to_check = self.root_server or '8.8.8.8'
         if self.root_server:
-            s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-            s.connect((urlparse(self.root_server).netloc, 80))
-            self.ip = s.getsockname()[0]
+            sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+            sock.connect((urlparse(url_to_check).netloc, 80))
+            self.ip = sock.getsockname()[0]
 
     def save(self, *args, **kwargs):
         self.clean()
@@ -87,6 +91,7 @@ class Farm(Model, SingletonModel):
             return self.root_save(*args, **kwargs)
 
     def leaf_save(self, *args, **kwargs):
+        """ This save function is used for leaf servers """
         root_api = tortilla.wrap(self.root_server, debug=True)
         if self.is_configured:
             # Register this farm with the root server
@@ -100,7 +105,7 @@ class Farm(Model, SingletonModel):
                         self._meta.fields}
                 data.pop(self._meta.pk.name)
                 if self.root_id:
-                    res = root_api.farms(self.farm_id).put(data=data)
+                    res = root_api.farms(self.root_id).put(data=data)
                 else:
                     res = root_api.farms.post(data=data)
                 assert res.status_code == 200
@@ -111,5 +116,6 @@ class Farm(Model, SingletonModel):
             Restart().to_json()
 
     def root_save(self, *args, **kwargs):
+        """ This save function is used for root servers """
         # TODO: Set up database mirroring here
         super().save(*args, **kwargs)

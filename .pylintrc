@@ -7,6 +7,7 @@ exclude-protected=_meta,_default_manager
 function-rgx=[a-z_][a-z0-9_]+$
 generated-members=objects,Meta,_meta,__package__
 good-names=application,urlpatterns,_,x,y,z
+ignore=migrations,tests,tests.py
 ignored-classes=Meta,APIView
 method-rgx=[a-z_][a-z0-9_]+$
 variable-rgx=[a-z_][a-z0-9_]+$

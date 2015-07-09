@@ -31,6 +31,8 @@ class Model3D(Model):
 
 class TrayLayout(Model):
     name = models.CharField(max_length=100)
+    num_rows = models.IntegerField()
+    num_cols = models.IntegerField()
 
     def __str__(self):
         return self.name
@@ -47,8 +49,9 @@ if settings.SERVER_TYPE == settings.LEAF:
     def parent_field_for_model(model_name):
         curr_schema = all_schemata[get_current_layout()]
         if model_name in curr_schema.entities:
-            return ForeignKey(curr_schema.entities[model_name].parent,
-                    related_name="children")
+            return ForeignKey(
+                curr_schema.entities[model_name].parent, related_name="children"
+            )
         else:
             return PositiveIntegerField()
 else:
@@ -144,12 +147,19 @@ class Tray(LayoutObject):
     width = models.FloatField(default=0)
     height = models.FloatField(default=0)
     model = models.ForeignKey(Model3D, null=True, related_name='+')
-    num_rows = models.IntegerField(default=0)
-    num_cols = models.IntegerField(default=0)
+    num_rows = models.IntegerField(default=0, editable=False)
+    num_cols = models.IntegerField(default=0, editable=False)
     parent = parent_field_for_model('Tray')
 
     def __str__(self):
         return self.name
+
+class PlantSite(Model):
+    parent = models.ForeignKey(Tray, related_name='plant_sites')
+    row = models.IntegerField()
+    col = models.IntegerField()
+    def __str__(self):
+        return '{} (r={}, c={})'.format(str(self.parent), self.row, self.col)
 
 # A dictionary of all of the classes in the layout tree that have been created
 # so we can be sure not to create a class that has already been created
@@ -197,7 +207,12 @@ if settings.SERVER_TYPE == settings.LEAF:
         def create_table(sender, app_config, verbosity, interactive, using,
                          model=model, **kwargs):
             with connections[using].schema_editor() as schema_editor:
-                schema_editor.create_model(model)
+                try:
+                    schema_editor.create_model(model)
+                except:
+                    # Lets try to finish the migration anyway. This might just
+                    # mean that the table already exists
+                    pass
         sender = apps.get_app_config(model._meta.app_label)
         uid = 'create_table_for_%s' % entity.name.lower()
         pre_migrate.connect(

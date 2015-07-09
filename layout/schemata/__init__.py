@@ -26,8 +26,9 @@ import yaml
 import voluptuous
 from slugify import slugify
 
-__all__ = ['all_schemata', 'Entity', 'Schema', 'register_schema',
-'load_schema_from_file']
+__all__ = [
+    'all_schemata', 'Entity', 'Schema', 'register_schema'
+]
 
 def to_slug(string):
     """
@@ -40,11 +41,12 @@ class Entity:
         voluptuous.Required('name'): to_slug,
         voluptuous.Required('parent'): to_slug,
     })
-    def __init__(self, attrs={}, **kwargs):
-        attrs.update(kwargs)
-        attrs = self.schema(attrs)
-        self.name = attrs['name']
-        self.parent = attrs['parent']
+    def __init__(self, attrs=None, **kwargs):
+        all_attrs = dict(attrs) if attrs else {}
+        all_attrs.update(kwargs)
+        all_attrs = self.schema(all_attrs)
+        self.name = all_attrs['name']
+        self.parent = all_attrs['parent']
 
 class Schema:
     schema = voluptuous.Schema({
@@ -53,22 +55,28 @@ class Schema:
         voluptuous.Required('entities', default=[]): [Entity.schema],
         voluptuous.Required('tray-parent', default='Enclosure'): to_slug,
     })
-    def __init__(self, attrs={}, **kwargs):
-        attrs.update(kwargs)
-        attrs = self.schema(attrs)
-        self.name = attrs['name']
-        self.description = attrs['description']
+    def __init__(self, attrs=None, **kwargs):
+        all_attrs = attrs.copy()
+        all_attrs.update(kwargs)
+        all_attrs = self.schema(all_attrs)
+        self.name = all_attrs['name']
+        self.description = all_attrs['description']
         self.entities = {}
-        for entity_attrs in attrs['entities']:
+        for entity_attrs in all_attrs['entities']:
             entity = Entity(entity_attrs)
             self.entities[entity.name] = entity
         self.dynamic_entities = copy.deepcopy(self.entities)
-        self.entities['Tray'] = Entity(name='Tray', parent=attrs['tray-parent'])
+        self.entities['Tray'] = Entity(
+            name='Tray', parent=all_attrs['tray-parent']
+        )
         self.entities['Enclosure'] = Entity(name='Enclosure', parent=None)
         for entity in self.entities.values():
             if hasattr(self, entity.name):
-                raise RuntimeError('Schema {} contained an entity with invalid '
-                    'name {}'.format(self.name, entity.name))
+                raise RuntimeError(
+                    'Schema {} contained an entity with invalid name {}'.format(
+                        self.name, entity.name
+                    )
+                )
             setattr(self, entity.name, entity)
         self.check()
 
@@ -83,7 +91,9 @@ class Schema:
             if entity.name == 'Enclosure':
                 continue
             if entity.parent == 'Tray':
-                raise SchemaError('Trays aren\'t allowed to have children')
+                raise voluptuous.SchemaError(
+                    'Trays aren\'t allowed to have children'
+                )
             elif entity.parent in entities_without_children:
                 entities_without_children.pop(entity.parent)
                 entity_children[entity.parent] = entity.name
@@ -104,14 +114,16 @@ class Schema:
             tmp = ', '.join('"{}"'.format(entity_name) for entity_name in
                             entities_without_children.keys())
             msg = 'The following entities do not have children: {}'.format(tmp)
-            raise SchemaError(msg)
+            raise voluptuous.SchemaError(msg)
 
 all_schemata = {} # Global registry for loaded schemata
 
 def register_schema(schema):
     if schema.name in all_schemata:
-        raise ValueError("Tried to register a schema named '%s', but a schema "
-                "by that name has already been registered" % schema.name)
+        raise ValueError(
+            "Tried to register a schema named '%s', but a schema by that name "
+            "has already been registered" % schema.name
+        )
     all_schemata[schema.name] = schema
 
 # Load all of the schema files from this directory
