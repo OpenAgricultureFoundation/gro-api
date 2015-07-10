@@ -46,6 +46,8 @@ CITYFARM_API_APPS = (
     'farms',
     'layout',
     'plants',
+    'resources',
+    'sensors',
 )
 
 if SERVER_TYPE == LEAF:

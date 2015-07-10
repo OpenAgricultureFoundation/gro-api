@@ -1,0 +1,50 @@
+[
+    {
+        "model": "resources.resourcetype",
+        "pk": 1,
+        "fields": {
+            "name": "water",
+            "read_only": True
+        }
+    },
+    {
+        "model": "resources.resourceproperty",
+        "pk": 1,
+        "fields": {
+            "name": "temperature",
+            "read_only": True
+        }
+    },
+    {
+        "model": "resources.resourceproperty",
+        "pk": 2,
+        "fields": {
+            "name": "ph",
+            "read_only": True
+        }
+    },
+    {
+        "model": "resources.resourceproperty",
+        "pk": 3,
+        "fields": {
+            "name": "ec",
+            "read_only": True
+        }
+    },
+    {
+        "model": "resources.resourcetype",
+        "pk": 2,
+        "fields": {
+            "name": "air",
+            "read_only": True
+        }
+    },
+    {
+        "model": "resources.resourcetype",
+        "pk": 3,
+        "fields": {
+            "name": "light",
+            "read_only": True
+        }
+    },
+]

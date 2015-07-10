@@ -2,15 +2,63 @@
 This module defines a single :class:`~rest_framework.routers.DefaultRouter`
 subclass to be used for managing urls in this project.
 """
+import inspect
+import logging
+import importlib
+from django.db import models
+from django.conf import settings
+from django.utils.functional import cached_property
 from rest_framework import routers, views, reverse, response
+from .utils import get_current_layout
+from .models import Model
+from .viewsets import model_viewsets
 
-class HybridRouter(routers.DefaultRouter):
+logger = logging.getLogger(__name__)
+
+class BaseRouter(routers.DefaultRouter):
     """
     A :class:`~rest_framework.routers.DefaultRouter` subclass that can register
-    view functions in addition to viewsets
+    view functions in addition to viewsets and can automatically load
     """
+    @classmethod
+    def get_instance(cls, *args, **kwargs):
+        """
+        Gets an instance of this class populated with urls for the current farm
+        layout
+        """
+        internal_name = '_{}_router'.format(get_current_layout())
+        if not hasattr(cls, internal_name):
+            router = cls()
+            normal_apps = [] # Apps without a urls submodule
+            for app_name in settings.CITYFARM_API_APPS:
+                # Try to use the `init_router` function in the `urls` submodule
+                # for the app. If no such submodule exists, add the app to the
+                # normal_apps list and load it later
+                try:
+                    app_urls = importlib.import_module('.urls', app_name)
+                    app_urls.init_router(router)
+                except ImportError as err:
+                    # App has no `urls` submodule`
+                    normal_apps.append(app_name)
+                except AttributeError as err:
+                    logger.warn(
+                        'Failed to load urls for app "%s". `urls` submodule '
+                        'should define a function `init_router`.' % app_name
+                    )
+            # Register a url for every model that belongs to one of the apps in
+            # `normal_apps`
+            for model in models.get_models():
+                if model.__module__.split('.')[0] in normal_apps:
+                    model_name = model._meta.object_name
+                    lower_model_name = model_name[0].lower() + model_name[1:]
+                    router.register(
+                        lower_model_name, model_viewsets.get_for_model(model)
+                    )
+            setattr(cls, internal_name, router)
+        return getattr(cls, internal_name)
+
     def __init__(self, *args, **kwargs):
-        super(HybridRouter, self).__init__(*args, **kwargs)
+        super().__init__(*args, **kwargs)
         self._api_view_urls = {}
 
     def add_api_view(self, name, url):
@@ -41,10 +89,14 @@ class HybridRouter(routers.DefaultRouter):
         return ret
 
     def get_urls(self):
-        urls = super(HybridRouter, self).get_urls()
+        urls = super().get_urls()
         for api_view_key in self._api_view_urls.keys():
             urls.append(self._api_view_urls[api_view_key])
         return urls
+
+    @cached_property
+    def urls(self):
+        return self.get_urls()
 
     def get_api_root_view(self):
         # Copy the following block from Default Router
