@@ -27,8 +27,8 @@ while getopts "vlrdph" OPTION; do
 done
 
 # Display selected run configuration
-$VERBOSE && [[ -n "$SERVER_TYPE" ]] && echo "Selected $SERVER_TYPE server type"
-$VERBOSE && [[ -n "$SERVER_MODE" ]] && echo "Selected $SERVER_MODE server mode"
+$VERBOSE && echo "Selected $SERVER_TYPE server type"
+$VERBOSE && echo "Selected $SERVER_MODE server mode"
 
 # If we are not in the directory that contains this script, switch to the
 # directory that contains this script
@@ -54,6 +54,11 @@ if [[ ! -d "./env" ]]; then
     else
         pip install -r requirements.txt -q
     fi
+fi
+
+# On production servers, install a cron script in /etc/cron.d
+if [[ $SERVER_MODE == "production" && -d "/etc/cron.d" ]]; then
+    echo "*/5 * * * * $(whoami) source $(pwd -P)/.env && python $(pwd -P)/manage.py runcrons"
 fi
 
 # Write the .env file

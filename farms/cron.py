@@ -1,4 +1,4 @@
-from django_cron import CronJobBase
+from django_cron import CronJobBase, Schedule
 
 class UpdateFarmIp(CronJobBase):
     RUN_EVERY_MINS = 60
