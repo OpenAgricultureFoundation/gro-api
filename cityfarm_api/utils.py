@@ -6,6 +6,7 @@ from django.db.utils import OperationalError
 from farms.models import Farm, DEFAULT_LAYOUT
 
 def get_current_layout():
+    # TODO: Save this in a session cache
     """
     Get the layout of the current farm as a string.
     """
@@ -34,3 +35,13 @@ class ModelDict(dict):
 
     def get_key_for_model(self, model):
         return (model._meta.app_label, model._meta.object_name)
+
+class Singleton(type):
+    def __init__(cls, name, bases, dict):
+        super().__init__(name, bases, dict)
+        cls.instance = None
+
+    def __call__(cls, *args, **kwargs):
+        if cls.instance is None:
+            cls.instance = super().__call__(*args, **kwargs)
+        return cls.instance

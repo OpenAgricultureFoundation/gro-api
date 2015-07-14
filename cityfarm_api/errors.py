@@ -1,6 +1,5 @@
 """
-This module defines a set of global exceptions for the CityFARM API Django
-project.
+This module defines a set of global exceptions for the CityFARM API project.
 """
 
 from rest_framework.exceptions import APIException

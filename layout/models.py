@@ -62,15 +62,10 @@ else:
         allowed value is the current one because the server is restarted whenever
         the farm layout is changed. In a leaf server, all farm layouts are allowed.
         """
-        @staticmethod
-        def current_value():
+        allowed_values = all_schemata.keys()
+
+        def get_current_value(self):
             return get_current_layout()
-        @staticmethod
-        def allowed_values():
-            if settings.SERVER_TYPE == settings.LEAF:
-                return get_current_layout()
-            else:
-                return all_schemata.keys()
 
     per_layout_cached_property = state_dependent_cached_property(LayoutVariable())
     LayoutForeignKey = dynamic_foreign_key(LayoutVariable())
@@ -82,23 +77,14 @@ else:
         of the farm being viewed.
         """
         def __init__(self, *args, **kwargs):
-            kwargs.pop('model')
-            self.model_name = kwargs.pop('model_name', None)
+            self.model_name = kwargs.pop('model_name')
             kwargs['related_name'] = 'children'
             super().__init__(*args, **kwargs)
 
-        def deconstruct(self):
-            name, path, args, kwargs = super().deconstruct()
-            kwargs['model_name'] = self.model_name
-            return name, path, args, kwargs
-
-        def contribute_to_class(self, cls, name, virtual_only=False):
-            self.model_name = cls.__name__
-            super().contribute_to_class(cls, name, virtual_only=virtual_only)
-
-        def to_for_state(self, state):
-            if self.model_name:
-                return getattr(all_schemata[state], self.model_name).parent
+        def get_other_model(self):
+            schema = all_schemata[get_current_layout()]
+            if self.model_name in schema.entities:
+                return schema.entities[self.model_name].parent
             else:
                 return None
 

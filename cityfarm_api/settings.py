@@ -52,8 +52,6 @@ CITYFARM_API_APPS = (
 
 if SERVER_TYPE == LEAF:
     CITYFARM_API_APPS = CITYFARM_API_APPS + ('control',)
-if SERVER_TYPE == ROOT:
-    CITYFARM_API_APPS = CITYFARM_API_APPS + ('root',)
 
 INSTALLED_APPS = FRAMEWORK_APPS + CITYFARM_API_APPS
 
@@ -74,7 +72,7 @@ MIDDLEWARE_CLASSES = (
 )
 if SERVER_TYPE == ROOT:
     MIDDLEWARE_CLASSES = MIDDLEWARE_CLASSES + (
-        'cityfarm_api.middleware.FarmRoutingMiddleware'
+        'cityfarm_api.middleware.FarmRoutingMiddleware',
     )
 
 ROOT_URLCONF = 'cityfarm_api.urls'
@@ -104,7 +102,7 @@ if SERVER_TYPE == LEAF:
     }
 if SERVER_TYPE == ROOT:
     DATABASES = {
-        'root': {
+        'default': {
             'ENGINE': 'django.db.backends.sqlite3',
             'NAME': os.path.join(BASE_DIR, 'db.sqlite3'),
         },

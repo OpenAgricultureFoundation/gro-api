@@ -1,7 +1,8 @@
 """
 This module defines a set of functions necessary to produce modified ForeignKey
 fields that change their behavior based on some application-level state
-variable.
+variable. These fields are not safe for use in models that will undergo
+migrations.
 """
 
 from django.apps import apps
@@ -34,59 +35,14 @@ def state_dependent_attribute(state_var):
         def __init__(self, name):
             self.name = name
 
-        def internal_name_for_state(self, state):
-            """
-            The name of the attribute on the parent instance in which to store
-            the value of this attribute for the given state
-
-            :param str state: The state for which to get the internal name
-            """
-            return "_{}_{}".format(state, self.name)
-
         @property
         def internal_name(self):
-            """
-            The internal name for the current state (see
-            :func:`internal_name_for_state`).
-            """
-            return self.internal_name_for_state(
-                state_var.current_value()
-            )
-
-        def get_for_state(self, instance, state):
-            """
-            Get the value of this attribute for the given instance and state
-
-            :param instance: The object for which this attribute is being read
-            :param str state: The state for which to get this attribute value
-            """
-            internal_name = self.internal_name_for_state(state)
-            return getattr(instance, internal_name)
+            return "_{}_{}".format(state_var.current_value, self.name)
 
         def __get__(self, instance, instance_type=None):
             if instance is None:
                 return self
-            return self.get_for_state(instance, state_var.current_value())
-
-        def set_for_state(self, instance, value, state):
-            """
-            Set the value of this attribute for the given instance and state
-
-            :param instance: The object for which this attribute is being set
-            :param value: The value to save
-            :param str state: The state for which to set this attribute value
-            """
-            setattr(instance, self.internal_name_for_state(state), value)
-
-        def set_for_all_states(self, instance, value):
-            """
-            Set a value for this attributes for all possible states
-
-            :param instance: The object for which this attribute is being set
-            :param value: The value to save
-            """
-            for state in state_var.allowed_values():
-                self.set_for_state(instance, value, state)
+            return getattr(instance, self.internal_name)
 
         def __set__(self, instance, value):
             setattr(instance, self.internal_name, value)
@@ -110,39 +66,16 @@ def state_dependent_cached_property(state_var):
             self.func = func
             self.__doc__ = getattr(func, '__doc__')
 
-        def internal_name_for_state(self, state):
-            """
-            The name of the attribute on the parent instance in which to store
-            the value of this property for the given state
-
-            :param str state: The state for which to get the internal name
-            """
-            return "_{}_{}".format(state, self.name)
-
         @property
         def internal_name(self):
-            """
-            The internal name for the current state (see
-            :func:`internal_name_for_state`)
-            """
-            return self.internal_name_for_state(state_var.current_value())
-
-        def get_for_state(self, instance, state):
-            """
-            Get the value of this attribute for the given instance and state
-
-            :param instance: The object for which this property is being read
-            :param str state: The state for which to get this property value
-            """
-            return instance.__dict__[self.internal_name_for_state(state)]
+            return "_{}_{}".format(state_var.current_value, self.name)
 
         def __get__(self, instance, instance_type=None):
             if instance is None:
                 return self
-            internal_name = self.internal_name
-            if internal_name not in instance.__dict__:
-                setattr(instance, internal_name, self.func(instance))
-            return instance.__dict__[internal_name]
+            if not hasattr(instance, self.internal_name):
+                setattr(instance, self.internal_name, self.func(instance))
+            return getattr(instance, self.internal_name)
     return Class
 
 def dynamic_related_field(state_var):
@@ -153,12 +86,12 @@ def dynamic_related_field(state_var):
     will be a :func:`state_dependent_attribute` that depends on the given state
     variable.
 
-    Subclasses of the returned class must define a method :meth:`to_for_state`
-    that takes a single argument `state` and returns the name of the model that
-    this field points to for the state given by the `state` argument. They must
-    also define a method `contribute_to_related_class` that takes 2 arguments,
-    `cls` (the other class to contribute to) and `related` (the rel object
-    describing the relation to the other class).
+    Subclasses of the returned class must define a method
+    :meth:`get_other_model` that returns the name of the model that this field
+    points to for the current state.  They must also define a method
+    `contribute_to_related_class` that takes 2 arguments, `cls` (the other class
+    to contribute to) and `related` (the rel object describing the relation to
+    the other class).
 
     :param state_var: A :class:`~cityfarm_api.state.StateVariable` instance that
         represents the application state variable on which the behavior of the
@@ -166,6 +99,7 @@ def dynamic_related_field(state_var):
     """
     assert isinstance(state_var, StateVariable)
     StateDependentAttribute = state_dependent_attribute(state_var)
+    StateDependentCachedProperty = state_dependent_cached_property(state_var)
     class Class(RelatedField):
         """ The dynamic RelatedField class to return """
         # It is useful to have some indicator that this field is dynamic.  We
@@ -173,26 +107,18 @@ def dynamic_related_field(state_var):
         # generated dynamically and most scopes won't have access to it.
         is_dynamic = True
         to = StateDependentAttribute('to')
-        name = StateDependentAttribute('name')
-        verbose_name = StateDependentAttribute('verbose_name')
-        def __init__(self, *args, **kwargs):
-            # Django requires a value `to` attribute to be set on the field upon
-            # initialization because some of the migration logic constructs the
-            # field without installing it in a model and then checks the
-            # `rel.to` attribute to figure out things about this field. Django
-            # also assumes that the deconstruction of a RelatedField will have a
-            # value for `to` in it's deconstruction, so we save the actual value
-            # in :meth:`deconstruct` just to be safe and ignore it here. We will
-            # set and actually resolve the attribute in :meth:`set_for_state`.
-            kwargs.pop('to', None)
-            self.to = self.to_for_state(state_var.current_value())
-            RelatedField.__init__(self, *args, **kwargs)
 
-        def to_for_state(self, state):
+        def __init__(self, *args, **kwargs):
+            for state in state_var.allowed_values:
+                with state_var.as_value(state):
+                    self.to = self.get_other_model()
+            Field.__init__(self, *args, **kwargs)
+
+        def get_other_model(self, state):
             """
             Returns the name of the model that this field points to for the
             given state. Subclasses of this class must implement
-            :meth:`to_for_state`.
+            :meth:`get_other_model`.
 
             :param: The application state to inspect.
             """
@@ -204,166 +130,27 @@ def dynamic_related_field(state_var):
             apps.check_models_ready()
             return self.to
 
-        def __check_relation_model_exists(self, state):
-            """
-            Performs the RelatedField._check_relation_model_exists check for the
-            application state given by `state`.
-            """
-            to = Class.to.get_for_state(self, state)
-            rel_is_missing = to not in apps.get_models()
-            rel_is_string = isinstance(to, str)
-            model_name = to if rel_is_string else to._meta.object_name
-            if rel_is_missing and (rel_is_string or not to._meta.swapped):
-                return [
-                    checks.Error(
-                        ("For state '%s', field defines a relation with model "
-                         "'%s', which is either not installed, or is abstract.")
-                        % (state, model_name),
-                        hint=None,
-                        obj=self,
-                        id='fields.E300',
-                    )
-                ]
-            return []
-
-        def _check_relation_model_exists(self):
-            errors = []
-            for state in state_var.allowed_values():
-                errors.extend(self.__check_relation_model_exists(state))
-            return errors
-
-        def __check_referencing_to_swapped_model(self, state):
-            """
-            Performs the RelatedField._check_referencing_to_swapped_model check
-            for the application state given by `state`
-            """
-            to = Class.to.get_for_state(self, state)
-            if (to not in apps.get_models() and not isinstance(to, str) and
-                    to._meta.swapped):
-                model = "%s.%s" % (to._meta.app_label, to._meta.object_name)
-                return [
-                    checks.Error(
-                        ("For state '%s', field defines a relation with the "
-                         "model '%s', which has been swapped out.") %
-                        (state, model),
-                        hint="Update the relation to point at 'settings.%s'." %
-                        to._meta.swappable,
-                        obj=self,
-                        id='fields.E301',
-                    )
-                ]
-            return []
-
-        def _check_referencing_to_swapped_model(self):
-            errors = []
-            for state in state_var.allowed_values():
-                errors.extend(self.__check_referencing_to_swapped_model(state))
-            return errors
-
-        def __check_clashes(self, state):
-            """
-            Performs the RelatedField._check_clashes check for the application
-            state given by `state`
-            """
-            # This is almost identical to RelatedField._check_clashes except
-            # that we have to pull the `to` value for the specified state
-            errors = []
-            opts = self.model._meta
-            to = Class.to.get_for_state(self, state)
-            if isinstance(to, str):
-                # To hasn't been resolved yet, so we can't really check it
-                return []
-            if self.rel.is_hidden():
-                # f the field doesn't install a backward relation on the target
-                # model, then there are no clashes to check for
-                return []
-
-            rel_opts = to._meta
-            rel_name = self.rel.get_accessor_name()
-            rel_query_name = self.related_query_name()
-            field_name = "%s.%s" % (opts.object_name, self.name)
-
-            potential_clashes = rel_opts.fields + rel_opts.many_to_many
-            for clash_field in potential_clashes:
-                clash_name = "%s.%s" % (rel_opts.object_name, clash_field.name)
-                if clash_field.name == rel_name:
-                    errors.append(
-                        checks.Error(
-                            ("Reverse acessor for '%s' clashes with field name "
-                             "'%s'.") % (field_name, clash_name),
-                            hint=
-                            ("Rename field '%s', or add/change a related_name "
-                             "argument to the definition for field '%s'") %
-                            (clash_name, field_name),
-                            obj=self,
-                            id='fields.E302',
-                        )
-                    )
-                if clash_field.name == rel_query_name:
-                    errors.append(
-                        checks.Error(
-                            ("Reverse query name for '%s' clashes with field "
-                             "name '%s'.") % (field_name, clash_name),
-                            hint=
-                            ("Rename field '%s', or add/change a related_name "
-                             "argument to the definition for field '%s'.") %
-                            (clash_name, field_name),
-                            obj=self,
-                            id='fields.E303',
-                        )
-                    )
-
-            potential_clashes = (
-                r for r in rel_opts.related_objects if r.field is not self
-            )
-            for clash_field in potential_clashes:
-                clash_name = '%s.%s' % (
-                    clash_field.related_model._meta.object_name,
-                    clash_field.field.name
-                )
-                if clash_field.get_accessor_name() == rel_name:
-                    errors.append(
-                        checks.Error(
-                            ("Reverse accessor for '%s' clashed with reverse "
-                             "accessor for '%s'.") % (field_name, clash_name),
-                            hint=
-                            ("Add or change a related_name argument to the "
-                             "definition for '%s' or '%s'.") %
-                            (field_name, clash_name),
-                            obj=self,
-                            id='fields.E304',
-                        )
-                    )
-                if clash_field.get_accessor_name() == rel_query_name:
-                    errors.append(
-                        checks.Error(
-                            ("Reverse query name for '%s' clashed with reverse "
-                             "query name for '%s'.") % (field_name, clash_name),
-                            hint=
-                            ("Add or change a related_name argument to the "
-                             "definition for '%s' or '%s'.") %
-                            (field_name, clash_name),
-                            obj=self,
-                            id='fields.E305',
-                        )
-                    )
-            return errors
-
-        def _check_clashes(self):
-            errors = []
-            for state in state_var.allowed_values():
-                errors.extend(self.__check_clashes(state))
+        def check(self, **kwargs):
+            errors = Field.check(self, **kwargs)
+            errors.extend(self._check_related_name_is_valid())
+            for state in state_var.allowed_values:
+                with state_var.as_value(state):
+                    if self.to is None:
+                        # This should only happen if `cls` is not going to be
+                        # used for `state`. Thus, we shouldn't have to check
+                        # this
+                        continue
+                    state_errors = []
+                    state_errors.extend(self._check_relation_model_exists())
+                    state_errors.extend(self._check_referencing_to_swapped_model())
+                    state_errors.extend(self._check_clashes())
+                    for err in state_errors:
+                        err.msg = 'With state {}: '.format(state) + err.msg
+                    errors.extend(state_errors)
             return errors
 
         def deconstruct(self):
-            name, path, args, kwargs = RelatedField.deconstruct(self)
-            if isinstance(self.to, str):
-                kwargs['to'] = self.to
-            else:
-                kwargs['to'] = '%s.%s' % (
-                    self.to._meta.app_label, self.to._meta.object_name
-                )
-            return name, path, args, kwargs
+            raise NotImplementedError()
 
         def contribute_to_class(self, cls, name, virtual_only=False):
             # We need to skip RelatedField in the mro, so we can't use `super()`
@@ -377,18 +164,25 @@ def dynamic_related_field(state_var):
                     'app_label': cls._meta.app_label.lower()
                 }
                 self.rel.related_name = related_name
-            # We already have something stored in `to` for the current state
-            # from __init__ but we're going to overwrite it anyway and resolve
-            # `to` for all states now that we know models are being loaded
-            for state in state_var.allowed_values():
-                other = self.to_for_state(state)
-                if isinstance(other, str) or other._meta.pk is None:
-                    def resolve_related_class(field, model, cls, state=state):
-                        Class.to.set_for_state(self, model, state)
-                        field.do_related_class_for_state(model, cls, state)
-                    add_lazy_relation(cls, self, other, resolve_related_class)
-                else:
-                    self.do_related_class(other, cls, state)
+            for state in state_var.allowed_values:
+                with state_var.as_value(state):
+                    other = self.to
+                    if other is None:
+                        # This should only happen if `cls` is not going to be
+                        # used for `state`. Just leave the null value there
+                        continue
+                    if isinstance(other, str) or other._meta.pk is None:
+                        def resolve_related_class(
+                            field, model, cls, state=state_var.current_value
+                        ):
+                            with state_var.as_value(state):
+                                field.to = model
+                                field.do_related_class(model, cls)
+                        add_lazy_relation(
+                            cls, self, other, resolve_related_class
+                        )
+                    else:
+                        self.do_related_class(other, cls)
 
         def contribute_to_related_class(self, cls, related):
             """
@@ -396,43 +190,6 @@ def dynamic_related_field(state_var):
             `contribute_to_related_class`
             """
             raise NotImplementedError()
-
-        def set_attributes_from_rel(self):
-            raise Exception(
-                'This function should never be called. Use '
-                '`set_attributes_from_rel_for_state` instead'
-            )
-
-        def set_attributes_from_rel_for_state(self, state):
-            """
-            Perform the function of `set_attributes_from_rel` for the
-            application state given by `state`.
-            """
-            to = Class.to.get_for_state(self, state)
-            name = Class.name.get_for_state(self, state)
-            if name is None:
-                name = to._meta.model_name + '_' + to._meta.pk.name,
-                Class.name.set_for_state(self, name, state)
-            verbose_name = Class.verbose_name.get_for_state(self, state)
-            if verbose_name is None:
-                verbose_name = to._meta.verbose_name
-                Class.verbose_name.set_for_state(self, verbose_name, state)
-            self.rel.set_field_name_for_state(state)
-
-        def do_related_class(self, other, cls):
-            raise Exception(
-                'This function should never be called. Use '
-                '`do_related_class_for_state` instead'
-            )
-
-        def do_related_class_for_state(self, other, cls, state):
-            """
-            Perform the function of `do_related_class` for the application state
-            given by `state`.
-            """
-            self.set_attributes_from_rel(state)
-            if not cls._meta.abstract:
-                self.contribute_to_related_class(other, self.rel)
     return Class
 
 def dynamic_foreign_object_rel(state_var):
@@ -499,22 +256,9 @@ def dynamic_many_to_one_rel(state_var):
                 limit_choices_to=limit_choices_to, parent_link=parent_link,
                 on_delete=on_delete, related_query_name=related_query_name
             )
-            Class.field_name.set_for_all_states(self, field_name)
-
-        def set_field_name(self):
-            """
-            :meth:`set_field_name_for_state` should be used instead of this
-            """
-            raise NotImplementedError()
-
-        def set_field_name_for_state(self, state):
-            """
-            Perform the same function as the old :meth:`set_field_name` but only
-            for the state given by `state`.
-            """
-            field_name = Class.field_name.get_for_state(self, state) or \
-                self.to._meta.pk.name
-            Class.field_name.set_for_state(self, field_name, state)
+            for state in state_var.allowed_values:
+                with state_var.as_value(state):
+                    self.field_name = field_name
     return Class
 
 def dynamic_foreign_object(state_var):
@@ -525,9 +269,9 @@ def dynamic_foreign_object(state_var):
     `ForeignObject` is that the constructor for this class does not accept the
     `to` attribute, because that is provided dynamically.
 
-    Subclasses of the returned class must define a method :meth:`to_for_state`
-    that takes a single argument `state` and returns the name of the model that
-    this field points to for the state given by the `state` argument.
+    Subclasses of the returned class must define a method
+    :meth:`get_other_model` that returns the name of the model that this field
+    points to for the current state.
 
     :param state_var: A :class:`cityfarm_api.state.StateVariable` instance that
         represents the application state variable on which the behavior of the
@@ -557,66 +301,26 @@ def dynamic_foreign_object(state_var):
 
             DynamicRelatedField.__init__(self, **kwargs)
 
-        def to_for_state(self, state):
+        def get_other_model(self, state):
             raise NotImplementedError()
 
         def check(self, **kwargs):
             errors = DynamicRelatedField.check(self, **kwargs)
-            errors.extend(self._check_unique_target())
+            for state in state_var.allowed_values:
+                with state_var.as_value(state):
+                    if self.to is None:
+                        # This should only happen if `cls` is not going to be
+                        # used for `state`. Thus, we shouldn't have to check
+                        # this
+                        continue
+                    state_errors = self._check_unique_target()
+                    for err in state_errors:
+                        err.msg = 'With state {}: '.format(state) + err.msg
+                    errors.extend(state_errors)
             return errors
 
-        def __check_unique_target(self, state):
-            """
-            Performs the ForeignObject._check_unique_target check for the
-            application state given by `state`.
-            """
-            to = Class.to.get_for_state(self, state)
-            rel_is_string = isinstance(to, str)
-            if rel_is_string or not self.requires_unique_target:
-                return []
-            try:
-                self.foreign_related_fields
-            except FieldDoesNotExist:
-                return []
-            has_unique_field = any(
-                rel_field.unique for rel_field in self.foreign_related_fields
-            )
-            if not has_unique_field and len(self.foreign_related_fields) > 1:
-                field_combination = ', '.join(
-                    "'%s'" % rel_field.name for rel_field in
-                    self.foreign_related_fields
-                )
-                model_name = to.__name__
-                return [
-                    checks.Error(
-                        ("None of the fields %s on model '%s' have a unique=True"
-                         " constraint.") % (field_combination, model_name),
-                        hint=None,
-                        obj=self,
-                        id='fields.E310',
-                    )
-                ]
-            elif not has_unique_field:
-                field_name = self.foreign_related_fields[0].name
-                model_name = to.__name__
-                return [
-                    checks.Error(
-                        ("'%s.%s' must set unique=True because it is "
-                         "references by a foreign key.") %
-                        (model_name, field_name),
-                        hint=None,
-                        obj=self,
-                        id='fields.E311',
-                    )
-                ]
-            else:
-                return []
-
-        def _check_unique_target(self):
-            errors = []
-            for state in state_var.allowed_values():
-                errors.extend(self.__check_unique_target(state))
-            return errors
+        def deconstruct(self):
+            raise NotImplementedError()
 
         def contribute_to_class(self, cls, name, virtual_only=False):
             # We need to skip RelatedField in the mro, so we can't use `super()`
@@ -648,9 +352,9 @@ def dynamic_foreign_key(state_var):
     some application state variable. The main difference between this class and
     `ForeignKey` is that the constructor does not accept the `to` attribute
 
-    Subclasses of the returned class must define a method :meth:`to_for_state`
-    that takes a single argument `state` and returns the name of the model that
-    this field points to for the state given by the `state` argument.
+    Subclasses of the returned class must define a method
+    :meth:`get_other_model` that returns the name of the model that this field
+    points to for the current state.
 
     :param state_var: A :class:`cityfarm_api.state.StateVariable` instance that
         represents the application state variable on which the behavior of the
@@ -684,7 +388,7 @@ def dynamic_foreign_key(state_var):
             )
             DynamicForeignObject.__init__(self, ['self'], [to_field], **kwargs)
 
-        def to_for_state(self, state):
+        def get_other_model(self):
             raise NotImplementedError()
 
         @cached_property
@@ -695,7 +399,7 @@ def dynamic_foreign_key(state_var):
             it's check.
             """
             self.generated_to_field = True
-            return self.to._meta.pk and self.to._meta.pk.name
+            return self.to and self.to._meta.pk and self.to._meta.pk.name
 
         def check(self, **kwargs):
             errors = DynamicForeignObject.check(self, **kwargs)
@@ -713,45 +417,29 @@ def dynamic_foreign_key(state_var):
             # Make sure the `to_field` has been generated if it is going to be
             getattr(self, 'to_field')
             if 'generated_to_field' in self.__dict__ and self.generated_to_field:
-                for state in state_var.allowed_values():
-                    to = Class.to.get_for_state(self, state)
-                    if not (to._meta.pk and to._meta.pk.name) == self.to_field:
-                        model_name = to._meta.object_name
-                        return [
-                            checks.Error(
-                                "DynamicForeignKey on model '%s' should point "
-                                "to a different field in the target model "
-                                "depending on the current state. This is "
-                                "currently not supported." % model_name,
-                                hint=None,
-                                obj=self,
-                                id='fields.E312',
-                            )
-                        ]
-
+                for state in state_var.allowed_values:
+                    with state_var.as_value(state):
+                        if self.to is not None and (self.to._meta.pk and
+                                self.to._meta.pk.name) != self.to_field:
+                            model_name = self.to._meta.object_name
+                            return [
+                                checks.Error(
+                                    "DynamicForeignKey on model '%s' should point "
+                                    "to a different field in the target model "
+                                    "depending on the current state. This is "
+                                    "currently not supported." % model_name,
+                                    hint=None,
+                                    obj=self,
+                                    id='fields.E312',
+                                )
+                            ]
             return []
 
         def deconstruct(self):
-            name, path, args, kwargs = DynamicForeignObject.deconstruct(self)
-            del kwargs['to_fields']
-            del kwargs['from_fields']
-            if self.db_index:
-                del kwargs['db_index']
-            else:
-                kwargs['db_index'] = False
-            if self.db_constraint is not True:
-                kwargs['db_constraint'] = self.db_constraint
-            to_meta = None
-            try:
-                to_meta = self.rel.to._meta
-            except AttributeError:
-                pass
-            if self.rel.field_name and (not to_meta or \
-                    (to_meta.pk and self.rel.field_name != to_meta.pk.name)):
-                kwargs['to_field'] = self.rel.field_name
-            return name, path, args, kwargs
+            raise NotImplementedError()
 
         def contribute_to_related_class(self, cls, related):
+            DynamicForeignObject.contribute_to_related_class(self, cls, related)
             if self.rel.field_name is None:
                 self.rel.field_name = cls._meta.pk.name
     return Class
