@@ -6,6 +6,7 @@ import inspect
 import logging
 import importlib
 from django.db import models
+from django.apps import apps
 from django.conf import settings
 from django.utils.functional import cached_property
 from rest_framework import routers, views, reverse, response
@@ -37,25 +38,35 @@ class BaseRouter(routers.DefaultRouter):
                 try:
                     app_urls = importlib.import_module('.urls', app_name)
                     app_urls.init_router(router)
+                    if hasattr(app_urls, 'GENERATE_DEFAULT_ROUTES') and \
+                            app_urls.GENERATE_DEFAULT_ROUTES:
+                        router.default_init_router(app_name, router)
                 except ImportError as err:
                     # App has no `urls` submodule`
-                    normal_apps.append(app_name)
+                    router.default_init_router(app_name, router)
                 except AttributeError as err:
                     logger.warn(
                         'Failed to load urls for app "%s". `urls` submodule '
                         'should define a function `init_router`.' % app_name
                     )
-            # Register a url for every model that belongs to one of the apps in
-            # `normal_apps`
-            for model in models.get_models():
-                if model.__module__.split('.')[0] in normal_apps:
-                    model_name = model._meta.object_name
-                    lower_model_name = model_name[0].lower() + model_name[1:]
-                    router.register(
-                        lower_model_name, model_viewsets.get_for_model(model)
-                    )
             setattr(cls, internal_name, router)
         return getattr(cls, internal_name)
+
+    def default_init_router(self, app_name, router):
+        """
+        If the `urls` submodule in an app in `settings.CITYFARM_API_APPS` either
+        does not define the :func:`init_router` function or sets the value of
+        `GENERATE_DEFAULT_ROUTES` to True, this function should be used to
+        generate the default routes for that app and register them to the given
+        router.
+        """
+        app_config = apps.get_app_config(app_name)
+        for model in app_config.get_models():
+            model_name = model._meta.object_name
+            lower_model_name = model_name[0].lower() + model_name[1:]
+            router.register(
+                lower_model_name, model_viewsets.get_for_model(model)
+            )
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)

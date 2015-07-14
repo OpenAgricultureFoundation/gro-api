@@ -77,11 +77,17 @@ class Farm(Model, SingletonModel):
             self.check_network()
 
     def check_network(self):
-        url_to_check = self.root_server or '8.8.8.8'
         if self.root_server:
-            sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-            sock.connect((urlparse(url_to_check).netloc, 80))
-            self.ip = sock.getsockname()[0]
+            try:
+                sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+                sock.connect((urlparse(self.root_server).netloc, 80))
+                self.ip = sock.getsockname()[0]
+                return
+            except socket.gaierror:
+                pass
+        sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+        sock.connect((urlparse('8.8.8.8').netloc, 80))
+        self.ip = sock.getsockname()[0]
 
     def save(self, *args, **kwargs):
         self.clean()
@@ -98,7 +104,6 @@ class Farm(Model, SingletonModel):
             if settings.SERVER_MODE == settings.DEVELOPMENT:
                 # Jk, don't actually contact the server, just pretend we did
                 self.root_id = 1
-                super().save(*args, **kwargs)
             else:
                 # Actually contact the server
                 data = {field.name: getattr(self, field.name) for field in
@@ -111,7 +116,7 @@ class Farm(Model, SingletonModel):
                 assert res.status_code == 200
                 # TODO: Update any parameters on the model that were
                 # rejected or modified by the root server
-                super().save(*args, **kwargs)
+        super().save(*args, **kwargs)
         if self.layout != self._old_layout:
             Restart().to_json()
 

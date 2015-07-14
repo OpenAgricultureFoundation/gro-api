@@ -112,7 +112,7 @@ class ModelViewSet(rest_mixins.CreateModelMixin,
     """
     pass
 
-class ListModelMixin(rest_mixins.ListModelMixin):
+class SingletonListModelMixin(rest_mixins.ListModelMixin):
     """
     Version of :class:`rest_framework.mixins.ListModelMixin` that works for
     singleton models. It makes sure that the singleton has been created before
@@ -125,7 +125,7 @@ class ListModelMixin(rest_mixins.ListModelMixin):
 
 class SingletonViewSet(rest_mixins.RetrieveModelMixin,
                        rest_mixins.UpdateModelMixin,
-                       ListModelMixin,
+                       SingletonListModelMixin,
                        GenericViewSet):
     """
     Version of :class:`ModelViewSet` that works for

@@ -9,6 +9,7 @@ from django.db import connections, models
 from django.db.models import ForeignKey, PositiveIntegerField
 from django.db.models.signals import pre_migrate
 from django.conf import settings
+from model_utils.managers import InheritanceManager
 from solo.models import SingletonModel
 from cityfarm_api.utils import get_current_layout
 from cityfarm_api.state import StateVariable
@@ -92,8 +93,11 @@ else:
         return ParentField(model_name=model_name)
 
 class LayoutObject(Model):
-    class Meta(Model.Meta):
-        abstract = True
+    super_id = models.AutoField(primary_key=True)
+    objects = InheritanceManager()
+
+    def __str__(self):
+        return LayoutObject.objects.get_subclass(super_id=self.super_id).__str__()
 
     def save(self, *args, **kwargs):
         # pylint: disable=access-member-before-definition
@@ -112,6 +116,7 @@ class LayoutObject(Model):
         return res
 
 class Enclosure(LayoutObject, SingletonModel):
+    id = models.AutoField(primary_key=True)
     name = models.CharField(max_length=100, blank=True)
     x = models.FloatField(default=0)
     y = models.FloatField(default=0)
@@ -120,11 +125,15 @@ class Enclosure(LayoutObject, SingletonModel):
     width = models.FloatField(default=0)
     height = models.FloatField(default=0)
     model = models.ForeignKey(Model3D, null=True, related_name='+')
+    layoutobject_ptr = models.OneToOneField(
+        LayoutObject, parent_link=True, editable=False
+    )
 
     def __str__(self):
         return self.name
 
 class Tray(LayoutObject):
+    id = models.AutoField(primary_key=True)
     name = models.CharField(max_length=100, blank=True)
     x = models.FloatField(default=0)
     y = models.FloatField(default=0)
@@ -136,6 +145,9 @@ class Tray(LayoutObject):
     num_rows = models.IntegerField(default=0, editable=False)
     num_cols = models.IntegerField(default=0, editable=False)
     parent = parent_field_for_model('Tray')
+    layoutobject_ptr = models.OneToOneField(
+        LayoutObject, parent_link=True, editable=False
+    )
 
     def __str__(self):
         return self.name
@@ -165,6 +177,7 @@ def generate_model_from_entity(entity, managed):
         "__module__": __name__,
         "Meta": Meta,
         "model_name": entity.name,
+        "id": models.AutoField(primary_key=True),
         "name": models.CharField(max_length=100, blank=True),
         "x": models.FloatField(default=0),
         "y": models.FloatField(default=0),
@@ -174,6 +187,9 @@ def generate_model_from_entity(entity, managed):
         "height": models.FloatField(default=0),
         "model": models.ForeignKey(Model3D, null=True, related_name='+'),
         "parent": parent_field_for_model(entity.name),
+        "layoutobject_ptr": models.OneToOneField(
+            LayoutObject, parent_link=True, editable=False
+        ),
         "__str__": __str__,
     }
     return type(entity.name, (LayoutObject,), model_attrs)

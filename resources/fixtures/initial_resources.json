@@ -4,7 +4,7 @@
         "pk": 1,
         "fields": {
             "name": "water",
-            "read_only": True
+            "read_only": "True"
         }
     },
     {
@@ -12,7 +12,8 @@
         "pk": 1,
         "fields": {
             "name": "temperature",
-            "read_only": True
+            "resource_type": 1,
+            "read_only": "True"
         }
     },
     {
@@ -20,7 +21,8 @@
         "pk": 2,
         "fields": {
             "name": "ph",
-            "read_only": True
+            "resource_type": 1,
+            "read_only": "True"
         }
     },
     {
@@ -28,7 +30,8 @@
         "pk": 3,
         "fields": {
             "name": "ec",
-            "read_only": True
+            "resource_type": 1,
+            "read_only": "True"
         }
     },
     {
@@ -36,7 +39,7 @@
         "pk": 2,
         "fields": {
             "name": "air",
-            "read_only": True
+            "read_only": "True"
         }
     },
     {
@@ -44,7 +47,7 @@
         "pk": 3,
         "fields": {
             "name": "light",
-            "read_only": True
+            "read_only": "True"
         }
-    },
+    }
 ]
