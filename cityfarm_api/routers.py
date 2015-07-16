@@ -10,67 +10,62 @@ from django.apps import apps
 from django.conf import settings
 from django.utils.functional import cached_property
 from rest_framework import routers, views, reverse, response
-from .utils import get_current_layout
+from layout.state import SystemLayout
 from .models import Model
 from .viewsets import model_viewsets
 
 logger = logging.getLogger(__name__)
 
 class BaseRouter(routers.DefaultRouter):
-    """
-    A :class:`~rest_framework.routers.DefaultRouter` subclass that can register
-    view functions in addition to viewsets and can automatically load
-    """
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self._api_view_urls = {}
+
     @classmethod
     def get_instance(cls, *args, **kwargs):
         """
         Gets an instance of this class populated with urls for the current farm
-        layout
+        layout. Instances are cached by layout.
         """
-        internal_name = '_{}_router'.format(get_current_layout())
+        internal_name = '_{}_router'.format(SystemLayout().current_value)
         if not hasattr(cls, internal_name):
             router = cls()
-            normal_apps = [] # Apps without a urls submodule
             for app_name in settings.CITYFARM_API_APPS:
-                # Try to use the `init_router` function in the `urls` submodule
-                # for the app. If no such submodule exists, add the app to the
-                # normal_apps list and load it later
                 try:
+                    # Try to use the `contribute_to_router` function in the
+                    # `urls` submodule for app
                     app_urls = importlib.import_module('.urls', app_name)
-                    app_urls.init_router(router)
+                    app_urls.contribute_to_router(router)
+                    # Also register the app normally if the `urls` submodule
+                    # tells us to
                     if hasattr(app_urls, 'GENERATE_DEFAULT_ROUTES') and \
                             app_urls.GENERATE_DEFAULT_ROUTES:
-                        router.default_init_router(app_name, router)
+                        router.register_app(app_name)
                 except ImportError as err:
-                    # App has no `urls` submodule`
-                    router.default_init_router(app_name, router)
+                    # App has no `urls` submodule`. Just register the app
+                    # normally
+                    router.register_app(app_name)
                 except AttributeError as err:
                     logger.warn(
                         'Failed to load urls for app "%s". `urls` submodule '
-                        'should define a function `init_router`.' % app_name
+                        'should define a function `contribute_to_router`.'
+                        % app_name
                     )
             setattr(cls, internal_name, router)
         return getattr(cls, internal_name)
 
-    def default_init_router(self, app_name, router):
-        """
-        If the `urls` submodule in an app in `settings.CITYFARM_API_APPS` either
-        does not define the :func:`init_router` function or sets the value of
-        `GENERATE_DEFAULT_ROUTES` to True, this function should be used to
-        generate the default routes for that app and register them to the given
-        router.
-        """
-        app_config = apps.get_app_config(app_name)
-        for model in app_config.get_models():
-            model_name = model._meta.object_name
-            lower_model_name = model_name[0].lower() + model_name[1:]
-            router.register(
-                lower_model_name, model_viewsets.get_for_model(model)
-            )
+    def register_app(self, app_name):
+        """ Register all of the models in the app with the given name """
+        for model in apps.get_app_config(app_name).get_models():
+            self.register_model(model)
 
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-        self._api_view_urls = {}
+    def register_model(self, model):
+        """ Register the given model to this router """
+        model_name = model._meta.object_name
+        lower_model_name = model_name[0].lower() + model_name[1:]
+        self.register(
+            lower_model_name, model_viewsets.get_for_model(model)
+        )
 
     def add_api_view(self, name, url):
         """

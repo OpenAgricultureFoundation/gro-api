@@ -15,7 +15,7 @@ from rest_framework import generics as rest_generics
 from .utils import ModelDict
 from .errors import FarmNotConfiguredError
 from .serializers import model_serializers
-from farms.models import Farm
+from layout.state import SystemLayout
 
 logger = logging.getLogger(__name__)
 
@@ -58,7 +58,7 @@ def farm_is_configured_check():
     If the current farm has not been configured, don't allow the user to access
     this viewset.
     """
-    if not Farm.get_solo().is_configured:
+    if SystemLayout().current_value is None:
         raise FarmNotConfiguredError()
 
 class APIView(rest_views.APIView, metaclass=APIViewMetaclass):

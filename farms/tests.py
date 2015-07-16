@@ -4,27 +4,23 @@ from farms.models import Farm
 
 
 class FarmTestCase(TestCase):
-    def test_invalid_layout(self):
-        farm = Farm.get_solo()
-        farm.layout = 'test'
-        self.assertRaises(ValidationError, farm.full_clean)
-
-    def test_valid_layout(self):
-        farm = Farm.get_solo()
-        farm.layout = 'aisle'
-        farm.save()
-
-    def test_empty_slug(self):
+    def test_slug_generation(self):
         farm = Farm.get_solo()
         farm.slug = ''
         farm.name = 'Test Farm'
-        farm.save()
+        farm.clean()
         self.assertEqual(farm.name, 'Test Farm')
         self.assertEqual(farm.slug, 'test-farm')
+        farm.name = 'Different Farm'
+        farm.clean()
+        self.assertEqual(farm.name, 'Different Farm')
+        self.assertEqual(farm.slug, 'test-farm')
 
-    def test_non_empty_slug(self):
+    def test_layout_locking(self):
         farm = Farm.get_solo()
-        farm.slug = 'test'
-        farm.name = 'Test Farm'
-        self.assertEqual(farm.name, 'Test Farm')
-        self.assertEqual(farm.slug, 'test')
+        farm.layout = None
+        farm.clean()
+        farm.layout = 'aisle'
+        farm.clean()
+        farm.layout = 'bay'
+        self.assertRaises(ValidationError, farm.clean)
