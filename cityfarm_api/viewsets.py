@@ -15,7 +15,7 @@ from rest_framework import generics as rest_generics
 from .utils import ModelDict
 from .errors import FarmNotConfiguredError
 from .serializers import model_serializers
-from layout.state import SystemLayout
+from .state import SystemLayout
 
 logger = logging.getLogger(__name__)
 
@@ -112,20 +112,9 @@ class ModelViewSet(rest_mixins.CreateModelMixin,
     """
     pass
 
-class SingletonListModelMixin(rest_mixins.ListModelMixin):
-    """
-    Version of :class:`rest_framework.mixins.ListModelMixin` that works for
-    singleton models. It makes sure that the singleton has been created before
-    getting the list of model instances from the database
-    """
-    def list(self, request, *args, **kwargs):
-        # Create the singleton if it has not yet been created
-        self.model.get_solo()
-        return super().list(request, *args, **kwargs)
-
 class SingletonViewSet(rest_mixins.RetrieveModelMixin,
                        rest_mixins.UpdateModelMixin,
-                       SingletonListModelMixin,
+                       rest_mixins.ListModelMixin,
                        GenericViewSet):
     """
     Version of :class:`ModelViewSet` that works for
@@ -142,4 +131,4 @@ for app_name in settings.CITYFARM_API_APPS:
     try:
         importlib.import_module('.views', app_name)
     except ImportError as err:
-        logger.info(err)
+        logger.debug(err)

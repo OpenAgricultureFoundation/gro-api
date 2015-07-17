@@ -1,23 +1,16 @@
-"""
-This module defines the Django models that describe the layout of a farm. A
-model is generated for every possible layout object name. Only the ones used for
-the current farm layout are marked as managed in a leaf server. In a root
-server, none of the models are managed.
-"""
-from django.db import connections, models
+from django.db import models
 from django.db.models import ForeignKey, PositiveIntegerField
-from django.db.models.signals import pre_migrate
-from django.apps import apps
 from django.conf import settings
-from model_utils.managers import InheritanceManager
 from solo.models import SingletonModel
+from model_utils.managers import InheritanceManager
+from cityfarm_api.state import SystemLayout
 from cityfarm_api.models import Model
-from cityfarm_api.fields import (
-    state_dependent_cached_property, dynamic_foreign_key
-)
+from cityfarm_api.fields import dynamic_foreign_key
 from farms.models import Farm
-from .state import SystemLayout
 from .schemata import all_schemata
+
+system_layout = SystemLayout()
+
 
 class Model3D(Model):
     name = models.CharField(max_length=100)
@@ -29,6 +22,7 @@ class Model3D(Model):
     def __str__(self):
         return self.name
 
+
 class TrayLayout(Model):
     name = models.CharField(max_length=100)
     num_rows = models.IntegerField()
@@ -37,32 +31,36 @@ class TrayLayout(Model):
     def __str__(self):
         return self.name
 
+
 class PlantSiteLayout(Model):
     parent = models.ForeignKey(TrayLayout, related_name="plant_sites")
     row = models.IntegerField()
     col = models.IntegerField()
 
     def __str__(self):
-        return "(r={}, c={}) in {}".format(self.row, self.col, self.parent.name)
+        return "(r={}, c={}) in {}".format(
+            self.row, self.col, self.parent.name
+        )
+
 
 if settings.SERVER_TYPE == settings.LEAF:
     def parent_field_for_model(model_name):
-        if SystemLayout().current_value is not None:
-            curr_schema = all_schemata[SystemLayout().current_value]
+        if system_layout.current_value is not None:
+            curr_schema = all_schemata[system_layout.current_value]
             return ForeignKey(
-                curr_schema.entities[model_name].parent, related_name="children"
+                curr_schema.entities[model_name].parent,
+                related_name="children"
             )
         else:
-            return PositiveIntegerField()
+            return PositiveIntegerField(db_column='parent_id')
 else:
-    per_layout_cached_property = state_dependent_cached_property(SystemLayout())
-    LayoutForeignKey = dynamic_foreign_key(SystemLayout())
+    LayoutForeignKey = dynamic_foreign_key(system_layout)
 
     class ParentField(LayoutForeignKey):
         """
         This class is the version of ForeignKey to be used on root servers. It
-        can dynamically decide which model it is pointing to based on the layout
-        of the farm being viewed.
+        can dynamically decide which model it is pointing to based on the
+        layout of the farm being viewed.
         """
         def __init__(self, *args, **kwargs):
             self.model_name = kwargs.pop('model_name')
@@ -70,24 +68,29 @@ else:
             super().__init__(*args, **kwargs)
 
         def get_other_model(self):
-            schema = all_schemata[get_current_layout()]
+            schema = all_schemata[system_layout.current_value]
             if self.model_name in schema.entities:
                 return schema.entities[self.model_name].parent
             else:
                 return None
 
+        def deconstruct(self, *args, **kwargs):
+            raise NotImplementedError()
+
     def parent_field_for_model(model_name):
         return ParentField(model_name=model_name)
+
 
 class LayoutObject(Model):
     super_id = models.AutoField(primary_key=True)
     objects = InheritanceManager()
 
     def __str__(self):
-        return LayoutObject.objects.get_subclass(super_id=self.super_id).__str__()
+        return LayoutObject.objects.get_subclass(
+            super_id=self.super_id
+        ).__str__()
 
     def save(self, *args, **kwargs):
-        # pylint: disable=access-member-before-definition
         # Generate pk to include in default name
         res = super().save(*args, **kwargs)
         if self._meta.get_field('name') and not self.name:
@@ -101,6 +104,7 @@ class LayoutObject(Model):
                 kwargs['force_insert'] = False
             res = super().save(*args, **kwargs)
         return res
+
 
 class Enclosure(LayoutObject, SingletonModel):
     id = models.AutoField(primary_key=True)
@@ -118,6 +122,7 @@ class Enclosure(LayoutObject, SingletonModel):
 
     def __str__(self):
         return self.name
+
 
 class Tray(LayoutObject):
     id = models.AutoField(primary_key=True)
@@ -139,22 +144,21 @@ class Tray(LayoutObject):
     def __str__(self):
         return self.name
 
+
 class PlantSite(Model):
     parent = models.ForeignKey(Tray, related_name='plant_sites')
     row = models.IntegerField()
     col = models.IntegerField()
+
     def __str__(self):
         return '{} (r={}, c={})'.format(str(self.parent), self.row, self.col)
 
-# A dictionary of all of the classes in the layout tree that have been created
-# so we can be sure not to create a class that has already been created
-dynamic_models = {}
 
 def generate_model_from_entity(entity):
     """
     :param entity: The entity for which to generate a model
     """
-    def __str__(self):
+    def to_string(self):
         return self.name
     model_attrs = {
         "__module__": __name__,
@@ -172,18 +176,21 @@ def generate_model_from_entity(entity):
         "layout_object": models.OneToOneField(
             LayoutObject, parent_link=True, editable=False
         ),
-        "__str__": __str__,
+        "__str__": to_string,
     }
     return type(entity.name, (LayoutObject,), model_attrs)
 
-generated_models = {}
+# A dictionary of all of the classes in the layout tree that have been created
+# so we can be sure not to create a class that has already been created
+dynamic_models = {}
+
 # Generate models for all of the entities that we could encounter
-for layout in SystemLayout().allowed_values:
+for layout in system_layout.allowed_values:
     if layout is None:
         assert settings.SERVER_TYPE == settings.LEAF, \
-                'This should only ever happen in a leaf server'
+            'This should only ever happen in a leaf server'
         continue
     for entity in all_schemata[layout].dynamic_entities.values():
-        if not entity.name in generated_models:
+        if entity.name not in dynamic_models:
             model = generate_model_from_entity(entity)
             dynamic_models[entity.name] = model

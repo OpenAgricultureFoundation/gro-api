@@ -10,7 +10,7 @@ from django.apps import apps
 from django.conf import settings
 from django.utils.functional import cached_property
 from rest_framework import routers, views, reverse, response
-from layout.state import SystemLayout
+from .state import SystemLayout
 from .models import Model
 from .viewsets import model_viewsets
 

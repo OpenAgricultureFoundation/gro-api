@@ -8,25 +8,31 @@ from layout.models import (
     Enclosure, Tray, PlantSite, dynamic_models, TrayLayout, PlantSiteLayout
 )
 
+
 class TrayLayoutSerializer(BaseSerializer):
     class Meta:
         model = TrayLayout
     condition = serializers.ChoiceField(
         ('all', 'odd', 'even', 'none'), write_only=True
     )
+
     def create(self, validated_data):
         num_rows = validated_data.get('num_rows')
         num_cols = validated_data.get('num_cols')
         condition = validated_data.pop('condition')
         res = super().create(validated_data)
         if condition == 'all':
-            should_create = lambda r,c: True
+            def should_create(row, col):
+                return True
         elif condition == 'odd':
-            should_create = lambda r,c: bool((r+c) % 2)
+            def should_create(row, col):
+                return bool((row + col) % 2)
         elif condition == 'even':
-            should_create = lambda r,c: bool((r+c+1) % 2)
+            def should_create(row, col):
+                return bool((row + col + 1) % 2)
         elif condition == 'none':
-            should_create = lambda r,c: False
+            def should_create(row, col):
+                return False
         for row in range(num_rows):
             for col in range(num_cols):
                 if should_create(row, col):
@@ -39,6 +45,7 @@ class EnclosureSerializer(BaseSerializer):
     class Meta:
         model = Enclosure
         nest_if_recursive = ('model',)
+
 
 class LayoutObjectSerializer(BaseSerializer):
     """ A Serializer for subclasses of LayoutObject """
@@ -63,14 +70,16 @@ class LayoutObjectSerializer(BaseSerializer):
                 "Model is too tall to fit in its parent"
             )
         return attrs
+
     def validate(self, attrs):
         return self.validate_location(attrs)
+
 
 class TraySerializer(LayoutObjectSerializer):
     class Meta:
         model = Tray
-        never_nest = ('parent',)
         nest_if_recursive = ('model',)
+
     layout = serializers.HyperlinkedRelatedField(
         view_name='traylayout-detail', queryset=TrayLayout.objects.all(),
         write_only=True,
@@ -88,7 +97,7 @@ class TraySerializer(LayoutObjectSerializer):
             plant_site.save()
         return res
 
-    def update(self, validated_data):
+    def update(self, instance, validated_data):
         raise NotImplementedError()
 
 for entity_name, entity_model in dynamic_models.items():

@@ -14,7 +14,9 @@ class Migration(migrations.Migration):
         migrations.CreateModel(
             name='Plant',
             fields=[
-                ('id', models.AutoField(auto_created=True, verbose_name='ID', primary_key=True, serialize=False)),
+                ('id', models.AutoField(
+                    auto_created=True, verbose_name='ID', primary_key=True,
+                    serialize=False)),
                 ('sown_date', models.DateTimeField()),
             ],
             options={
@@ -25,10 +27,21 @@ class Migration(migrations.Migration):
         migrations.CreateModel(
             name='PlantType',
             fields=[
-                ('id', models.AutoField(auto_created=True, verbose_name='ID', primary_key=True, serialize=False)),
+                ('id', models.AutoField(
+                    auto_created=True, verbose_name='ID', primary_key=True,
+                    serialize=False
+                )),
                 ('common_name', models.CharField(max_length=100)),
                 ('latin_name', models.CharField(max_length=100)),
-                ('plant_size', models.CharField(choices=[('short-leafy', 'Short Leafy'), ('short-branchy', 'Short Branchy'), ('medium-leafy', 'Medium Leafy'), ('medium-branchy', 'Medium Branchy'), ('tall-leafy', 'Tall Leafy'), ('tall-branchy', 'Tall Barnchy')], max_length=100)),
+                ('plant_size', models.CharField(
+                    choices=[('short-leafy', 'Short Leafy'),
+                             ('short-branchy', 'Short Branchy'),
+                             ('medium-leafy', 'Medium Leafy'),
+                             ('medium-branchy', 'Medium Branchy'),
+                             ('tall-leafy', 'Tall Leafy'),
+                             ('tall-branchy', 'Tall Barnchy')],
+                    max_length=100
+                )),
             ],
             options={
                 'managed': True,
@@ -38,11 +51,15 @@ class Migration(migrations.Migration):
         migrations.AddField(
             model_name='plant',
             name='plant_type',
-            field=models.ForeignKey(related_name='plants', to='plants.PlantType'),
+            field=models.ForeignKey(
+                related_name='plants', to='plants.PlantType'
+            ),
         ),
         migrations.AddField(
             model_name='plant',
             name='site',
-            field=models.OneToOneField(to='layout.PlantSite', related_name='plant'),
+            field=models.OneToOneField(
+                to='layout.PlantSite', related_name='plant'
+            ),
         ),
     ]

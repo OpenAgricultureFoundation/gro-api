@@ -4,20 +4,24 @@ in the abstract a growing device. This module handles the logic for contacting
 the remote server when the farm is created and setting a farm layout.
 """
 import socket
+import logging
 import tortilla
 from slugify import slugify
 from urllib.parse import urlparse
 from django.db import models
 from django.conf import settings
+from django.utils.translation import ugettext_lazy as _
 from django.dispatch import Signal
-from django.core.exceptions import ValidationError
 from solo.models import SingletonModel
+from rest_framework import status
+from rest_framework.exceptions import APIException
 from cityfarm_api.models import Model
 from layout.schemata import all_schemata
 
+logger = logging.getLogger(__name__)
+
 LAYOUT_CHOICES = ((key, val.name) for key, val in all_schemata.items())
 LAYOUT_CHOICES = sorted(LAYOUT_CHOICES, key=lambda choice: choice[0])
-DEFAULT_LAYOUT = 'tray'
 
 farm_bases = (Model,)
 if settings.SERVER_TYPE == settings.LEAF:
@@ -32,6 +36,14 @@ if settings.SERVER_TYPE == settings.ROOT:
     root_id_kwargs = {
         'primary_key': True
     }
+
+class LayoutChangeAttempted(APIException):
+    """
+    Changing a farm from one layout is currently not allowed. This exception
+    should be raised when a used tries to do that
+    """
+    status_code = status.HTTP_403_FORBIDDEN
+    default_detail = _('Changing the layout of a farm is disallowed')
 
 class Farm(*farm_bases):
     """
@@ -52,7 +64,8 @@ class Farm(*farm_bases):
         blank=(settings.SERVER_TYPE == settings.LEAF), unique=True
     )
     root_server = models.URLField(
-        default="http://cityfarm.media.mit.edu", null=True
+        default="http://cityfarm.media.mit.edu",
+        null=(settings.SERVER_TYPE == settings.LEAF)
     )
     ip = models.GenericIPAddressField(
         editable=(settings.SERVER_TYPE == settings.ROOT),
@@ -62,31 +75,10 @@ class Farm(*farm_bases):
         choices=LAYOUT_CHOICES, null=(settings.SERVER_TYPE == settings.LEAF)
     )
 
-    layout_selected = Signal(providing_args=['layout'])
-
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         if settings.SERVER_TYPE == settings.LEAF:
             self._old_layout = self.layout
-
-    def clean(self):
-        if settings.SERVER_TYPE == settings.LEAF:
-            if self.name and not self.slug:
-                self.slug = slugify(self.name.lower())
-            if self.layout != self._old_layout:
-                if self._old_layout:
-                    # We can't change from one layout to another; migrating the
-                    # database is too hard, and we wouldn't know what to do with
-                    # the layout data
-                    raise ValidationError(
-                        'Changing the layout of a farm is disallowed'
-                    )
-                else:
-                    Farm.layout_selected.send(
-                        sender=self.__class__, layout=self.layout
-                    )
-            self._old_layout = self.layout
-            self.check_network()
 
     def check_network(self):
         """
@@ -97,16 +89,21 @@ class Farm(*farm_bases):
         """
         assert settings.SERVER_TYPE == settings.LEAF, \
             '`check_network` should only be called on leaf servers'
+        logger.debug('Checking for network connection')
+        sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
         if self.root_server:
+            address = urlparse(self.root_server).netloc
+            logger.debug('Querying server at {}'.format(address))
             try:
-                sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-                sock.connect((urlparse(self.root_server).netloc, 80))
+                sock.connect((address, 80))
                 self.ip = sock.getsockname()[0]
                 return
             except socket.gaierror:
+                logger.debug('Failed to query server at {}'.format(address))
                 pass
-        sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-        sock.connect((urlparse('8.8.8.8').netloc, 80))
+        address = '8.8.8.8'
+        logger.debug('Querying server at {}'.format(address))
+        sock.connect((address, 80))
         self.ip = sock.getsockname()[0]
 
     def save(self, *args, **kwargs):
@@ -117,8 +114,23 @@ class Farm(*farm_bases):
 
     def leaf_save(self, *args, **kwargs):
         """ This save function is used for leaf servers """
+        if self.name and not self.slug:
+            self.slug = slugify(self.name.lower())
+            logger.debug('Generated slug {} from name {}'.format(
+                self.slug, self.name
+            ))
+        if not self.ip:
+            self.check_network()
+        if self.layout != self._old_layout:
+            if self._old_layout:
+                raise LayoutChangeAttempted()
+            else:
+                # TODO: migrate initial --fake; migrate
+                pass
+        self._old_layout = self.layout
         root_api = tortilla.wrap(self.root_server, debug=True)
         if self.slug:
+            # TODO: Log shit
             # Register this farm with the root server
             if settings.SERVER_MODE == settings.DEVELOPMENT:
                 # Jk, don't actually contact the server, just pretend we did

@@ -3,7 +3,7 @@ This module defines a set of utility functions that can be used by the apps in
 this project
 """
 from django.db.utils import OperationalError
-from farms.models import Farm, DEFAULT_LAYOUT
+from farms.models import Farm
 
 class ModelDict(dict):
     """

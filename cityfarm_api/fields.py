@@ -7,7 +7,6 @@ migrations.
 
 from django.apps import apps
 from django.core import checks
-from django.core.exceptions import FieldDoesNotExist
 from django.db.models import CASCADE
 from django.db.models.fields import Field
 from django.db.models.fields.related import (
@@ -99,7 +98,6 @@ def dynamic_related_field(state_var):
     """
     assert isinstance(state_var, StateVariable)
     StateDependentAttribute = state_dependent_attribute(state_var)
-    StateDependentCachedProperty = state_dependent_cached_property(state_var)
     class Class(RelatedField):
         """ The dynamic RelatedField class to return """
         # It is useful to have some indicator that this field is dynamic.  We
@@ -114,7 +112,7 @@ def dynamic_related_field(state_var):
                     self.to = self.get_other_model()
             Field.__init__(self, *args, **kwargs)
 
-        def get_other_model(self, state):
+        def get_other_model(self):
             """
             Returns the name of the model that this field points to for the
             given state. Subclasses of this class must implement
@@ -301,7 +299,7 @@ def dynamic_foreign_object(state_var):
 
             DynamicRelatedField.__init__(self, **kwargs)
 
-        def get_other_model(self, state):
+        def get_other_model(self):
             raise NotImplementedError()
 
         def check(self, **kwargs):

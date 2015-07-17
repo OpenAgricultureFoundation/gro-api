@@ -13,7 +13,9 @@ class Migration(migrations.Migration):
         migrations.CreateModel(
             name='LayoutObject',
             fields=[
-                ('super_id', models.AutoField(primary_key=True, serialize=False)),
+                ('super_id', models.AutoField(
+                    primary_key=True, serialize=False
+                )),
             ],
             options={
                 'managed': True,
@@ -23,7 +25,10 @@ class Migration(migrations.Migration):
         migrations.CreateModel(
             name='Model3D',
             fields=[
-                ('id', models.AutoField(auto_created=True, verbose_name='ID', primary_key=True, serialize=False)),
+                ('id', models.AutoField(
+                    auto_created=True, verbose_name='ID', primary_key=True,
+                    serialize=False
+                )),
                 ('name', models.CharField(max_length=100)),
                 ('file', models.FileField(upload_to='3D_models')),
                 ('width', models.FloatField()),
@@ -38,7 +43,10 @@ class Migration(migrations.Migration):
         migrations.CreateModel(
             name='PlantSite',
             fields=[
-                ('id', models.AutoField(auto_created=True, verbose_name='ID', primary_key=True, serialize=False)),
+                ('id', models.AutoField(
+                    auto_created=True, verbose_name='ID', primary_key=True,
+                    serialize=False
+                )),
                 ('row', models.IntegerField()),
                 ('col', models.IntegerField()),
             ],
@@ -50,7 +58,10 @@ class Migration(migrations.Migration):
         migrations.CreateModel(
             name='PlantSiteLayout',
             fields=[
-                ('id', models.AutoField(auto_created=True, verbose_name='ID', primary_key=True, serialize=False)),
+                ('id', models.AutoField(
+                    auto_created=True, verbose_name='ID', primary_key=True,
+                    serialize=False
+                )),
                 ('row', models.IntegerField()),
                 ('col', models.IntegerField()),
             ],
@@ -62,7 +73,10 @@ class Migration(migrations.Migration):
         migrations.CreateModel(
             name='TrayLayout',
             fields=[
-                ('id', models.AutoField(auto_created=True, verbose_name='ID', primary_key=True, serialize=False)),
+                ('id', models.AutoField(
+                    auto_created=True, verbose_name='ID', primary_key=True,
+                    serialize=False
+                )),
                 ('name', models.CharField(max_length=100)),
                 ('num_rows', models.IntegerField()),
                 ('num_cols', models.IntegerField()),
@@ -83,8 +97,12 @@ class Migration(migrations.Migration):
                 ('length', models.FloatField(default=0)),
                 ('width', models.FloatField(default=0)),
                 ('height', models.FloatField(default=0)),
-                ('layout_object', models.OneToOneField(parent_link=True, to='layout.LayoutObject', editable=False)),
-                ('model', models.ForeignKey(null=True, to='layout.Model3D', related_name='+')),
+                ('layout_object', models.OneToOneField(
+                    parent_link=True, to='layout.LayoutObject', editable=False
+                )),
+                ('model', models.ForeignKey(
+                    null=True, to='layout.Model3D', related_name='+'
+                )),
             ],
             options={
                 'managed': True,
@@ -105,9 +123,13 @@ class Migration(migrations.Migration):
                 ('height', models.FloatField(default=0)),
                 ('num_rows', models.IntegerField(editable=False, default=0)),
                 ('num_cols', models.IntegerField(editable=False, default=0)),
-                ('parent', models.PositiveIntegerField()),
-                ('layout_object', models.OneToOneField(parent_link=True, to='layout.LayoutObject', editable=False)),
-                ('model', models.ForeignKey(null=True, to='layout.Model3D', related_name='+')),
+                ('parent', models.PositiveIntegerField(db_column='parent_id')),
+                ('layout_object', models.OneToOneField(
+                    parent_link=True, to='layout.LayoutObject', editable=False
+                )),
+                ('model', models.ForeignKey(
+                    null=True, to='layout.Model3D', related_name='+'
+                )),
             ],
             options={
                 'managed': True,
@@ -118,11 +140,15 @@ class Migration(migrations.Migration):
         migrations.AddField(
             model_name='plantsitelayout',
             name='parent',
-            field=models.ForeignKey(related_name='plant_sites', to='layout.TrayLayout'),
+            field=models.ForeignKey(
+                related_name='plant_sites', to='layout.TrayLayout'
+            ),
         ),
         migrations.AddField(
             model_name='plantsite',
             name='parent',
-            field=models.ForeignKey(related_name='plant_sites', to='layout.Tray'),
+            field=models.ForeignKey(
+                related_name='plant_sites', to='layout.Tray'
+            ),
         ),
     ]

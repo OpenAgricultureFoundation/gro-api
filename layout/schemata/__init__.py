@@ -13,9 +13,9 @@ attribute, which is the name of the parent model for the trays (defaults to
 define a system.
 
 Each entity should have a ``name`` attribute, which is the name of the entity,
-and a ``parent`` attribute, which is the name of the parent entity. The ``Tray``
-and ``Enclosure`` entities are implied and sit at the bottom and top of the
-layout tree, respectively.
+and a ``parent`` attribute, which is the name of the parent entity. The
+``Tray`` and ``Enclosure`` entities are implied and sit at the bottom and top
+of the layout tree, respectively.
 
 For some examples of schema files, see the ``layout/schemata`` directory.
 """
@@ -30,23 +30,27 @@ __all__ = [
     'all_schemata', 'Entity', 'Schema', 'register_schema'
 ]
 
+
 def to_slug(string):
     """
     Clean the name of a layout object by making it lowercase and slugifying it.
     """
     return slugify(str(string))
 
+
 class Entity:
     schema = voluptuous.Schema({
         voluptuous.Required('name'): to_slug,
         voluptuous.Required('parent'): to_slug,
     })
+
     def __init__(self, attrs=None, **kwargs):
         all_attrs = dict(attrs) if attrs else {}
         all_attrs.update(kwargs)
         all_attrs = self.schema(all_attrs)
         self.name = all_attrs['name']
         self.parent = all_attrs['parent']
+
 
 class Schema:
     schema = voluptuous.Schema({
@@ -55,6 +59,7 @@ class Schema:
         voluptuous.Required('entities', default=[]): [Entity.schema],
         voluptuous.Required('tray-parent', default='Enclosure'): to_slug,
     })
+
     def __init__(self, attrs=None, **kwargs):
         all_attrs = attrs.copy()
         all_attrs.update(kwargs)
@@ -73,7 +78,7 @@ class Schema:
         for entity in self.entities.values():
             if hasattr(self, entity.name):
                 raise RuntimeError(
-                    'Schema {} contained an entity with invalid name {}'.format(
+                    'Schema {} contained entity with invalid name {}'.format(
                         self.name, entity.name
                     )
                 )
@@ -81,10 +86,12 @@ class Schema:
         self.check()
 
     def check(self):
-        entities_without_children = self.entities.copy() # A dictionary of all
-        # of the entities without children. It is initialized to the full set of
-        # entities and should be emptied by the end of this function
+        # A dictionary of all of the entities without children. It is
+        # initialized to the full set of entities and should be emptied by the
+        # end of this function
+        entities_without_children = self.entities.copy()
         entities_without_children.pop('Tray')  # Trays shouldn't have children
+
         # Maps the name of an entity to the name of that entity's child
         entity_children = {}
         for entity in self.entities.values():
@@ -116,7 +123,8 @@ class Schema:
             msg = 'The following entities do not have children: {}'.format(tmp)
             raise voluptuous.SchemaError(msg)
 
-all_schemata = {} # Global registry for loaded schemata
+all_schemata = {}  # Global registry for loaded schemata
+
 
 def register_schema(schema):
     if schema.name in all_schemata:
