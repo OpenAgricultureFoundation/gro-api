@@ -1,13 +1,10 @@
-"""
-This module defines a set of cron jobs that the server should run periodically
-to update things about this server.
-"""
 import logging
 from django.conf import settings
 from django_cron import CronJobBase, Schedule
 from .models import Farm
 
 logger = logging.getLogger(__name__)
+
 
 class UpdateFarmIp(CronJobBase):
     """
@@ -18,12 +15,15 @@ class UpdateFarmIp(CronJobBase):
     RUN_EVERY_MINS = 60
     schedule = Schedule(run_every_mins=RUN_EVERY_MINS)
     code = 'farms.update_farm_ip'
-    def do(self):
-        logger.info('Running cron job at `farms.cron.UpdateFarmIp`')
-        assert settings.SERVER_TYPE == settings.LEAF, \
-                'This cron job should only be run on leaf servers'
+
+    @staticmethod
+    def do():
+        logger.info('Running cron job `farms.cron.UpdateFarmIp`')
+        if not settings.SERVER_TYPE == settings.LEAF:
+            logger.error('This cron job should only be run on leaf servers')
         farm = Farm.get_solo()
         old_ip = farm.ip
         farm.check_network()
         if farm.ip != old_ip:
+            logger.info('IP Changed from %s to %s', old_ip, farm.ip)
             farm.save()

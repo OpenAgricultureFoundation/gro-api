@@ -5,6 +5,7 @@ if settings.SERVER_TYPE == settings.LEAF:
 else:
     from cityfarm_api.viewsets import ModelViewSet as FarmViewSetBase
 
+
 class FarmViewSet(FarmViewSetBase):
     model = Farm
     allow_access_with_unconfigured_farm = True

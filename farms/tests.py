@@ -3,6 +3,7 @@ from rest_framework.test import APITestCase
 from django.conf import settings
 from django.core.exceptions import ValidationError
 from farms.models import Farm, LayoutChangeAttempted
+from .cron import UpdateFarmIp
 
 URL_PREFIX = '' if settings.SERVER_TYPE == settings.LEAF else '/tray'
 LIST_URL = URL_PREFIX + '/farm/'
@@ -11,7 +12,6 @@ EXAMPLE_FARM_INFO = {
     'name': 'Test Farm',
     'slug': 'test-farm',
     'root_server': 'http://cityfarm.media.mit.edu',
-    'ip': '12.34.56.78',
     'layout': 'aisle',
 }
 
@@ -85,3 +85,15 @@ class FarmLayoutTestCase(APITestCase):
         self.assertEqual(
             res.data['detail'], LayoutChangeAttempted.default_detail
         )
+
+class UpdateFarmIpTestCase(APITestCase):
+    def test_cron_jon(self):
+        farm = Farm.get_solo()
+        farm.check_network()
+        real_ip = farm.ip
+        farm.ip = '12.34.56.78'
+        farm.save()
+        UpdateFarmIp().do()
+        res = self.client.get(FARM_URL)
+        self.assertEqual(res.status_code, 200)
+        self.assertEqual(res.data['ip'], real_ip)
