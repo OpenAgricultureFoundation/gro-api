@@ -192,7 +192,6 @@ if SERVER_MODE == DEVELOPMENT:
         LOGGING['loggers'][app_name]['handlers'].append('console')
     ALLOWED_HOSTS = []
     SECRET_KEY = '))r--wwm1h@2n7x^b(o)e(*ziq+_l2*lxfpd7tdnq9qgtwlq@_'
-
 else:
     DEBUG = False
     LOGGING['handlers']['file']['filename'] = '/var/log/cityfarm_api.log'
@@ -226,3 +225,12 @@ else:
     SESSION_COOKIE_SECURE = True
     CONN_MAX_AGE = None
     ADMINS = ['Douglas Chambers', 'dougiefresh@mit.edu']
+    CACHES = {
+        'default': {
+            'BACKEND': 'django.core.cache.backends.memcached.MemcachedCache',
+            'LOCATION': '127.0.0.1:11211',
+        },
+    }
+    SOLO_CACHE = 'default'
+    SOLO_CACHE_PREFIX = 'solo'
+    SOLO_CACHE_TIMEOUT = 60*5  # 5 minutes

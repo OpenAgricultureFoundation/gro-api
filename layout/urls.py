@@ -1,5 +1,5 @@
 from django.conf import settings
-from cityfarm_api.state import SystemLayout
+from cityfarm_api.state import system_layout
 from .models import (
     Model3D, TrayLayout, PlantSiteLayout, LayoutObject, Enclosure, Tray,
     PlantSite, dynamic_models
@@ -13,7 +13,7 @@ def contribute_to_router(router):
     router.register_model(Enclosure)
     router.register_model(Tray)
     router.register_model(PlantSite)
-    current_layout = SystemLayout().current_value
+    current_layout = system_layout.current_value
     if settings.SERVER_TYPE == settings.ROOT and not current_layout:
         logger.warn(
             'Root server encountered farm without layout. This should never '

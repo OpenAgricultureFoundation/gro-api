@@ -4,7 +4,7 @@ used by this app.
 """
 
 import logging
-from control.commands import Command, FakeMigrate, Migrate
+from control.commands import Command, ReloadWorkers
 logger = logging.getLogger('cityfarm_api.control')
 
 
@@ -39,3 +39,7 @@ class Routine:
             logger.info('Running command "{}"'.format(command.title))
             result.append(command.to_json())
         return result
+
+class Restart(Routine):
+    title = 'Restart'
+    command_classes = [ReloadWorkers, ]

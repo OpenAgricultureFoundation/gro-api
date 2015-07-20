@@ -12,7 +12,6 @@ from rest_framework import status
 from rest_framework.exceptions import APIException
 from cityfarm_api.models import Model
 from layout.schemata import all_schemata
-from control.routines import SetupLayout
 
 logger = logging.getLogger(__name__)
 

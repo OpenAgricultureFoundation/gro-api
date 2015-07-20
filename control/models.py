@@ -1,6 +1,6 @@
 import os
 from django.core import checks
-from .commands import fifo_path, manager_path, FifoCommand, ManagerCommand
+from .commands import fifo_path, manager_path, FifoCommand
 from .routines import Routine
 from .exceptions import InvalidFifoFile, InvalidFifoPath, InvalidManagerPath
 
@@ -16,18 +16,6 @@ def check_fifo_path(app_configs, **kwargs):
     except InvalidFifoFile as e:
         msg = 'FIFO file is invalid'
         hint = 'Make sure the file at "{}" is a valid FIFO'.format(fifo_path)
-        errors.append(checks.CheckMessage(checks.WARNING, msg, hint))
-    return errors
-
-@checks.register
-def check_manager_path(app_configs, **kwargs):
-    errors = []
-    try:
-        ManagerCommand.check()
-    except InvalidManagerPath as e:
-        msg = 'Failed to find manage.py file'
-        hint = 'Make sure that your project\'s manage.py file is at ' + \
-            '"{}"'.format(manager_path)
         errors.append(checks.CheckMessage(checks.WARNING, msg, hint))
     return errors
 

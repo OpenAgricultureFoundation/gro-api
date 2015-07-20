@@ -3,13 +3,11 @@ from django.db.models import ForeignKey, PositiveIntegerField
 from django.conf import settings
 from solo.models import SingletonModel
 from model_utils.managers import InheritanceManager
-from cityfarm_api.state import SystemLayout
+from cityfarm_api.state import system_layout
 from cityfarm_api.models import Model
 from cityfarm_api.fields import dynamic_foreign_key
 from farms.models import Farm
 from .schemata import all_schemata
-
-system_layout = SystemLayout()
 
 
 class Model3D(Model):

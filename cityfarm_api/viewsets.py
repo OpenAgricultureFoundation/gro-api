@@ -15,7 +15,7 @@ from rest_framework import generics as rest_generics
 from .utils import ModelDict
 from .errors import FarmNotConfiguredError
 from .serializers import model_serializers
-from .state import SystemLayout
+from .state import system_layout
 
 logger = logging.getLogger(__name__)
 
@@ -58,7 +58,7 @@ def farm_is_configured_check():
     If the current farm has not been configured, don't allow the user to access
     this viewset.
     """
-    if SystemLayout().current_value is None:
+    if system_layout.current_value is None:
         raise FarmNotConfiguredError()
 
 class APIView(rest_views.APIView, metaclass=APIViewMetaclass):
@@ -112,10 +112,17 @@ class ModelViewSet(rest_mixins.CreateModelMixin,
     """
     pass
 
+class SingletonViewSetBase(APIViewMetaclass):
+    def __init__(cls, name, bases, attrs):
+        if 'model' in attrs:
+            attrs['model'].get_solo()
+        super().__init__(name, bases, attrs)
+
 class SingletonViewSet(rest_mixins.RetrieveModelMixin,
                        rest_mixins.UpdateModelMixin,
                        rest_mixins.ListModelMixin,
-                       GenericViewSet):
+                       GenericViewSet,
+                       metaclass=SingletonViewSetBase):
     """
     Version of :class:`ModelViewSet` that works for
     :class:`solo.models.SingletonModel` instances. It doesn't allows for creates

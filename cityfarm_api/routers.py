@@ -29,7 +29,6 @@ class BaseRouter(routers.DefaultRouter):
         """
         internal_name = '_{}_router'.format(system_layout.current_value)
         if not hasattr(cls, internal_name):
-            print('Creating router instance')
             router = cls()
             for app_name in settings.CITYFARM_API_APPS:
                 try:

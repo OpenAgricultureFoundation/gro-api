@@ -4,11 +4,9 @@ from django.db.migrations.operations.base import Operation
 from django.db.migrations.operations.models import CreateModel
 from django.db.migrations.operations.fields import AlterField
 from django.utils.functional import cached_property
-from cityfarm_api.state import SystemLayout
+from cityfarm_api.state import system_layout
 from layout.models import dynamic_models
 from layout.schemata import all_schemata
-
-system_layout = SystemLayout()
 
 
 class CreateDynamicModels(Operation):
@@ -24,9 +22,9 @@ class CreateDynamicModels(Operation):
     @cached_property
     def operations(self):
         ops = []
-        if SystemLayout().current_value is None:
+        if system_layout.current_value is None:
             return []
-        schema = all_schemata[SystemLayout().current_value]
+        schema = all_schemata[system_layout.current_value]
         created_models = set()
         created_models.add('Enclosure')
 

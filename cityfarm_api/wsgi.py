@@ -7,6 +7,11 @@ For more information on this file, see
 https://docs.djangoproject.com/en/1.8/howto/deployment/wsgi/
 """
 
-from django.core.wsgi import get_wsgi_application
+import django
+from django.core.handlers.wsgi import WSGIHandler
 
-application = get_wsgi_application()
+django.setup()
+
+from layout import monkey_patch_resolvers
+
+application = WSGIHandler()
