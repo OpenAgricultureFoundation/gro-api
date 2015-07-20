@@ -4,6 +4,7 @@ import tortilla
 from slugify import slugify
 from urllib.parse import urlparse
 from django.db import models
+from django.core.management import call_command
 from django.conf import settings
 from django.utils.translation import ugettext_lazy as _
 from solo.models import SingletonModel
@@ -11,6 +12,7 @@ from rest_framework import status
 from rest_framework.exceptions import APIException
 from cityfarm_api.models import Model
 from layout.schemata import all_schemata
+from control.routines import SetupLayout
 
 logger = logging.getLogger(__name__)
 
@@ -123,8 +125,10 @@ class Farm(*farm_bases):
             if self._old_layout:
                 raise LayoutChangeAttempted()
             else:
-                # TODO: migrate 0001 --fake; migrate; restart
-                pass
+                from cityfarm_api.state import system_layout
+                with system_layout.as_value(self.layout):
+                    call_command('migrate', 'layout', '0001', '--fake')
+                    call_command('migrate')
         self._old_layout = self.layout
         if self.slug:
             # Register this farm with the root server

@@ -7,6 +7,7 @@ from django.conf import settings
 from django.utils.functional import cached_property
 from .utils import Singleton
 from farms.models import Farm
+from layout.schemata import all_schemata
 
 class StateVariable(metaclass=Singleton):
     """
@@ -52,10 +53,15 @@ class SystemLayout(StateVariable):
         if settings.SERVER_TYPE == settings.ROOT:
             return all_schemata.keys()
         else:
-            return [self.current_value, ]
+            if self.current_value is None:
+                return all_schemata.keys()
+            else:
+                return [self.current_value, ]
 
     def get_current_value(self):
         try:
             return Farm.get_solo().layout
         except OperationalError:
             return None
+
+system_layout = SystemLayout()

@@ -228,11 +228,17 @@ class ManagerCommand(ShellCommand):
         return ' '.join(('python3', manager_path) + self.args)
 
 
-class MakeMigrations(ManagerCommand):
-    """ Create new migrations(s) for apps """
-    title = 'Make Migrations'
-    args = ('makemigrations', '--noinput')
-
+def FakeMigrate(app_name, migration_name):
+    """
+    For the app named `app_name`, pretend to revert to the migration named
+    `migration_name`. This allows us to redo the migration that creates the
+    database tables for the layout models when a farm layout is selected
+    """
+    class Class(ManagerCommand):
+        """ The command to return """
+        title = 'Fake Migrate'
+        args = ('migrate', app_name, migration_name, '--fake')
+    return Class
 
 class Migrate(ManagerCommand):
     """ Update database schema """

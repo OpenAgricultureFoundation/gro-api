@@ -53,7 +53,7 @@ CITYFARM_API_APPS = (
 if SERVER_TYPE == LEAF:
     CITYFARM_API_APPS = CITYFARM_API_APPS + ('control',)
 
-INSTALLED_APPS = FRAMEWORK_APPS + CITYFARM_API_APPS
+INSTALLED_APPS = CITYFARM_API_APPS + FRAMEWORK_APPS
 
 CRON_CLASSES = (
     'farms.cron.UpdateFarmIp',
@@ -69,11 +69,8 @@ MIDDLEWARE_CLASSES = (
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
     'django.middleware.security.SecurityMiddleware',
+    'cityfarm_api.middleware.FarmRoutingMiddleware',
 )
-if SERVER_TYPE == ROOT:
-    MIDDLEWARE_CLASSES = MIDDLEWARE_CLASSES + (
-        'cityfarm_api.middleware.FarmRoutingMiddleware',
-    )
 
 ROOT_URLCONF = 'cityfarm_api.urls'
 

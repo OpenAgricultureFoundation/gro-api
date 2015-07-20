@@ -4,7 +4,7 @@ used by this app.
 """
 
 import logging
-from control.commands import Command, ReloadWorkers, MakeMigrations, Migrate
+from control.commands import Command, FakeMigrate, Migrate
 logger = logging.getLogger('cityfarm_api.control')
 
 
@@ -28,14 +28,14 @@ class Routine:
             if not issubclass(command_class, Command):
                 raise TypeError('Routine can only hold Command subclasses')
 
+    def run(self):
+        for command in self.commands:
+            logger.info('Running command "{}"'.format(command.title))
+            command.run()
+
     def to_json(self):
         result = []
         for command in self.commands:
             logger.info('Running command "{}"'.format(command.title))
             result.append(command.to_json())
         return result
-
-
-class Restart(Routine):
-    title = 'Restart'
-    command_classes = [MakeMigrations, MakeMigrations, Migrate, ReloadWorkers]

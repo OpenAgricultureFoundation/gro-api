@@ -10,7 +10,7 @@ from django.apps import apps
 from django.conf import settings
 from django.utils.functional import cached_property
 from rest_framework import routers, views, reverse, response
-from .state import SystemLayout
+from .state import system_layout
 from .models import Model
 from .viewsets import model_viewsets
 
@@ -27,26 +27,27 @@ class BaseRouter(routers.DefaultRouter):
         Gets an instance of this class populated with urls for the current farm
         layout. Instances are cached by layout.
         """
-        internal_name = '_{}_router'.format(SystemLayout().current_value)
+        internal_name = '_{}_router'.format(system_layout.current_value)
         if not hasattr(cls, internal_name):
+            print('Creating router instance')
             router = cls()
             for app_name in settings.CITYFARM_API_APPS:
                 try:
                     # Try to use the `contribute_to_router` function in the
                     # `urls` submodule for app
                     app_urls = importlib.import_module('.urls', app_name)
-                    app_urls.contribute_to_router(router)
-                    # Also register the app normally if the `urls` submodule
-                    # tells us to
+                    # Register the app normally if the `urls` submodule tells
+                    # us to
                     if hasattr(app_urls, 'GENERATE_DEFAULT_ROUTES') and \
                             app_urls.GENERATE_DEFAULT_ROUTES:
                         router.register_app(app_name)
+                    app_urls.contribute_to_router(router)
                 except ImportError as err:
                     # App has no `urls` submodule`. Just register the app
                     # normally
                     router.register_app(app_name)
                 except AttributeError as err:
-                    logger.warn(
+                    logger.info(
                         'Failed to load urls for app "%s". `urls` submodule '
                         'should define a function `contribute_to_router`.'
                         % app_name
