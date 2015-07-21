@@ -112,6 +112,8 @@ if SERVER_TYPE == ROOT:
 
 WSGI_APPLICATION = 'cityfarm_api.wsgi.application'
 
+TEST_RUNNER = 'cityfarm_api.test_runner.TestRunner'
+
 # Internationalization
 # https://docs.djangoproject.com/en/1.8/topics/i18n/
 
