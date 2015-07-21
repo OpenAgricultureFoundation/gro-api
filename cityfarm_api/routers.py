@@ -2,16 +2,13 @@
 This module defines a single :class:`~rest_framework.routers.DefaultRouter`
 subclass to be used for managing urls in this project.
 """
-import inspect
 import logging
 import importlib
-from django.db import models
 from django.apps import apps
 from django.conf import settings
 from django.utils.functional import cached_property
 from rest_framework import routers, views, reverse, response
-from .state import system_layout
-from .models import Model
+from .utils.state import system_layout
 from .viewsets import model_viewsets
 
 logger = logging.getLogger(__name__)
@@ -29,7 +26,7 @@ class BaseRouter(routers.DefaultRouter):
         """
         internal_name = '_{}_router'.format(system_layout.current_value)
         if not hasattr(cls, internal_name):
-            router = cls()
+            router = cls(*args, **kwargs)
             for app_name in settings.CITYFARM_API_APPS:
                 try:
                     # Try to use the `contribute_to_router` function in the
@@ -41,15 +38,15 @@ class BaseRouter(routers.DefaultRouter):
                             app_urls.GENERATE_DEFAULT_ROUTES:
                         router.register_app(app_name)
                     app_urls.contribute_to_router(router)
-                except ImportError as err:
+                except ImportError:
                     # App has no `urls` submodule`. Just register the app
                     # normally
                     router.register_app(app_name)
-                except AttributeError as err:
+                except AttributeError:
                     logger.info(
                         'Failed to load urls for app "%s". `urls` submodule '
-                        'should define a function `contribute_to_router`.'
-                        % app_name
+                        'should define a function `contribute_to_router`.',
+                        app_name
                     )
             setattr(cls, internal_name, router)
         return getattr(cls, internal_name)

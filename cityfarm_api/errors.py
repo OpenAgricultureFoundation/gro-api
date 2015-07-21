@@ -7,7 +7,7 @@ from rest_framework.exceptions import APIException
 class FarmNotConfiguredError(APIException):
     """
     This exception should be thrown when a user attempts to input data for a
-    farm that has not yet been configured.
+    model in farm that has not yet been configured.
     """
     status_code = 403
     default_detail = (

@@ -6,12 +6,14 @@ It exposes the WSGI callable as a module-level variable named ``application``.
 For more information on this file, see
 https://docs.djangoproject.com/en/1.8/howto/deployment/wsgi/
 """
+from django.core.wsgi import get_wsgi_application
 
-import django
-from django.core.handlers.wsgi import WSGIHandler
+application = get_wsgi_application()
 
-django.setup()
+# Send a fake request to the server right after it is created to make it less
+# lazy
+from django.test import RequestFactory
 
-from layout import monkey_patch_resolvers
-
-application = WSGIHandler()
+fake_environ = RequestFactory().get('/').environ
+fake_start_response = lambda x, y: None
+application(fake_environ, fake_start_response)

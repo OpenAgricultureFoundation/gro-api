@@ -3,9 +3,9 @@ from django.db.models import ForeignKey, PositiveIntegerField
 from django.conf import settings
 from solo.models import SingletonModel
 from model_utils.managers import InheritanceManager
-from cityfarm_api.state import system_layout
+from cityfarm_api.utils.state import system_layout
 from cityfarm_api.models import Model
-from cityfarm_api.fields import dynamic_foreign_key
+from cityfarm_api.fields import LayoutForeignKey
 from farms.models import Farm
 from .schemata import all_schemata
 
@@ -40,43 +40,33 @@ class PlantSiteLayout(Model):
             self.row, self.col, self.parent.name
         )
 
+class ParentField(LayoutForeignKey):
+    """
+    This class is the version of ForeignKey to be used on root servers. It
+    can dynamically decide which model it is pointing to based on the
+    layout of the farm being viewed.
+    """
+    def __init__(self, model_name):
+        self.model_name = model_name
+        kwargs = {'related_name': 'children'}
+        super().__init__(**kwargs)
 
-if settings.SERVER_TYPE == settings.LEAF:
-    def parent_field_for_model(model_name):
-        if system_layout.current_value is not None:
-            curr_schema = all_schemata[system_layout.current_value]
-            return ForeignKey(
-                curr_schema.entities[model_name].parent,
-                related_name="children"
-            )
+    def get_other_model(self):
+        current_layout = system_layout.current_value
+        if current_layout is None:
+            return None
+        schema = all_schemata[current_layout]
+        if self.model_name in schema.entities:
+            return schema.entities[self.model_name].parent
         else:
-            return PositiveIntegerField(db_column='parent_id')
-else:
-    LayoutForeignKey = dynamic_foreign_key(system_layout)
+            return None
 
-    class ParentField(LayoutForeignKey):
-        """
-        This class is the version of ForeignKey to be used on root servers. It
-        can dynamically decide which model it is pointing to based on the
-        layout of the farm being viewed.
-        """
-        def __init__(self, *args, **kwargs):
-            self.model_name = kwargs.pop('model_name')
-            kwargs['related_name'] = 'children'
-            super().__init__(*args, **kwargs)
-
-        def get_other_model(self):
-            schema = all_schemata[system_layout.current_value]
-            if self.model_name in schema.entities:
-                return schema.entities[self.model_name].parent
-            else:
-                return None
-
-        def deconstruct(self, *args, **kwargs):
-            raise NotImplementedError()
-
-    def parent_field_for_model(model_name):
-        return ParentField(model_name=model_name)
+    def deconstruct(self):
+        name = self.name
+        path = "%s.%s" % (self.__class__.__module__, self.__class__.__name__)
+        args = []
+        kwargs = {'model_name': self.model_name}
+        return name, path, args, kwargs
 
 
 class LayoutObject(Model):
@@ -91,9 +81,10 @@ class LayoutObject(Model):
     def save(self, *args, **kwargs):
         # Generate pk to include in default name
         res = super().save(*args, **kwargs)
-        if self._meta.get_field('name') and not self.name:
+        farm_name = Farm.get_solo().name
+        if self._meta.get_field('name') and not self.name and farm_name:
             self.name = "{} {} {}".format(
-                Farm.get_solo().name,
+                farm_name,
                 self.__class__.__name__,
                 self.pk
             )
@@ -134,7 +125,7 @@ class Tray(LayoutObject):
     model = models.ForeignKey(Model3D, null=True, related_name='+')
     num_rows = models.IntegerField(default=0, editable=False)
     num_cols = models.IntegerField(default=0, editable=False)
-    parent = parent_field_for_model('Tray')
+    parent = ParentField('Tray')
     layout_object = models.OneToOneField(
         LayoutObject, parent_link=True, editable=False
     )
@@ -170,7 +161,7 @@ def generate_model_from_entity(entity):
         "width": models.FloatField(default=0),
         "height": models.FloatField(default=0),
         "model": models.ForeignKey(Model3D, null=True, related_name='+'),
-        "parent": parent_field_for_model(entity.name),
+        "parent": ParentField(entity.name),
         "layout_object": models.OneToOneField(
             LayoutObject, parent_link=True, editable=False
         ),

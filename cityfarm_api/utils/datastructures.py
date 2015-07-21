@@ -2,9 +2,6 @@
 This module defines a set of utility functions that can be used by the apps in
 this project
 """
-from django.db.utils import OperationalError
-from farms.models import Farm
-
 class ModelDict(dict):
     """
     :class:`dict` subclass that can use model classes as keys. Internally it
@@ -22,13 +19,3 @@ class ModelDict(dict):
 
     def get_key_for_model(self, model):
         return (model._meta.app_label, model._meta.object_name)
-
-class Singleton(type):
-    def __init__(cls, name, bases, dict):
-        super().__init__(name, bases, dict)
-        cls.instance = None
-
-    def __call__(cls, *args, **kwargs):
-        if cls.instance is None:
-            cls.instance = super().__call__(*args, **kwargs)
-        return cls.instance

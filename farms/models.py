@@ -124,7 +124,7 @@ class Farm(*farm_bases):
             if self._old_layout:
                 raise LayoutChangeAttempted()
             else:
-                from cityfarm_api.state import system_layout
+                from cityfarm_api.utils.state import system_layout
                 with system_layout.as_value(self.layout):
                     call_command('migrate', 'layout', '0001', '--fake')
                     call_command('migrate')

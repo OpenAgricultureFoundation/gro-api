@@ -82,19 +82,21 @@ class TraySerializer(LayoutObjectSerializer):
 
     layout = serializers.HyperlinkedRelatedField(
         view_name='traylayout-detail', queryset=TrayLayout.objects.all(),
-        write_only=True,
+        write_only=True, required=False
     )
 
     def create(self, validated_data):
         layout = validated_data.pop('layout')
-        validated_data['num_rows'] = layout.num_rows
-        validated_data['num_cols'] = layout.num_cols
+        if layout is not None:
+            validated_data['num_rows'] = layout.num_rows
+            validated_data['num_cols'] = layout.num_cols
         res = super().create(validated_data)
-        for layout_site in layout.plant_sites.all():
-            plant_site = PlantSite(
-                parent=res, row=layout_site.row, col=layout_site.col
-            )
-            plant_site.save()
+        if layout is not None:
+            for layout_site in layout.plant_sites.all():
+                plant_site = PlantSite(
+                    parent=res, row=layout_site.row, col=layout_site.col
+                )
+                plant_site.save()
         return res
 
     def update(self, instance, validated_data):

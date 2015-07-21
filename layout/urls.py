@@ -1,5 +1,5 @@
 from django.conf import settings
-from cityfarm_api.state import system_layout
+from cityfarm_api.utils.state import system_layout
 from .models import (
     Model3D, TrayLayout, PlantSiteLayout, LayoutObject, Enclosure, Tray,
     PlantSite, dynamic_models

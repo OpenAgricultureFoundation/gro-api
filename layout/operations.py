@@ -3,8 +3,7 @@ from django.db.migrations.state import ModelState
 from django.db.migrations.operations.base import Operation
 from django.db.migrations.operations.models import CreateModel
 from django.db.migrations.operations.fields import AlterField
-from django.utils.functional import cached_property
-from cityfarm_api.state import system_layout
+from cityfarm_api.utils.state import system_layout
 from layout.models import dynamic_models
 from layout.schemata import all_schemata
 
@@ -19,7 +18,7 @@ class CreateDynamicModels(Operation):
     reduces_to_sql = True
     reversible = False
 
-    @cached_property
+    @property
     def operations(self):
         ops = []
         if system_layout.current_value is None:

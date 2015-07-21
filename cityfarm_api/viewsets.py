@@ -12,10 +12,10 @@ from rest_framework import mixins as rest_mixins
 from rest_framework import views as rest_views
 from rest_framework import viewsets as rest_viewsets
 from rest_framework import generics as rest_generics
-from .utils import ModelDict
+from .utils.state import system_layout
+from .utils.datastructures import ModelDict
 from .errors import FarmNotConfiguredError
 from .serializers import model_serializers
-from .state import system_layout
 
 logger = logging.getLogger(__name__)
 
@@ -39,7 +39,7 @@ class ViewSetRegistry(ModelDict):
         been registered for the model, returns a :class:`ModelViewSet` subclass
         that can operate on the given model
         """
-        if not model in self:
+        if model not in self:
             class ViewSet(ModelViewSet): # pylint: disable=used-before-assignment
                 queryset = model.objects.all()
                 serializer_class = model_serializers.get_for_model(model)

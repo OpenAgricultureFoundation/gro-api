@@ -8,13 +8,11 @@ from django.conf import settings
 from rest_framework import serializers
 from rest_framework.settings import api_settings
 from rest_framework.relations import HyperlinkedRelatedField
-from rest_framework.serializers import (
-    SerializerMetaclass
-)
+from rest_framework.serializers import SerializerMetaclass
 from rest_framework.utils.field_mapping import (
     get_detail_view_name, get_relation_kwargs, get_nested_relation_kwargs
 )
-from .utils import ModelDict
+from .utils.datastructures import ModelDict
 
 logger = logging.getLogger(__name__)
 
@@ -47,7 +45,7 @@ class DynamicHyperlinkedRelatedField(HyperlinkedRelatedField):
     @queryset.setter
     def queryset(self, val):
         # We should never be assigning an actual value to this property
-        assert val == None
+        assert val is None
 
     @property
     def view_name(self):
@@ -91,7 +89,7 @@ class SerializerRegistry(ModelDict):
         try:
             # This may fail if serializer is abstract, such as BaseSerializer
             self[serializer.Meta.model] = serializer
-        except:
+        except AttributeError:
             pass
 
     def get_for_model(self, model):
@@ -100,7 +98,7 @@ class SerializerRegistry(ModelDict):
         has been registered for the model, returns a :class:`BaseSerializer`
         subclass that can operate on the given model.
         """
-        if not model in self:
+        if model not in self:
             _model = model # Scoping is weird
             class Serializer(BaseSerializer): # pylint: disable=used-before-assignment
                 class Meta:

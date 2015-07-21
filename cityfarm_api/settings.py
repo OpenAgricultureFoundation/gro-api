@@ -69,8 +69,10 @@ MIDDLEWARE_CLASSES = (
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
     'django.middleware.security.SecurityMiddleware',
-    'cityfarm_api.middleware.FarmRoutingMiddleware',
+    'cityfarm_api.db_router.FarmRoutingMiddleware',
 )
+
+DATABASE_ROUTERS = ['cityfarm_api.db_router.FarmDbRouter']
 
 ROOT_URLCONF = 'cityfarm_api.urls'
 
@@ -95,6 +97,9 @@ if SERVER_TYPE == LEAF:
         'default': {
             'ENGINE': 'django.db.backends.sqlite3',
             'NAME': os.path.join(BASE_DIR, 'db.sqlite3'),
+            'TEST': {
+                'SERIALIZE': False,
+            }
         }
     }
 if SERVER_TYPE == ROOT:
@@ -183,6 +188,28 @@ for app_name in CITYFARM_API_APPS:
         'propagate': True,
     }
 
+SECRET_FILE = os.path.join(BASE_DIR, 'secret.txt')
+try:
+    SECRET_KEY = open(SECRET_FILE).read().strip()
+except IOError:
+    try:
+        import random
+        VALID_CHARACTERS = "{}{}{}".format(
+            string.ascii_letters,
+            string.digits,
+            string.punctuation,
+        )
+        CHARACTER = lambda: random.SystemRandom().choice(VALID_CHARACTERS)
+        SECRET_KEY = ''.join([CHARACTER() for i in range(50)])
+        SECRET = open(SECRET_FILE, 'w')
+        SECRET.write(SECRET_KEY)
+        SECRET.close()
+    except IOError:
+        raise Exception(
+            'Failed to write secret key to secret file at '
+            '{}'.format(SECRET_FILE)
+        )
+
 if SERVER_MODE == DEVELOPMENT:
     DEBUG = True
     LOGGING['handlers']['file']['filename'] = \
@@ -191,7 +218,6 @@ if SERVER_MODE == DEVELOPMENT:
     for app_name in CITYFARM_API_APPS:
         LOGGING['loggers'][app_name]['handlers'].append('console')
     ALLOWED_HOSTS = []
-    SECRET_KEY = '))r--wwm1h@2n7x^b(o)e(*ziq+_l2*lxfpd7tdnq9qgtwlq@_'
 else:
     DEBUG = False
     LOGGING['handlers']['file']['filename'] = '/var/log/cityfarm_api.log'
@@ -200,27 +226,6 @@ else:
         ".media.mit.edu",
         ".media.mit.edu.",
     ]
-    SECRET_FILE = os.path.join(BASE_DIR, 'secret.txt')
-    try:
-        SECRET_KEY = open(SECRET_FILE).read().strip()
-    except IOError:
-        try:
-            import random
-            VALID_CHARACTERS = "{}{}{}".format(
-                string.ascii_letters,
-                string.digits,
-                string.punctuation,
-            )
-            CHARACTER = lambda: random.SystemRandom().choice(VALID_CHARACTERS)
-            SECRET_KEY = ''.join([CHARACTER() for i in range(50)])
-            SECRET = open(SECRET_FILE, 'w')
-            SECRET.write(SECRET_KEY)
-            SECRET.close()
-        except IOError:
-            raise Exception(
-                'Failed to write secret key to secret file at '
-                '{}'.format(SECRET_FILE)
-            )
     CSRF_COOKIE_SECURE = True
     SESSION_COOKIE_SECURE = True
     CONN_MAX_AGE = None

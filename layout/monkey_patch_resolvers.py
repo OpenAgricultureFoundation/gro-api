@@ -1,15 +1,18 @@
 import sys
+import logging
 from django import http
 from django.conf import settings
 from django.core import signals, urlresolvers
+from django.core.handlers.base import BaseHandler
 from django.core.exceptions import (
     MiddlewareNotUsed, PermissionDenied, SuspiciousOperation,
 )
 from django.http.multipartparser import MultiPartParserError
-from django.core.handlers.base import BaseHandler
 from django.utils import lru_cache
-from cityfarm_api.state import system_layout
-from cityfarm_api.urls import get_current_urls
+from django.views import debug
+from cityfarm_api.utils.state import system_layout
+
+django_handlers_logger = logging.getLogger('django.request')
 
 class FakeURLConfModule:
     def __init__(self, urls):
@@ -17,6 +20,9 @@ class FakeURLConfModule:
 
 @lru_cache.lru_cache(maxsize=None)
 def inner_get_resolver(urlconf, layout):
+    # Loading this upon module import causes problems, so we're going to be
+    # lazy about it
+    from cityfarm_api.urls import get_current_urls
     return urlresolvers.RegexURLResolver(
         r'^/', FakeURLConfModule(get_current_urls())
     )
@@ -105,7 +111,7 @@ def new_get_response(self, request):
             response = response.render()
 
     except http.Http404 as e:
-        logger.warning('Not Found: %s', request.path,
+        django_handlers_logger.warning('Not Found: %s', request.path,
                     extra={
                         'status_code': 404,
                         'request': request
@@ -116,7 +122,7 @@ def new_get_response(self, request):
             response = self.get_exception_response(request, resolver, 404)
 
     except PermissionDenied:
-        logger.warning(
+        django_handlers_logger.warning(
             'Forbidden (Permission denied): %s', request.path,
             extra={
                 'status_code': 403,
@@ -125,7 +131,7 @@ def new_get_response(self, request):
         response = self.get_exception_response(request, resolver, 403)
 
     except MultiPartParserError:
-        logger.warning(
+        django_handlers_logger.warning(
             'Bad request (Unable to parse request body): %s', request.path,
             extra={
                 'status_code': 400,
