@@ -16,7 +16,6 @@ class CreateDynamicModels(Operation):
     correct model. It cannot be run in reverse.
     """
     reduces_to_sql = True
-    reversible = False
 
     @property
     def operations(self):
@@ -66,7 +65,10 @@ class CreateDynamicModels(Operation):
 
     def database_backwards(self, app_label, schema_editor, from_state,
                            to_state):
-        raise NotImplementedError()
+        for operation in self.operations:
+            operation.database_backwards(
+                app_label, schema_editor, from_state, to_state
+            )
 
     def describe(self):
         return "Creating dynamic models for system layout {}".format(

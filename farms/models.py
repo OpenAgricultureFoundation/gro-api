@@ -12,6 +12,7 @@ from rest_framework import status
 from rest_framework.exceptions import APIException
 from cityfarm_api.models import Model
 from layout.schemata import all_schemata
+from control.routines import SetupLayout
 
 logger = logging.getLogger(__name__)
 
@@ -126,8 +127,7 @@ class Farm(*farm_bases):
             else:
                 from cityfarm_api.utils.state import system_layout
                 with system_layout.as_value(self.layout):
-                    call_command('migrate', 'layout', '0001', '--fake')
-                    call_command('migrate')
+                    SetupLayout().run()
         self._old_layout = self.layout
         if self.slug:
             # Register this farm with the root server

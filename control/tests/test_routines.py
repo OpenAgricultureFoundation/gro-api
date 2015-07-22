@@ -26,7 +26,6 @@ class RoutineTestCase(TestCase):
             self.assertEqual(subresult['log'], '')
             self.assertEqual(subresult['error'], '')
             self.assertEqual(subresult['returncode'], 0)
-        command_count = 0
 
     def test_invalid_routine(self):
         class TestRoutine(Routine):

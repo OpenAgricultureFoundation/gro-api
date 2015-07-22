@@ -4,6 +4,7 @@ subclass to be used for managing urls in this project.
 """
 import logging
 import importlib
+from collections import OrderedDict
 from django.apps import apps
 from django.conf import settings
 from django.utils.functional import cached_property
@@ -128,6 +129,6 @@ class BaseRouter(routers.DefaultRouter):
                         request=request,
                         format=kwargs.pop('format', None)
                     )
-                return response.Response(ret)
+                return response.Response(OrderedDict(sorted(ret.items())))
 
         return APIRoot.as_view()

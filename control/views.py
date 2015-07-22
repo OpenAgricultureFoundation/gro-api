@@ -11,8 +11,10 @@ from .routines import Routine
 
 all_views = {}
 
-for routine in Routine.__subclasses__():
+for routine_class in Routine.__subclasses__():
+    if routine_class.hidden:
+        continue
     @api_view()
-    def view_func(request):
-        return Response(routine().to_json())
-    all_views[slugify(routine.title.lower())] = view_func
+    def view_func(request, routine=routine_class()):
+        return Response(routine.to_json())
+    all_views[slugify(routine_class.title.lower())] = view_func

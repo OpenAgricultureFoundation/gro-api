@@ -4,8 +4,9 @@ used by this app.
 """
 
 import logging
-from control.commands import Command, ReloadWorkers
-logger = logging.getLogger('cityfarm_api.control')
+from django.conf import settings
+from control.commands import Command, Flush, migrate, ReloadWorkers
+logger = logging.getLogger(__name__)
 
 
 class Routine:
@@ -18,6 +19,8 @@ class Routine:
     """
     #: The title of this routine
     title = 'Unnamed Routine'
+    #: Whether or not a URL should be generated for this routine
+    hidden = False
 
     def __init__(self):
         self.commands = [CommandCls() for CommandCls in self.command_classes]
@@ -29,17 +32,30 @@ class Routine:
                 raise TypeError('Routine can only hold Command subclasses')
 
     def run(self):
+        logger.info('Running routine "%s"', self.title)
         for command in self.commands:
-            logger.info('Running command "{}"'.format(command.title))
+            logger.info('Running command "%s"', command.title)
             command.run()
 
     def to_json(self):
         result = []
         for command in self.commands:
-            logger.info('Running command "{}"'.format(command.title))
+            logger.info('Running command "%s"', command.title)
             result.append(command.to_json())
         return result
 
+class SetupLayout(Routine):
+    hidden = True
+    title = 'Setup Layout'
+    command_classes = (migrate('layout', '0001'), migrate())
+
+
 class Restart(Routine):
     title = 'Restart'
-    command_classes = [ReloadWorkers, ]
+    command_classes = (ReloadWorkers,)
+
+
+class Reset(Routine):
+    title = 'Reset'
+    command_classes = (Flush,) + tuple(migrate(app_name, 'zero') for app_name
+            in settings.CITYFARM_API_APPS) + (migrate(),)
