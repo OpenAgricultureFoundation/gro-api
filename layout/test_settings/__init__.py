@@ -1,4 +1,0 @@
-LAYOUT_TEST_UNCONFIGURED = "unconfigured"
-LAYOUT_TEST_TRAY = "tray"
-LAYOUT_TEST_BAY = "bay"
-LAYOUT_TEST_AISLE = "aisle"

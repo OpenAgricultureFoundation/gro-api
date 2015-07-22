@@ -5,7 +5,5 @@ install:
     - pip install coverage
     - pip install coveralls
     - source .env
-script:
-    - coverage run --source=. --omit=env/*,*test*,*migrations* manage.py test
-    - coverage report -m
-after-success: coveralls --verbose
+script: coverage run --source=. --omit=env/*,*test*,*migrations* manage.py test
+after_success: coveralls

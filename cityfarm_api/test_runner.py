@@ -8,4 +8,4 @@ class TestRunner(DiscoverRunner):
             return super().setup_databases()
     def run_tests(self, *args, **kwargs):
         logging.disable(logging.ERROR)
-        super().run_tests(*args, **kwargs)
+        return super().run_tests(*args, **kwargs)
