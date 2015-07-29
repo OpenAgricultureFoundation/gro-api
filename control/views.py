@@ -12,8 +12,6 @@ from .routines import Routine
 all_views = {}
 
 for routine_class in Routine.__subclasses__():
-    if routine_class.hidden:
-        continue
     @api_view()
     def view_func(request, routine=routine_class()):
         return Response(routine.to_json())

@@ -4,7 +4,7 @@ from django.db.migrations.operations.base import Operation
 from django.db.migrations.operations.models import CreateModel
 from django.db.migrations.operations.fields import AlterField
 from cityfarm_api.utils.state import system_layout
-from layout.models import dynamic_models
+from layout.models import dynamic_models, ParentField
 from layout.schemata import all_schemata
 
 
@@ -47,8 +47,7 @@ class CreateDynamicModels(Operation):
                 create_model(entity)
         tray_to_model = 'layout.%s' % schema.entities['Tray'].parent
         ops.append(AlterField(
-            'tray', 'parent',
-            models.ForeignKey(to=tray_to_model, related_name='children')
+            'tray', 'parent', ParentField(model_name='Tray')
         ))
         return ops
 

@@ -7,7 +7,6 @@ because they provide useful additional functionality
 
 import logging
 import importlib
-from django.db.utils import OperationalError
 from django.conf import settings
 from rest_framework import mixins as rest_mixins
 from rest_framework import views as rest_views
@@ -113,22 +112,11 @@ class ModelViewSet(rest_mixins.CreateModelMixin,
     """
     pass
 
-class SingletonViewSetBase(APIViewMetaclass):
-    def __init__(cls, name, bases, attrs):
-        if 'model' in attrs:
-            try:
-                attrs['model'].get_solo()
-            except OperationalError:
-                # It's confusing to see this error on viewset initialization.
-                # It'll come up later unless the problem fixes itself
-                pass
-        super().__init__(name, bases, attrs)
-
 class SingletonViewSet(rest_mixins.RetrieveModelMixin,
                        rest_mixins.UpdateModelMixin,
                        rest_mixins.ListModelMixin,
                        GenericViewSet,
-                       metaclass=SingletonViewSetBase):
+                       metaclass=APIViewMetaclass):
     """
     Version of :class:`ModelViewSet` that works for
     :class:`solo.models.SingletonModel` instances. It doesn't allows for creates

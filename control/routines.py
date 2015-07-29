@@ -5,57 +5,42 @@ used by this app.
 
 import logging
 from django.conf import settings
-from control.commands import Command, Flush, migrate, ReloadWorkers
+from control.commands import Command, Flush, Migrate, ReloadWorkers
 logger = logging.getLogger(__name__)
 
 
 class Routine:
     """
-    A base class for all routines in this module. Subclasses of this class
-    must define an attribute :attr:`command_classes` which is a list of
-    :class:`~control.commands.Command` subclasses to run for this routine. They
-    should also define an attribute :attr:`title` which is the name of the
-    routine being run.
+    Abstract base class for all routines in this module. Subclasses of this
+    class must define an attribute :attr:`commands` which is a list of
+    :class:`~control.commands.Command` instances to run for this routine. They
+    should also define an attribute :attr:`title` which is the name of this
+    routine.
     """
     #: The title of this routine
     title = 'Unnamed Routine'
-    #: Whether or not a URL should be generated for this routine
-    hidden = False
 
-    def __init__(self):
-        self.commands = [CommandCls() for CommandCls in self.command_classes]
+    def __call__(self):
+        logger.info('Running routine "%s"', self.title)
+        for command in self.commands:
+            command()
 
     @classmethod
     def check(self):
-        for command_class in self.command_classes:
-            if not issubclass(command_class, Command):
-                raise TypeError('Routine can only hold Command subclasses')
-
-    def run(self):
-        logger.info('Running routine "%s"', self.title)
         for command in self.commands:
-            logger.info('Running command "%s"', command.title)
-            command.run()
+            if not isinstance(command, Command):
+                raise TypeError('Routine can only hold Command instances')
 
     def to_json(self):
-        result = []
-        for command in self.commands:
-            logger.info('Running command "%s"', command.title)
-            result.append(command.to_json())
-        return result
-
-class SetupLayout(Routine):
-    hidden = True
-    title = 'Setup Layout'
-    command_classes = (migrate('layout', '0001'), migrate())
+        return [command.to_json() for command in self.commands]
 
 
 class Restart(Routine):
     title = 'Restart'
-    command_classes = (ReloadWorkers,)
+    commands = (ReloadWorkers(),)
 
 
 class Reset(Routine):
     title = 'Reset'
-    command_classes = (Flush,) + tuple(migrate(app_name, 'zero') for app_name
-            in settings.CITYFARM_API_APPS) + (migrate(),)
+    commands = (Flush(),) + tuple(Migrate(app_name, 'zero') for app_name
+            in settings.CITYFARM_API_APPS) + (Migrate(), ReloadWorkers())

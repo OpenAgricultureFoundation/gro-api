@@ -3,6 +3,15 @@ from __future__ import unicode_literals
 
 from django.db import models, migrations
 
+def load_fixture(apps, schema_editor):
+    from django.core.management import call_command
+    call_command('loaddata', 'initial_resources', app_label='resources')
+
+def unload_fixture(apps, schema_editor):
+    ResourceType = apps.get_model("resources", "ResourceType")
+    ResourceType.objects.filter(read_only=True).delete()
+    ResourceProperty = apps.get_model("resources", "ResourceProperty")
+    ResourceProperty.objects.filter(read_only=True).delete()
 
 class Migration(migrations.Migration):
 
@@ -56,5 +65,8 @@ class Migration(migrations.Migration):
             model_name='resource',
             name='resource_type',
             field=models.ForeignKey(related_name='resources', to='resources.ResourceType'),
+        ),
+        migrations.RunPython(
+            load_fixture, reverse_code=unload_fixture
         ),
     ]

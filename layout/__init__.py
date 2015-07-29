@@ -9,3 +9,4 @@ is also possible to define custom layout schema in simple configuration files.
 For more information on the structure of these files, see
 :file:`schemata/__init__.py`.
 """
+default_app_config = 'layout.apps.LayoutConfig'

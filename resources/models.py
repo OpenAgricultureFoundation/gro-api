@@ -19,3 +19,5 @@ class Resource(Model):
     name = models.CharField(max_length=100)
     resource_type = models.ForeignKey(ResourceType, related_name='resources')
     location = models.ForeignKey(LayoutObject, related_name='resources')
+    def __str__(self):
+        return self.name

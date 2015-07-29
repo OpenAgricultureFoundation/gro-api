@@ -1,18 +1,23 @@
 from contextlib import contextmanager
 from django.db.utils import OperationalError
-from django.core.cache import cache
 from django.conf import settings
 from django.utils.functional import cached_property
 from .functional import Singleton
 from layout.schemata import all_schemata
+
+if settings.SERVER_TYPE == settings.LEAF:
+    from django.core.cache import caches
+    get_cache = lambda: caches['default']
+else:
+    # Use the per-request cache
+    raise NotImplementedError()
 
 class SystemLayout(metaclass=Singleton):
     """
     This is a state variable the represents the layout of the current farm. The
     current value is read from the singleton farm instance
     """
-    cache_key = 'system_layout'
-    cache_timeout = 30  # 30 seconds
+    cache_key = 'layout'
 
     def __init__(self):
         self.use_mock_value = False
@@ -22,15 +27,16 @@ class SystemLayout(metaclass=Singleton):
     def current_value(self):
         if self.use_mock_value:
             return self.mock_value
-        val = cache.get(self.cache_key)
-        if val is None:
-            from farms.models import Farm
-            try:
-                val = Farm.get_solo().layout
-                cache.set(self.cache_key, val, self.cache_timeout)
-            except OperationalError:
-                pass
-        return val
+        cache = get_cache()
+        if self.cache_key in cache:
+            return cache.get(cache_key)
+        from farms.models import Farm
+        try:
+            val = Farm.get_solo().layout
+            cache.set(self.cache_key, val)
+            return val
+        except OperationalError:
+            return None
 
     @cached_property
     def allowed_values(self):
@@ -59,9 +65,15 @@ class LayoutDependentAttribute:
     A descriptor that behaves like an attribute but stores a different value
     depending on the layout of the current farm.
     """
-    def __init__(self, name, default=None):
+    def __init__(self, name, **kwargs):
+        # We really only want to access the keyword argument `default`, but we
+        # need to differentiate between a None `default` and no default, so we
+        # can't give the argument a default value, and we have to use a general
+        # dict
         self.name = name
-        self.default = default
+        if 'default' in kwargs:
+            self.default = kwargs.pop('default')
+        assert len(kwargs) == 0
 
     @property
     def internal_name(self):
@@ -70,14 +82,12 @@ class LayoutDependentAttribute:
     def __get__(self, instance, instance_type=None):
         if instance is None:
             return self
-        if system_layout.current_value is None:
-            return self.default
-        else:
-            return getattr(instance, self.internal_name, None)
+        if not hasattr(instance, self.internal_name):
+            setattr(instance, self.internal_name, self.default())
+        return getattr(instance, self.internal_name)
 
     def __set__(self, instance, value):
-        if system_layout.current_value is not None:
-            setattr(instance, self.internal_name, value)
+        setattr(instance, self.internal_name, value)
 
 class LayoutDependentCachedProperty:
     """
@@ -85,11 +95,10 @@ class LayoutDependentCachedProperty:
     property cached on the instance dependent on the layout of the current
     farm.
     """
-    def __init__(self, func, default=None):
+    def __init__(self, func):
         self.name = func.__name__
         self.func = func
         self.__doc__ = getattr(func, '__doc__')
-        self.default = default
 
     @property
     def internal_name(self):
@@ -98,8 +107,12 @@ class LayoutDependentCachedProperty:
     def __get__(self, instance, instance_type=None):
         if instance is None:
             return self
-        if system_layout.current_value is None:
-            return self.default
         if not hasattr(instance, self.internal_name):
             setattr(instance, self.internal_name, self.func(instance))
         return getattr(instance, self.internal_name)
+
+    def __set__(self, instance, value):
+        # We define this function only so that instances of this class will be
+        # data descriptors and can overshadow attributes by the same name in
+        # the instance dictionary
+        raise NotImplementedError()

@@ -10,13 +10,14 @@ from django.db.models import CASCADE
 from django.db.models.fields import Field
 from django.db.models.fields.related import (
     RelatedField, ForeignObject, ForeignKey, ForeignObjectRel,
-    add_lazy_relation, ReverseSingleRelatedObjectDescriptor
+    add_lazy_relation, ForeignRelatedObjectsDescriptor,
+    ReverseSingleRelatedObjectDescriptor
 )
 from django.utils.encoding import force_text
 from django.utils.functional import cached_property
 from django.utils.translation import ugettext_lazy as _
 from cityfarm_api.utils.state import (
-    system_layout, LayoutDependentAttribute
+    system_layout, LayoutDependentAttribute, LayoutDependentCachedProperty
 )
 
 class LayoutRelatedField(RelatedField):
@@ -33,7 +34,7 @@ class LayoutRelatedField(RelatedField):
     """
     # It is useful to have some indicator that this field is dynamic
     is_dynamic = True
-    to = LayoutDependentAttribute('to')
+    to = LayoutDependentAttribute('to', default=lambda: None)
 
     def __init__(self, *args, **kwargs):
         for state in system_layout.allowed_values:
@@ -98,15 +99,11 @@ class LayoutRelatedField(RelatedField):
                     # used for `state`. Just leave the null value there
                     continue
                 if isinstance(other, str) or other._meta.pk is None:
-                    def resolve_related_class(
-                        field, model, cls, state=system_layout.current_value
-                    ):
+                    def resolve_related_class(field, model, cls, state=state):
                         with system_layout.as_value(state):
                             field.to = model
                             field.do_related_class(model, cls)
-                    add_lazy_relation(
-                        cls, self, other, resolve_related_class
-                    )
+                    add_lazy_relation(cls, self, other, resolve_related_class)
                 else:
                     self.do_related_class(other, cls)
 
@@ -155,7 +152,7 @@ class LayoutManyToOneRel(LayoutForeignObjectRel):
     that uses the result of :class:`LayoutForeignObjectRel` as a base instead
     of :class:`~django.db.models.fields.related.ForeignObjectRel`.
     """
-    field_name = LayoutDependentAttribute('field_name')
+    field_name = LayoutDependentAttribute('field_name', default=None)
     def __init__(self, field, field_name, related_name=None, \
             limit_choices_to=None, parent_link=False, on_delete=None, \
             related_query_name=None):
@@ -167,6 +164,15 @@ class LayoutManyToOneRel(LayoutForeignObjectRel):
         for state in system_layout.allowed_values:
             with system_layout.as_value(state):
                 self.field_name = field_name
+
+class LayoutForeignRelatedObjectsDescriptor(ForeignRelatedObjectsDescriptor):
+    related = LayoutDependentAttribute('related')
+    def __init__(self):
+        pass
+
+    @LayoutDependentCachedProperty
+    def related_manager_cls(self):
+        return ForeignRelatedObjectsDescriptor.related_manager_cls.func(self)
 
 class LayoutForeignObject(ForeignObject, LayoutRelatedField):
     """
@@ -180,7 +186,11 @@ class LayoutForeignObject(ForeignObject, LayoutRelatedField):
     returns the name of the model that this field points to for the current
     state.
     """
-    _related_fields = LayoutDependentAttribute('related_fields')
+    _related_fields = LayoutDependentAttribute(
+        'related_fields', default=lambda: None
+    )
+    related_accessor_class = LayoutForeignRelatedObjectsDescriptor
+
     def __init__(self, from_fields, to_fields, swappable=True, **kwargs):
         self.from_fields = from_fields
         self.to_fields = to_fields = to_fields
@@ -234,13 +244,14 @@ class LayoutForeignObject(ForeignObject, LayoutRelatedField):
 
     def contribute_to_related_class(self, cls, related):
         if not related.hidden and not related.related_model._meta.swapped:
-            # This has to be idempotent so that  it can be called once per
+            # This has to be idempotent so that it can be called once per
             # state
             if not hasattr(cls, related.get_accessor_name()):
                 setattr(
                     cls, related.get_accessor_name(),
-                    self.related_accessor_class(related)
+                    self.related_accessor_class()
                 )
+            getattr(cls, related.get_accessor_name()).related = related
             if related.limit_choices_to:
                 cls._meta.related_fkey_lookups.append(
                     related.limit_choices_to
@@ -292,9 +303,9 @@ class LayoutForeignKey(LayoutForeignObject, ForeignKey):
         """
         self.generated_to_field = True
         for layout in system_layout.allowed_values:
-           with system_layout.as_value(layout):
-               if self.to is not None:
-                   return self.to._meta.pk.name
+            with system_layout.as_value(layout):
+                if self.to is not None:
+                    return self.to._meta.pk.name
 
     def check(self, **kwargs):
         errors = LayoutForeignObject.check(self, **kwargs)

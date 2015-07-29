@@ -1,10 +1,12 @@
 from django.db import models
+from django.db.utils import OperationalError
 from django.db.models import ForeignKey, PositiveIntegerField
+from django.db.models.signals import post_save
+from django.dispatch import receiver
 from django.conf import settings
-from solo.models import SingletonModel
 from model_utils.managers import InheritanceManager
 from cityfarm_api.utils.state import system_layout
-from cityfarm_api.models import Model
+from cityfarm_api.models import Model, SingletonModel
 from cityfarm_api.fields import LayoutForeignKey
 from farms.models import Farm
 from .schemata import all_schemata
@@ -39,6 +41,7 @@ class PlantSiteLayout(Model):
         return "(r={}, c={}) in {}".format(
             self.row, self.col, self.parent.name
         )
+
 
 class ParentField(LayoutForeignKey):
     """
@@ -112,6 +115,14 @@ class Enclosure(LayoutObject, SingletonModel):
     def __str__(self):
         return self.name
 
+@receiver(post_save, sender=Farm)
+def create_singleton_instance(sender, instance, **kwargs):
+    if instance.name is not None:
+        try:
+            Enclosure.get_solo()
+        except OperationalError:
+            pass
+
 
 class Tray(LayoutObject):
     id = models.AutoField(primary_key=True)
@@ -125,7 +136,7 @@ class Tray(LayoutObject):
     model = models.ForeignKey(Model3D, null=True, related_name='+')
     num_rows = models.IntegerField(default=0, editable=False)
     num_cols = models.IntegerField(default=0, editable=False)
-    parent = ParentField('Tray')
+    parent = ParentField(model_name='Tray')
     layout_object = models.OneToOneField(
         LayoutObject, parent_link=True, editable=False
     )

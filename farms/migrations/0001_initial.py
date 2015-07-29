@@ -13,29 +13,13 @@ class Migration(migrations.Migration):
         migrations.CreateModel(
             name='Farm',
             fields=[
-                ('id', models.AutoField(
-                    auto_created=True, verbose_name='ID', primary_key=True,
-                    serialize=False
-                )),
-                ('root_id', models.IntegerField(null=True, editable=False)),
-                ('name', models.CharField(null=True, max_length=100)),
-                ('slug', models.SlugField(
-                    null=True, max_length=100, unique=True, blank=True
-                )),
-                ('root_server', models.URLField(
-                    null=True, default='http://cityfarm.media.mit.edu'
-                )),
-                ('ip', models.GenericIPAddressField(
-                    null=True, editable=False
-                )),
-                ('layout', models.SlugField(
-                    null=True,
-                    choices=[
-                        ('aisle', 'aisle'),
-                        ('bay', 'bay'),
-                        ('tray', 'tray')
-                    ]
-                )),
+                ('id', models.AutoField(auto_created=True, verbose_name='ID', primary_key=True, serialize=False)),
+                ('root_id', models.IntegerField(editable=False, null=True)),
+                ('name', models.CharField(max_length=100, null=True)),
+                ('slug', models.SlugField(max_length=100, unique=True, blank=True, null=True)),
+                ('root_server', models.URLField(default='http://cityfarm.media.mit.edu', null=True)),
+                ('ip', models.GenericIPAddressField(editable=False, null=True)),
+                ('layout', models.SlugField(choices=[('aisle', 'Single Aisle'), ('bay', 'Single Bay'), ('tray', 'Single Tray (i.e. GroBot)')], null=True)),
             ],
             options={
                 'managed': True,

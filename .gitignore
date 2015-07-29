@@ -63,6 +63,7 @@ env
 .env
 fifo
 *.swp
+*.swo
 secret.txt
 cityfarm_api/media/*
 cityfarm_api/static/*

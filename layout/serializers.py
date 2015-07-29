@@ -4,7 +4,7 @@ layout.models module
 """
 from rest_framework import serializers
 from cityfarm_api.serializers import BaseSerializer
-from layout.models import (
+from .models import (
     Enclosure, Tray, PlantSite, dynamic_models, TrayLayout, PlantSiteLayout
 )
 
@@ -13,14 +13,10 @@ class TrayLayoutSerializer(BaseSerializer):
     class Meta:
         model = TrayLayout
     condition = serializers.ChoiceField(
-        ('all', 'odd', 'even', 'none'), write_only=True
+        ('all', 'odd', 'even', 'none'), write_only=True, required=False
     )
 
-    def create(self, validated_data):
-        num_rows = validated_data.get('num_rows')
-        num_cols = validated_data.get('num_cols')
-        condition = validated_data.pop('condition')
-        res = super().create(validated_data)
+    def create_sites(self, instance, condition):
         if condition == 'all':
             def should_create(row, col):
                 return True
@@ -33,12 +29,31 @@ class TrayLayoutSerializer(BaseSerializer):
         elif condition == 'none':
             def should_create(row, col):
                 return False
-        for row in range(num_rows):
-            for col in range(num_cols):
+        for row in range(instance.num_rows):
+            for col in range(instance.num_cols):
                 if should_create(row, col):
-                    site = PlantSiteLayout(parent=res, row=row, col=col)
+                    site = PlantSiteLayout(parent=instance, row=row, col=col)
                     site.save()
-        return res
+
+    def clear_sites(self, instance):
+        for site in instance.plant_sites.all():
+            site.delete()
+
+    def create(self, validated_data):
+        condition = validated_data.pop('condition', 'none')
+        instance = super().create(validated_data)
+        self.create_sites(instance, condition)
+        return instance
+
+    def update(self, instance, validated_data):
+        instance.name = validated_data.get('name', instance.name)
+        instance.num_rows = validated_data.get('num_rows', instance.num_rows)
+        instance.num_cols = validated_data.get('num_cols', instance.num_cols)
+        condition = validated_data.pop('condition', 'none')
+        self.clear_sites(instance)
+        self.create_sites(instance, condition)
+        instance.save()
+        return instance
 
 
 class EnclosureSerializer(BaseSerializer):
@@ -85,22 +100,33 @@ class TraySerializer(LayoutObjectSerializer):
         write_only=True, required=False
     )
 
+    def create_sites(self, instance, layout):
+        for layout_site in layout.plant_sites.all():
+            plant_site = PlantSite(
+                parent=instance, row=layout_site.row, col=layout_site.col
+            )
+            plant_site.save()
+
+    def clear_sites(self, instance):
+        for plant_site in instance.plant_sites.all():
+            plant_site.delete()
+
     def create(self, validated_data):
         layout = validated_data.pop('layout')
         if layout is not None:
             validated_data['num_rows'] = layout.num_rows
             validated_data['num_cols'] = layout.num_cols
-        res = super().create(validated_data)
+        instance = super().create(validated_data)
         if layout is not None:
-            for layout_site in layout.plant_sites.all():
-                plant_site = PlantSite(
-                    parent=res, row=layout_site.row, col=layout_site.col
-                )
-                plant_site.save()
-        return res
+            self.create_sites(instance, layout)
+        return instance
 
     def update(self, instance, validated_data):
-        raise NotImplementedError()
+        if 'layout' in validated_data:
+            layout = validated_data.pop('layout')
+            self.clear_sites(instance)
+            self.create_sites(instance, layout)
+        return super().update(instance, validated_data)
 
 for entity_name, entity_model in dynamic_models.items():
     class Serializer(LayoutObjectSerializer):

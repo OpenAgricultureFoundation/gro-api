@@ -3,6 +3,7 @@ Django settings for cityfarm_api project.
 """
 
 import os
+import sys
 import string
 
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
@@ -36,6 +37,7 @@ CITYFARM_API_APPS = (
     'plants',
     'resources',
     'sensors',
+    'actuators',
 )
 
 if SERVER_TYPE == LEAF:
@@ -69,8 +71,13 @@ MIDDLEWARE_CLASSES = (
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
     'django.middleware.security.SecurityMiddleware',
-    'cityfarm_api.db_router.FarmRoutingMiddleware',
 )
+
+if SERVER_TYPE == ROOT:
+    MIDDLEWARE_CLASSES += (
+        'cityfarm_api.middleware.RequestCacheMiddleware',
+        'cityfarm_api.middleware.FarmRoutingMiddleware',
+    )
 
 CORS_ORIGIN_ALLOW_ALL = True
 
@@ -92,7 +99,8 @@ TEMPLATES = [
     },
 ]
 
-DATABASE_ROUTERS = ['cityfarm_api.db_router.FarmDbRouter']
+if SERVER_TYPE == ROOT:
+    DATABASE_ROUTERS = ['cityfarm_api.middleware.FarmDbRouter']
 
 STATIC_URL = '/static/'
 STATIC_ROOT = os.path.join(BASE_DIR, 'cityfarm_api', 'static')
@@ -124,29 +132,28 @@ if SERVER_TYPE == LEAF:
         }
     }
 else:
-    DATABASES = {
-        'default': {
-            'ENGINE': 'django.db.backends.sqlite3',
-            'NAME': os.path.join(BASE_DIR, 'db.sqlite3'),
-        },
-    }
+    if 'test' in sys.argv:
+        # TODO: Setup a database for every possible layout
+        raise NotImplementedError()
+    else:
+        # TODO: Setup a database for every registered farm
+        DATABASES = {
+            'default': {
+                'ENGINE': 'django.db.backends.sqlite3',
+                'NAME': os.path.join(BASE_DIR, 'db.sqlite3'),
+            },
+        }
+        raise NotImplementedError()
 CONN_MAX_AGE = None
 
 # Caching
 
-if SERVER_MODE == DEVELOPMENT:
-    pass
-else:
-    CACHES = {
-        'default': {
-            'BACKEND': 'django.core.cache.backends.memcached.MemcachedCache',
-            'LOCATION': '127.0.0.1:11211',
-        },
+# TODO: Make this better
+CACHES = {
+    'default': {
+        'BACKEND': 'django.core.cache.backends.dummy.DummyCache'
     }
-
-SOLO_CACHE = 'default'
-SOLO_CACHE_PREFIX = 'solo'
-SOLO_CACHE_TIMEOUT = 60*5  # 5 minutes
+}
 
 # Logging
 
@@ -155,8 +162,8 @@ LOGGING = {
     'disable_existing_loggers': False,
     'formatters': {
         'verbose': {
-            'format': '%(levelname)s %(asctime)s %(module)s %(process)d' +
-                      '%(thread)d %(message)s',
+            'format': '%(levelname)s %(asctime)s %(pathname)s %(lineno)d ' +
+                      '%(message)s',
         },
         'simple': {
             'format': '%(levelname)s %(message)s',
@@ -164,7 +171,7 @@ LOGGING = {
     },
     'handlers': {
         'console': {
-            'level': 'INFO',
+            'level': 'DEBUG' if SERVER_MODE == DEVELOPMENT else 'INFO',
             'class': 'logging.StreamHandler',
             'formatter': 'simple',
         },

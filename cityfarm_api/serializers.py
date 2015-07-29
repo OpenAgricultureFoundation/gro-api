@@ -12,6 +12,7 @@ from rest_framework.serializers import SerializerMetaclass
 from rest_framework.utils.field_mapping import (
     get_detail_view_name, get_relation_kwargs, get_nested_relation_kwargs
 )
+from .utils.state import LayoutDependentAttribute
 from .utils.datastructures import ModelDict
 
 logger = logging.getLogger(__name__)
@@ -138,6 +139,7 @@ class BaseSerializer(serializers.HyperlinkedModelSerializer,
     """
     Base class used for all serializers in this project.
     """
+    _fields = LayoutDependentAttribute('fields')
     serializer_related_field = SmartHyperlinkedRelatedField
 
     def __init__(self, *args, **kwargs):

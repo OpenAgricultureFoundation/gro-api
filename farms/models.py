@@ -4,34 +4,37 @@ import tortilla
 from slugify import slugify
 from urllib.parse import urlparse
 from django.db import models
+from django.db.utils import OperationalError
+from django.db.models.signals import post_migrate
+from django.dispatch import receiver
 from django.core.management import call_command
 from django.conf import settings
 from django.utils.translation import ugettext_lazy as _
-from solo.models import SingletonModel
 from rest_framework import status
 from rest_framework.exceptions import APIException
-from cityfarm_api.models import Model
 from layout.schemata import all_schemata
-from control.routines import SetupLayout
+from control.commands import Migrate
 
 logger = logging.getLogger(__name__)
 
-LAYOUT_CHOICES = ((key, val.name) for key, val in all_schemata.items())
+LAYOUT_CHOICES = ((key, val.description) for key, val in all_schemata.items())
 LAYOUT_CHOICES = sorted(LAYOUT_CHOICES, key=lambda choice: choice[0])
 
-farm_bases = (Model,)
 if settings.SERVER_TYPE == settings.LEAF:
     RootIdField = models.IntegerField
     root_id_kwargs = {
         'editable': False,
         'null': True
     }
-    farm_bases = farm_bases + (SingletonModel,)
+    from cityfarm_api.models import SingletonModel
+    farm_base = SingletonModel
 if settings.SERVER_TYPE == settings.ROOT:
     RootIdField = models.AutoField
     root_id_kwargs = {
         'primary_key': True
     }
+    from cityfarm_api.models import Model
+    farm_base = Model
 
 
 class LayoutChangeAttempted(APIException):
@@ -43,7 +46,7 @@ class LayoutChangeAttempted(APIException):
     default_detail = _('Changing the layout of a farm is disallowed')
 
 
-class Farm(*farm_bases):
+class Farm(farm_base):
     """
     This model represents a growing device in the abstract. It is a singleton
     on leaf servers but not on root servers. It also handles the logic of
@@ -125,9 +128,10 @@ class Farm(*farm_bases):
             if self._old_layout:
                 raise LayoutChangeAttempted()
             else:
+                Migrate('layout', '0001')()
                 from cityfarm_api.utils.state import system_layout
                 with system_layout.as_value(self.layout):
-                    SetupLayout().run()
+                    Migrate()()
         self._old_layout = self.layout
         if self.slug:
             # Register this farm with the root server
@@ -165,3 +169,10 @@ class Farm(*farm_bases):
         """ This save function is used for root servers """
         # TODO: Set up database mirroring here
         super().save(*args, **kwargs)
+
+@receiver(post_migrate)
+def create_singleton_instance(sender, **kwargs):
+    try:
+        Farm.get_solo()
+    except OperationalError:
+        pass
