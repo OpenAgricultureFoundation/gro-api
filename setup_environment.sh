@@ -59,7 +59,9 @@ fi
 
 # On production servers, install a cron script in /etc/cron.d
 if [[ $SERVER_MODE == "production" && -d "/etc/cron.d" ]]; then
-    echo "*/5 * * * * $(whoami) source $(pwd -P)/.env && python $(pwd -P)/manage.py runcrons"
+    echo "*/5 * * * * $(whoami) source $(pwd -P)/.env && python $(pwd -P)/manage.py runcrons" > /etc/cron.d/cityfarm
+else
+    >&2 echo "Couldn't find directory /etc/cron.d/. Cron jobs will not be run."
 fi
 
 # Write the .env file
