@@ -40,6 +40,7 @@ fi
 if [[ ! -d "./env" ]]; then
     if [[ ! $TRAVIS ]]; then
         $VERBOSE && echo "Creating virtual environment"
+        pip3 install virtualenv
         if $VERBOSE; then
             virtualenv -p python3 --system-site-packages env
         else
@@ -50,9 +51,9 @@ if [[ ! -d "./env" ]]; then
     fi
     $VERBOSE && echo "Installing project dependencies..."
     if $VERBOSE; then
-        pip install -r requirements.txt
+        pip3 install -r requirements.txt
     else
-        pip install -r requirements.txt -q
+        pip3 install -r requirements.txt -q
     fi
 fi
 
