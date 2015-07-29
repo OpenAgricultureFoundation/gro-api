@@ -13,6 +13,12 @@ Options:
 VERBOSE=false
 SERVER_TYPE=leaf
 SERVER_MODE=production
+RED_COLOR='\033[0;31m'
+NO_COLOR='\033[0m'
+
+function error {
+    echo -e "${RED_COLOR}$1${NO_COLOR}" 1>&2
+}
 
 # Parse options
 while getopts "vlrdph" OPTION; do
@@ -40,7 +46,7 @@ fi
 if [[ ! -d "./env" ]]; then
     if [[ ! $TRAVIS ]]; then
         $VERBOSE && echo "Creating virtual environment"
-        pip3 install virtualenv
+        pip3 -q install virtualenv
         if $VERBOSE; then
             virtualenv -p python3 --system-site-packages env
         else
@@ -61,7 +67,7 @@ fi
 if [[ $SERVER_MODE == "production" && -d "/etc/cron.d" ]]; then
     echo "*/5 * * * * $(whoami) source $(pwd -P)/.env && python $(pwd -P)/manage.py runcrons" > /etc/cron.d/cityfarm
 else
-    >&2 echo "Couldn't find directory /etc/cron.d/. Cron jobs will not be run."
+    error "Couldn't find directory /etc/cron.d/. Cron jobs will not be run."
 fi
 
 # Write the .env file
