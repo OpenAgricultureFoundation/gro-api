@@ -9,6 +9,7 @@ from django.core.exceptions import (
 )
 from django.http.multipartparser import MultiPartParserError
 from django.utils import lru_cache
+from django.utils.encoding import force_text
 from django.views import debug
 from cityfarm_api.utils.state import system_layout
 
