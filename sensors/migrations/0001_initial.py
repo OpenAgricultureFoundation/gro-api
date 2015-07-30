@@ -14,62 +14,64 @@ class Migration(migrations.Migration):
         migrations.CreateModel(
             name='DataPoint',
             fields=[
-                ('id', models.AutoField(serialize=False, primary_key=True, verbose_name='ID', auto_created=True)),
+                ('id', models.AutoField(auto_created=True, serialize=False, verbose_name='ID', primary_key=True)),
+                ('timestamp', models.IntegerField()),
                 ('value', models.FloatField()),
             ],
             options={
-                'managed': True,
-                'abstract': False,
+                'get_latest_by': 'timestamp',
+                'ordering': ['timestamp'],
             },
         ),
         migrations.CreateModel(
             name='SensingPoint',
             fields=[
-                ('id', models.AutoField(serialize=False, primary_key=True, verbose_name='ID', auto_created=True)),
-                ('property', models.ForeignKey(related_name='sensing_points', to='resources.ResourceProperty')),
+                ('id', models.AutoField(auto_created=True, serialize=False, verbose_name='ID', primary_key=True)),
+                ('property', models.ForeignKey(to='resources.ResourceProperty', related_name='sensing_points')),
             ],
             options={
-                'managed': True,
                 'abstract': False,
+                'managed': True,
             },
         ),
         migrations.CreateModel(
             name='Sensor',
             fields=[
-                ('id', models.AutoField(serialize=False, primary_key=True, verbose_name='ID', auto_created=True)),
+                ('id', models.AutoField(auto_created=True, serialize=False, verbose_name='ID', primary_key=True)),
                 ('name', models.CharField(max_length=100)),
-                ('resource', models.ForeignKey(related_name='sensors', to='resources.Resource')),
+                ('resource', models.ForeignKey(to='resources.Resource', related_name='sensors')),
             ],
             options={
-                'managed': True,
                 'abstract': False,
+                'managed': True,
             },
         ),
         migrations.CreateModel(
             name='SensorType',
             fields=[
-                ('id', models.AutoField(serialize=False, primary_key=True, verbose_name='ID', auto_created=True)),
+                ('id', models.AutoField(auto_created=True, serialize=False, verbose_name='ID', primary_key=True)),
                 ('name', models.CharField(max_length=100)),
+                ('read_only', models.BooleanField(default=False, editable=False)),
                 ('properties', models.ManyToManyField(related_name='sensor_types', to='resources.ResourceProperty')),
             ],
             options={
-                'managed': True,
                 'abstract': False,
+                'managed': True,
             },
         ),
         migrations.AddField(
             model_name='sensor',
             name='sensor_type',
-            field=models.ForeignKey(related_name='sensors', to='sensors.SensorType'),
+            field=models.ForeignKey(to='sensors.SensorType', related_name='sensors'),
         ),
         migrations.AddField(
             model_name='sensingpoint',
             name='sensor',
-            field=models.ForeignKey(related_name='sensing_points', to='sensors.Sensor'),
+            field=models.ForeignKey(to='sensors.Sensor', related_name='sensing_points'),
         ),
         migrations.AddField(
             model_name='datapoint',
             name='origin',
-            field=models.ForeignKey(related_name='data_points', to='sensors.SensingPoint'),
+            field=models.ForeignKey(to='sensors.SensingPoint', related_name='data_points+'),
         ),
     ]

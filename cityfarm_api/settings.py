@@ -8,6 +8,8 @@ import string
 
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
+REST_FRAMEWORK = {}
+
 # Local Configuration
 
 LEAF = "leaf"
@@ -108,14 +110,20 @@ STATIC_ROOT = os.path.join(BASE_DIR, 'cityfarm_api', 'static')
 MEDIA_URL = '/media/'
 MEDIA_ROOT = os.path.join(BASE_DIR, 'cityfarm_api', 'media')
 
-if SERVER_MODE == DEVELOPMENT:
-    ALLOWED_HOSTS = []
+if SERVER_TYPE == LEAF:
+    # TODO: We could dynamically generate this from the current ip address?
+    # There is no guarantee about what host leaf servers will run behind
+    ALLOWED_HOSTS = ['*']
 else:
-    ALLOWED_HOSTS = [
-        "localhost",
-        ".media.mit.edu",
-        ".media.mit.edu.",
-    ]
+    if SERVER_MODE == DEVELOPMENT:
+        ALLOWED_HOSTS = ['*']
+    else:
+        ALLOWED_HOSTS = [
+            "localhost",
+            ".media.mit.edu",
+            ".media.mit.edu.",
+        ]
+
 CSRF_COOKIE_SECURE = True
 SESSION_COOKIE_SECURE = True
 
@@ -205,14 +213,17 @@ if SERVER_MODE == DEVELOPMENT:
         LOGGING['loggers'][app_name]['handlers'].append('console')
 else:
     LOGGING['handlers']['file']['filename'] = '/var/log/cityfarm_api.log'
+    LOGGING['loggers']['django'] = {
+        'handlers': ['file'],
+        'level': 'DEBUG',
+        'propagate': True,
+    }
 
 # Testing
 
 TEST_RUNNER = 'cityfarm_api.test.TestRunner'
 
-REST_FRAMEWORK = {
-    'TEST_REQUEST_DEFAULT_FORMAT': 'json',
-}
+REST_FRAMEWORK['TEST_REQUEST_DEFAULT_FORMAT'] = 'json'
 
 # Cron
 

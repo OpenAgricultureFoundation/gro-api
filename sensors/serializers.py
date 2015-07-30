@@ -1,6 +1,16 @@
+from rest_framework.serializers import ValidationError
 from cityfarm_api.serializers import BaseSerializer
+from .models import SensorType, Sensor, SensingPoint
 
-from .models import Sensor, SensingPoint
+class SensorTypeSerializer(BaseSerializer):
+    class Meta:
+        model = SensorType
+
+    def validate_read_only(self, value):
+        if value:
+            raise ValidationError(
+                'This object is read-only and cannot be modified'
+            )
 
 class SensorSerializer(BaseSerializer):
     class Meta:
@@ -30,4 +40,3 @@ class SensorSerializer(BaseSerializer):
         instance.resource = validated_data.get('resource', instance.resource)
         instance.save()
         return instance
-

@@ -9,6 +9,7 @@ class ResourceType(Model):
         return self.name
 
 class ResourceProperty(Model):
+    code = models.CharField(max_length=3, primary_key=True)
     name = models.CharField(max_length=100)
     resource_type = models.ForeignKey(ResourceType, related_name='properties')
     read_only = models.BooleanField(editable=False, default=False)

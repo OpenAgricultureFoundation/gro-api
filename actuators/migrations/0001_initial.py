@@ -14,34 +14,34 @@ class Migration(migrations.Migration):
         migrations.CreateModel(
             name='Actuator',
             fields=[
-                ('id', models.AutoField(verbose_name='ID', primary_key=True, serialize=False, auto_created=True)),
+                ('id', models.AutoField(primary_key=True, auto_created=True, serialize=False, verbose_name='ID')),
                 ('name', models.CharField(max_length=100)),
             ],
             options={
-                'managed': True,
                 'abstract': False,
+                'managed': True,
             },
         ),
         migrations.CreateModel(
             name='ActuatorType',
             fields=[
-                ('id', models.AutoField(verbose_name='ID', primary_key=True, serialize=False, auto_created=True)),
+                ('id', models.AutoField(primary_key=True, auto_created=True, serialize=False, verbose_name='ID')),
                 ('name', models.CharField(max_length=100)),
                 ('properties', models.ManyToManyField(to='resources.ResourceProperty', related_name='actuator_types')),
             ],
             options={
-                'managed': True,
                 'abstract': False,
+                'managed': True,
             },
         ),
         migrations.AddField(
             model_name='actuator',
             name='actuator_type',
-            field=models.ForeignKey(to='actuators.ActuatorType', related_name='actuators'),
+            field=models.ForeignKey(related_name='actuators', to='actuators.ActuatorType'),
         ),
         migrations.AddField(
             model_name='actuator',
             name='resource',
-            field=models.ForeignKey(to='resources.Resource', related_name='actuators'),
+            field=models.ForeignKey(related_name='actuators', to='resources.Resource'),
         ),
     ]

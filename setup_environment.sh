@@ -43,38 +43,30 @@ if [[ $0 =~ "/" ]]; then
     cd ${0%/*}
 fi
 
-if [[ ! -d "./env" ]]; then
-    if [[ ! $TRAVIS ]]; then
-        $VERBOSE && echo "Creating virtual environment"
-        pip3 -q install virtualenv
-        if $VERBOSE; then
-            virtualenv -p python3 --system-site-packages env
-        else
-            virtualenv -p python3 --system-site-packages env -q
-        fi
-        $VERBOSE && echo "Activating virtual environment"
-        source env/bin/activate
-    fi
-    $VERBOSE && echo "Installing project dependencies..."
-    if $VERBOSE; then
-        pip3 install -r requirements.txt
-    else
-        pip3 install -r requirements.txt -q
-    fi
+if [[ -d "./env" ]]; then
+    $VERBOSE && echo "Activating virtual environment"
+    source env/bin/activate
+fi
+$VERBOSE && echo "Installing project dependencies..."
+if $VERBOSE; then
+    pip3 install -r requirements.txt
+else
+    pip3 install -r requirements.txt -q
 fi
 
 # On production servers, install a cron script in /etc/cron.d
 if [[ $SERVER_MODE == "production" && -d "/etc/cron.d" ]]; then
     echo "*/5 * * * * $(whoami) source $(pwd -P)/.env && python $(pwd -P)/manage.py runcrons" > /etc/cron.d/cityfarm
+    if (( $? != 0 )); then
+        error "Failed to write cron jobs. Exiting..."
+        exit 1
+    fi
 else
     error "Couldn't find directory /etc/cron.d/. Cron jobs will not be run."
 fi
 
 # Write the .env file
 : > .env # Truncate the file
-if [[ ! $TRAVIS ]]; then
-    echo "source env/bin/activate" >> .env
-fi
 echo "export CITYFARM_API_ROOT=$(pwd -P)" >> .env
 echo "export CITYFARM_API_SERVER_TYPE=$SERVER_TYPE" >> .env
 echo "export CITYFARM_API_SERVER_MODE=$SERVER_MODE" >> .env

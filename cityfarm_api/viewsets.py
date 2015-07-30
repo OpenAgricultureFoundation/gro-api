@@ -26,9 +26,9 @@ class ViewSetRegistry(ModelDict):
     """
     def register(self, viewset):
         if hasattr(viewset, 'model'):
-            if viewset.queryset is None:
+            if getattr(viewset, 'queryset', None) is None:
                 viewset.queryset = viewset.model.objects.all()
-            if viewset.serializer_class is None:
+            if getattr(viewset, 'serializer_class', None) is None:
                 serializer = model_serializers.get_for_model(viewset.model)
                 viewset.serializer_class = serializer
             self[viewset.model] = viewset
@@ -40,10 +40,9 @@ class ViewSetRegistry(ModelDict):
         that can operate on the given model
         """
         if model not in self:
-            class ViewSet(ModelViewSet): # pylint: disable=used-before-assignment
-                queryset = model.objects.all()
-                serializer_class = model_serializers.get_for_model(model)
-            self[model] = ViewSet
+            viewset_name = model.__name__ + 'ViewSet'
+            cls = type(viewset_name, (ModelViewSet,), {'model': model})
+            self.register(cls)
         return self[model]
 
 model_viewsets = ViewSetRegistry()

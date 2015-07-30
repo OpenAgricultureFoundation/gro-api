@@ -7,22 +7,29 @@ class SensorType(Model):
     properties = models.ManyToManyField(
         ResourceProperty, related_name='sensor_types'
     )
+    read_only = models.BooleanField(editable=False, default=False)
     def __str__(self):
-        return self.name
+        return self.name + (' (stock)' if self.read_only else ' (custom)')
 
 class Sensor(Model):
     name = models.CharField(max_length=100)
     sensor_type = models.ForeignKey(SensorType, related_name='sensors')
     resource = models.ForeignKey(Resource, related_name='sensors')
     def __str__(self):
-        return self.name
+        return self.name + ' (' + self.sensor_type.name + ')'
 
 class SensingPoint(Model):
     sensor = models.ForeignKey(Sensor, related_name='sensing_points')
     property = models.ForeignKey(
         ResourceProperty, related_name='sensing_points'
     )
+    def __str__(self):
+        return self.sensor.name + ' - ' + self.property.name
 
 class DataPoint(Model):
-    origin = models.ForeignKey(SensingPoint, related_name='data_points')
+    class Meta:
+        ordering = ['timestamp']
+        get_latest_by = 'timestamp'
+    origin = models.ForeignKey(SensingPoint, related_name='data_points+')
+    timestamp = models.IntegerField()
     value = models.FloatField()
