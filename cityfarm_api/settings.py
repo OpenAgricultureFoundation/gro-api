@@ -214,8 +214,19 @@ if SERVER_MODE == DEVELOPMENT:
 else:
     LOGGING['handlers']['file']['level'] = 'INFO'
     LOGGING['handlers']['file']['filename'] = '/var/log/cityfarm_api.log'
+    import pdb; pdb.set_trace()
+    if not 'django.security' in LOGGING['loggers']:
+        LOGGING['loggers']['django.security'] = {
+            'handlers': [],
+        }
     LOGGING['loggers']['django.security']['handlers'] += 'file'
+    LOGGING['loggers']['django.security']['level'] += 'INFO'
+    if not 'django.request' in LOGGING['loggers']:
+        LOGGING['loggers']['django.request'] = {
+            'handlers': [],
+        }
     LOGGING['loggers']['django.request']['handlers'] += 'file'
+    LOGGING['loggers']['django.request']['level'] += 'INFO'
 
 # Testing
 
