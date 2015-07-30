@@ -5,6 +5,8 @@ from cityfarm_api.utils.state import system_layout
 class LayoutConfig(AppConfig):
     name = 'layout'
     def ready(self):
+        from . import  monkey_patch_resolvers
+        # Use DynamicOptions for dynamic models
         dynamic_fields = []
         dynamic_models = set()
         for model in self.get_models():
