@@ -212,12 +212,10 @@ if SERVER_MODE == DEVELOPMENT:
     for app_name in CITYFARM_API_APPS:
         LOGGING['loggers'][app_name]['handlers'].append('console')
 else:
+    LOGGING['handlers']['file']['level'] = 'INFO'
     LOGGING['handlers']['file']['filename'] = '/var/log/cityfarm_api.log'
-    LOGGING['loggers']['django'] = {
-        'handlers': ['file'],
-        'level': 'DEBUG',
-        'propagate': True,
-    }
+    LOGGING['loggers']['django.security']['handlers'] += 'file'
+    LOGGING['loggers']['django.request']['handlers'] += 'file'
 
 # Testing
 
