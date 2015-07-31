@@ -1,4 +1,3 @@
-from django.db import models
 from django.db.migrations.state import ModelState
 from django.db.migrations.operations.base import Operation
 from django.db.migrations.operations.models import CreateModel
@@ -45,7 +44,6 @@ class CreateDynamicModels(Operation):
                 create_model(schema.dynamic_entities[entity.parent])
             if entity.name not in created_models:
                 create_model(entity)
-        tray_to_model = 'layout.%s' % schema.entities['Tray'].parent
         ops.append(AlterField(
             'tray', 'parent', ParentField(model_name='Tray')
         ))

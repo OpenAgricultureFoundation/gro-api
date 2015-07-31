@@ -4,39 +4,35 @@ from rest_framework.decorators import detail_route
 from rest_framework.exceptions import APIException
 from cityfarm_api.viewsets import ModelViewSet
 from cityfarm_api.serializers import model_serializers
-from .models import SensingPoint, DataPoint
+from .models import Actuator, ActuatorState
 
-DataPointSerializer = model_serializers.get_for_model(DataPoint)
+ActuatorStateSerializer = model_serializers.get_for_model(ActuatorState)
 
-class SensingPointViewSet(ModelViewSet):
-    model = SensingPoint
-
-    @detail_route(methods=["get"])
-    def data(self, request, pk=None):
-        raise NotImplementedError()
+class ActuatorViewSet(ModelViewSet):
+    model = Actuator
 
     @detail_route(methods=["get"])
-    def value(self, request, pk=None):
-        point = self.get_object()
-        queryset = DataPoint.objects.filter(origin=point).latest()
-        serializer = DataPointSerializer(
+    def state(self, request, pk=None):
+        actuator = self.get_object()
+        queryset = ActuatorState.filter(origin=actuator).latest()
+        serializer = ActuatorStateSerializer(
             queryset, context={'request': request}
         )
         return Response(serializer.data)
 
     @detail_route(methods=["get"])
     def history(self, request, pk=None):
-        point = self.get_object()
+        actuator = self.get_object()
         since = request.query_params.get('since', None)
         if not since:
             raise APIException(
                 "History requests must contain a 'since' GET parameter"
             )
         before = request.query_params.get('before', time.time())
-        queryset = DataPoint.objects.filter(
-            origin=point, timestamp__gt=since, timestamp__lt=before
+        queryset = ActuatorState.filter(
+            origin=actuator, timestamp__gt=since, timestamp__lt=before
         )
-        serializer = DataPointSerializer(
+        serializer = ActuatorStateSerializer(
             queryset, context={'request': request}
         )
         return Response(serializer.data)

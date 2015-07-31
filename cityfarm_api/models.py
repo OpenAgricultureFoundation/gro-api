@@ -3,13 +3,9 @@ This module defines a base model class form which all models in this project
 should inherit.
 """
 from collections import defaultdict
-from django.db.utils import OperationalError
 from django.db.models import Model as DjangoModel
-from django.db.models.base import ModelBase as DjangoModelBase
 from django.db.models.options import Options as DjangoOptions
-from django.db.models.signals import post_migrate
 from django.conf import settings
-from django.dispatch import receiver
 from solo import models as solo_models
 from .utils.state import (
     system_layout, LayoutDependentAttribute, LayoutDependentCachedProperty
@@ -75,16 +71,16 @@ class DynamicOptions(DjangoOptions):
 
     @property
     def _dynamic_relation_tree(self):
-        if not '_dynamic_relation_tree' in self.__dict__:
+        if '_dynamic_relation_tree' not in self.__dict__:
             self._populate_dynamic_directed_relation_graph()
         dynamic_relation_tree = self.__dict__['_dynamic_relation_tree']
         return dynamic_relation_tree[system_layout.current_value]
 
     @property
     def _relation_tree(self):
-        if not '_relation_tree' in self.__dict__:
+        if '_relation_tree' not in self.__dict__:
             self._populate_directed_relation_graph()
-        if not '_dynamic_relation_tree' in self.__dict__:
+        if '_dynamic_relation_tree' not in self.__dict__:
             old_relation_tree = self.__dict__['_relation_tree']
             new_relation_tree = [f for f in old_relation_tree
                 if not getattr(f, 'is_dynamic', False)]

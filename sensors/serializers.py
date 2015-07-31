@@ -6,15 +6,31 @@ class SensorTypeSerializer(BaseSerializer):
     class Meta:
         model = SensorType
 
-    def validate_read_only(self, value):
-        if value:
-            raise ValidationError(
-                'This object is read-only and cannot be modified'
-            )
+    def validate(self, data):
+        resource_type = data['resource_type']
+        properties = data['properties']
+        for property in properties:
+            if property.resource_type != resource_type:
+                raise ValidationError(
+                    'Proposed sensor type measures properties of a resource '
+                    'type other than the one is claims to monitor'
+                )
+        return data
 
 class SensorSerializer(BaseSerializer):
     class Meta:
         model = Sensor
+
+    def validate(self, data):
+        sensor_type = data['sensor_type']
+        resource = data['resource']
+        if sensor_type.resource_type != resource.resource_type:
+            raise ValidationError(
+                'Attempted to install a {} sensor in a {} resource'.format(
+                    sensor_type.resource_type, resource.resource_type
+                )
+            )
+        return data
 
     def create_points(self, instance):
         for resource_property in instance.sensor_type.properties.all():
@@ -40,3 +56,7 @@ class SensorSerializer(BaseSerializer):
         instance.resource = validated_data.get('resource', instance.resource)
         instance.save()
         return instance
+
+class SensingPoint(BaseSerializer):
+    class Meta:
+        model = SensingPoint

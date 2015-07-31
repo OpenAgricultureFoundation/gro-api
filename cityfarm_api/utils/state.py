@@ -29,7 +29,7 @@ class SystemLayout(metaclass=Singleton):
             return self.mock_value
         cache = get_cache()
         if self.cache_key in cache:
-            return cache.get(cache_key)
+            return cache.get(self.cache_key)
         from farms.models import Farm
         try:
             val = Farm.get_solo().layout

@@ -40,14 +40,3 @@ class InvalidFifoFile(InvalidFile):
     @property
     def detail(self):
         return 'FIFO file "%s" is invalid' % self.filepath
-
-
-class InvalidManagerPath(InvalidFile):
-    """
-    This exception should be thrown if the filepath designated as the path of
-    the :file:`manage.py` file of the server is determined to be invalid.
-
-    """
-    @property
-    def detail(self):
-        return 'manage.py file "%s" does not exist' % self.filepath

@@ -8,7 +8,7 @@ from django.conf import settings
 from rest_framework import serializers
 from rest_framework.settings import api_settings
 from rest_framework.relations import HyperlinkedRelatedField
-from rest_framework.serializers import SerializerMetaclass
+from rest_framework.serializers import SerializerMetaclass, ValidationError
 from rest_framework.utils.field_mapping import (
     get_detail_view_name, get_relation_kwargs, get_nested_relation_kwargs
 )

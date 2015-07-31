@@ -7,8 +7,9 @@ class ActuatorType(Model):
     properties = models.ManyToManyField(
         ResourceProperty, related_name='actuator_types'
     )
+    read_only = models.BooleanField(editable=False, default=False)
     def __str__(self):
-        return self.name
+        return self.name + (' (stock)' if self.read_only else ' (custom)')
 
 class Actuator(Model):
     name = models.CharField(max_length=100)
@@ -16,3 +17,11 @@ class Actuator(Model):
     resource = models.ForeignKey(Resource, related_name='actuators')
     def __str__(self):
         return self.name
+
+class ActuatorState(Model):
+    class Meta:
+        ordering = ['timestamp']
+        get_latest_by = 'timestamp'
+    origin = models.ForeignKey(Actuator, related_name='state+')
+    timestamp = models.IntegerField()
+    value = models.FloatField()

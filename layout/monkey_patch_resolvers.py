@@ -1,11 +1,12 @@
 import sys
+import types
 import logging
 from django import http
 from django.conf import settings
 from django.core import signals, urlresolvers
 from django.core.handlers.base import BaseHandler
 from django.core.exceptions import (
-    MiddlewareNotUsed, PermissionDenied, SuspiciousOperation,
+    PermissionDenied, SuspiciousOperation,
 )
 from django.http.multipartparser import MultiPartParserError
 from django.utils import lru_cache
@@ -30,8 +31,6 @@ def inner_get_resolver(urlconf, layout):
 
 def outer_get_resolver(urlconf):
     return inner_get_resolver(urlconf, system_layout.current_value)
-
-urlresolvers.get_resolver = outer_get_resolver
 
 # Monkey patching `django.core.urlresolvers.get_resolver` doesn't completely
 # solve the problem in Django 1.8.3 because
@@ -184,4 +183,6 @@ def new_get_response(self, request):
 
     return response
 
-BaseHandler.get_response = new_get_response
+def monkey_patch_resolvers():
+    urlresolvers.get_resolver = outer_get_resolver
+    BaseHandler.get_response = new_get_response

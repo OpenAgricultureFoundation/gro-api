@@ -1,3 +1,4 @@
+import logging
 from django.conf import settings
 from cityfarm_api.utils.state import system_layout
 from .models import (
@@ -5,6 +6,9 @@ from .models import (
     PlantSite, dynamic_models
 )
 from .schemata import all_schemata
+
+logger = logging.getLogger(__name__)
+
 def contribute_to_router(router):
     router.register_model(Model3D)
     router.register_model(TrayLayout)

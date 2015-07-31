@@ -1,0 +1,20 @@
+[
+    {
+        "model": "actuators.actuatortype",
+        "pk": 1,
+        "fields": {
+            "name": "Heater",
+            "properties": [1],
+            "read_only": "True"
+        }
+    },
+    {
+        "model": "actuators.actuatortype",
+        "pk": 2,
+        "fields": {
+            "name": "Humidifier",
+            "properties": [2],
+            "read_only": "True"
+        }
+    }
+]

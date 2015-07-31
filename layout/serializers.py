@@ -112,7 +112,7 @@ class TraySerializer(LayoutObjectSerializer):
             plant_site.delete()
 
     def create(self, validated_data):
-        layout = validated_data.pop('layout')
+        layout = validated_data.pop('layout', None)
         if layout is not None:
             validated_data['num_rows'] = layout.num_rows
             validated_data['num_cols'] = layout.num_cols
@@ -122,11 +122,15 @@ class TraySerializer(LayoutObjectSerializer):
         return instance
 
     def update(self, instance, validated_data):
-        if 'layout' in validated_data:
-            layout = validated_data.pop('layout')
+        layout = validated_data.pop('layout', None)
+        if layout is not None:
+            validated_data['num_rows'] = layout.num_rows
+            validated_data['num_cols'] = layout.num_cols
+        instance = super().update(instance, validated_data)
+        if layout is not None:
             self.clear_sites(instance)
             self.create_sites(instance, layout)
-        return super().update(instance, validated_data)
+        return instance
 
 for entity_name, entity_model in dynamic_models.items():
     class Serializer(LayoutObjectSerializer):

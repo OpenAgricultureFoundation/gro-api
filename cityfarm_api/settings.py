@@ -40,6 +40,7 @@ CITYFARM_API_APPS = (
     'resources',
     'sensors',
     'actuators',
+    'recipes',
 )
 
 if SERVER_TYPE == LEAF:
@@ -200,7 +201,7 @@ LOGGING = {
 }
 for app_name in CITYFARM_API_APPS:
     LOGGING['loggers'][app_name] = {
-        'handlers': ['file'],
+        'handlers': ['file', ],
         'level': 'DEBUG',
         'propagate': True,
     }
@@ -214,19 +215,18 @@ if SERVER_MODE == DEVELOPMENT:
 else:
     LOGGING['handlers']['file']['level'] = 'INFO'
     LOGGING['handlers']['file']['filename'] = '/var/log/cityfarm_api.log'
-    import pdb; pdb.set_trace()
-    if not 'django.security' in LOGGING['loggers']:
+    if 'django.security' not in LOGGING['loggers']:
         LOGGING['loggers']['django.security'] = {
             'handlers': [],
         }
-    LOGGING['loggers']['django.security']['handlers'] += 'file'
-    LOGGING['loggers']['django.security']['level'] += 'INFO'
-    if not 'django.request' in LOGGING['loggers']:
+    LOGGING['loggers']['django.security']['handlers'].append('file')
+    LOGGING['loggers']['django.security']['level'] = 'INFO'
+    if 'django.request' not in LOGGING['loggers']:
         LOGGING['loggers']['django.request'] = {
             'handlers': [],
         }
-    LOGGING['loggers']['django.request']['handlers'] += 'file'
-    LOGGING['loggers']['django.request']['level'] += 'INFO'
+    LOGGING['loggers']['django.request']['handlers'].append('file')
+    LOGGING['loggers']['django.request']['level'] = 'INFO'
 
 # Testing
 

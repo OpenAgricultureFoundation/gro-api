@@ -3,11 +3,11 @@ import logging
 import tortilla
 from slugify import slugify
 from urllib.parse import urlparse
+from requests.exceptions import ConnectionError
 from django.db import models
 from django.db.utils import OperationalError
 from django.db.models.signals import post_migrate
 from django.dispatch import receiver
-from django.core.management import call_command
 from django.conf import settings
 from django.utils.translation import ugettext_lazy as _
 from rest_framework import status
@@ -143,10 +143,16 @@ class Farm(farm_base):
                 data = {field.name: getattr(self, field.name) for field in
                         self._meta.fields}
                 data.pop(self._meta.pk.name)
-                if self.root_id:
-                    res = root_api.farms(self.root_id).put(data=data)
-                else:
-                    res = root_api.farms.post(data=data)
+                try:
+                    if self.root_id:
+                        res = root_api.farms(self.root_id).put(data=data)
+                    else:
+                        res = root_api.farms.post(data=data)
+                except ConnectionError:
+                    raise APIException(
+                        'Failed to contact root server. Farm information will '
+                        'not be changed.'
+                    )
                 logger.debug(
                     "Request: %s %s %s", res.request.method, res.request.url,
                     res.request.body
@@ -156,10 +162,10 @@ class Farm(farm_base):
                         if getattr(self, key) != val:
                             setattr(self, key, val)
                 else:
-                    logger.error(
-                        'Root server at "%s" responsed with status code %d, '
-                        'body "%s"', self.root_server, res.status_code,
-                        res.data
+                    raise APIException(
+                        'Root server at "{}" responsed with status code {}, '
+                        'body "{}"'.format(self.root_server, res.status_code,
+                        res.data)
                     )
         super().save(*args, **kwargs)
         if self.layout != self._old_layout:

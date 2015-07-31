@@ -17,13 +17,11 @@ import os
 import stat
 import select
 import logging
-import importlib
 import subprocess
 from django.conf import settings
 from django.core.management import call_command
-from rest_framework.exceptions import APIException
 from control.exceptions import (
-    InvalidFile, InvalidFifoPath, InvalidFifoFile, InvalidManagerPath
+    InvalidFile, InvalidFifoPath, InvalidFifoFile
 )
 
 fifo_path = os.environ['UWSGI_MASTER_FIFO']
@@ -186,7 +184,7 @@ class FifoCommand(Command):
         FIFO. This allows subclasses to implement custom recovery procedures.
         """
         return
-        yield
+        yield # pylint: disable=unreachable
 
     def run(self):
         self.check()
@@ -238,7 +236,7 @@ class ShellCommand(Command):
     is the command to run as a string.
     """
     def run(self):
-        logger.debug('Running shell command "{}"'.format(self.command))
+        logger.debug('Running shell command "%s"', self.command)
         proc = subprocess.Popen(
             self.command,
             shell=True,
