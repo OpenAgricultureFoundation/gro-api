@@ -56,7 +56,3 @@ class SensorSerializer(BaseSerializer):
         instance.resource = validated_data.get('resource', instance.resource)
         instance.save()
         return instance
-
-class SensingPoint(BaseSerializer):
-    class Meta:
-        model = SensingPoint

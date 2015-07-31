@@ -34,7 +34,7 @@
         "pk": 4,
         "fields": {
             "name": "DS18B20 (water)",
-            "resource_type": 2,
+            "resource_type": 3,
             "properties": [7],
             "read_only": "True"
         }
@@ -44,7 +44,7 @@
         "pk": 5,
         "fields": {
             "name": "TSL2561",
-            "resource_type": 3,
+            "resource_type": 2,
             "properties": [4],
             "read_only": "True"
         }
