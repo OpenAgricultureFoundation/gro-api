@@ -81,6 +81,10 @@ if SERVER_TYPE == ROOT:
         'cityfarm_api.middleware.RequestCacheMiddleware',
         'cityfarm_api.middleware.FarmRoutingMiddleware',
     )
+else:
+    MIDDLEWARE_CLASSES += (
+        'cityfarm_api.middleware.FarmIsConfiguredCheckMiddleware',
+    )
 
 CORS_ORIGIN_ALLOW_ALL = True
 

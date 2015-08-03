@@ -112,6 +112,7 @@ class BaseRouter(routers.DefaultRouter):
 
         class APIRoot(views.APIView):
             _ignore_model_permissions = True
+            allow_on_unconfigured_farm = True
 
             def get(self, request, **kwargs):
                 """ GET the root view """

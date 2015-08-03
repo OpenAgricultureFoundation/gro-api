@@ -5,12 +5,13 @@ database depending on the farm referenced by the current request.
 """
 from threading import currentThread
 from django.conf import settings
+from django.core.exceptions import MiddlewareNotUsed
 from django.core.cache.backends.locmem import LocMemCache
+from rest_framework.views import APIView
+from .errors import FarmNotConfiguredError
+from .utils.state import system_layout
 
 _request_cache = {}
-
-assert settings.SERVER_TYPE == settings.ROOT, \
-    "The `cityfarm_api.middleware module should only be used in root servers"
 
 def get_request_cache():
     """ Returns the cache for the current thread """
@@ -41,6 +42,28 @@ class FarmRoutingMiddleware:
     def process_view(self, request, view_func, view_args, view_kwargs):
         if 'farm' in view_kwargs:
             get_request_cache().set('farm', view_kwargs['farm'])
+
+class FarmIsConfiguredCheckMiddleware:
+    """
+    Hides all views except for the farm view if the current farm is not
+    configured
+    """
+    def __init__(self):
+        if system_layout.current_value is not None:
+            raise MiddlewareNotUsed()
+        class FarmNotConfiguredView(APIView):
+            def get(self, request):
+                raise FarmNotConfiguredError()
+            post = get
+            put = get
+            patch = get
+            delete = get
+        self.view = FarmNotConfiguredView.as_view()
+
+    def process_view(self, request, view_func, view_args, view_kwargs):
+        if not getattr(view_func.cls, 'allow_on_unconfigured_farm', False):
+            return self.view(request)
+
 
 class FarmDbRouter:
     """

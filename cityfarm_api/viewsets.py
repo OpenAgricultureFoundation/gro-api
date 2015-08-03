@@ -52,34 +52,8 @@ class APIViewMetaclass(type):
         super().__init__(name, bases, attrs)
         model_viewsets.register(cls)
 
-def farm_is_configured_check():
-    """
-    If the current farm has not been configured, don't allow the user to access
-    this viewset.
-    """
-    if system_layout.current_value is None:
-        raise FarmNotConfiguredError()
-
 class APIView(rest_views.APIView, metaclass=APIViewMetaclass):
-    """
-    :class:`~rest_framework.views.APIView subclass that modifies :meth:`initial`
-    to call :meth:`check`. This lets subclasses define additional checks to be
-    performed on each request that don't fit cleanly into any of the standard
-    categories: authentication, permissions, and throttles.
-    """
-    allow_access_with_unconfigured_farm = False
-
-    def initial(self, *args, **kwargs):
-        """
-        Calls meth:`check` after calling the :meth:`initial` method of the
-        parent class
-        """
-        super().initial(*args, **kwargs)
-        self.check()
-
-    def check(self):
-        if not self.allow_access_with_unconfigured_farm:
-            farm_is_configured_check()
+    pass
 
 class ViewSet(rest_viewsets.ViewSetMixin, APIView):
     """
@@ -114,8 +88,7 @@ class ModelViewSet(rest_mixins.CreateModelMixin,
 class SingletonViewSet(rest_mixins.RetrieveModelMixin,
                        rest_mixins.UpdateModelMixin,
                        rest_mixins.ListModelMixin,
-                       GenericViewSet,
-                       metaclass=APIViewMetaclass):
+                       GenericViewSet):
     """
     Version of :class:`ModelViewSet` that works for
     :class:`solo.models.SingletonModel` instances. It doesn't allows for creates

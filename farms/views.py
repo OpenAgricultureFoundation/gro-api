@@ -8,4 +8,4 @@ else:
 
 class FarmViewSet(FarmViewSetBase):
     model = Farm
-    allow_access_with_unconfigured_farm = True
+    allow_on_unconfigured_farm = True
