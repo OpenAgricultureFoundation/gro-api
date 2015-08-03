@@ -3,10 +3,12 @@ This module creates serializers for some of the models defines in the
 layout.models module
 """
 from rest_framework import serializers
+from rest_framework.utils.field_mapping import get_detail_view_name
 from cityfarm_api.serializers import BaseSerializer
 from .models import (
     Enclosure, Tray, PlantSite, dynamic_models, TrayLayout, PlantSiteLayout
 )
+from resources.models import Resource
 
 
 class TrayLayoutSerializer(BaseSerializer):
@@ -55,12 +57,22 @@ class TrayLayoutSerializer(BaseSerializer):
         instance.save()
         return instance
 
+class ResourcesMixin:
+    resources_view_name = get_detail_view_name(Resource)
 
-class EnclosureSerializer(BaseSerializer):
+    def get_resources(self, obj):
+        child = serializers.HyperlinkedIdentityField(
+            view_name=self.resources_view_name
+        )
+        field = serializers.ListField(child=child)
+        field.parent = self
+        return field.to_representation(obj.resources.all())
+
+class EnclosureSerializer(BaseSerializer, ResourcesMixin):
     class Meta:
         model = Enclosure
         nest_if_recursive = ('model',)
-
+    resources = serializers.SerializerMethodField()
 
 class LayoutObjectSerializer(BaseSerializer):
     """ A Serializer for subclasses of LayoutObject """
@@ -89,8 +101,7 @@ class LayoutObjectSerializer(BaseSerializer):
     def validate(self, attrs):
         return self.validate_location(attrs)
 
-
-class TraySerializer(LayoutObjectSerializer):
+class TraySerializer(LayoutObjectSerializer, ResourcesMixin):
     class Meta:
         model = Tray
         nest_if_recursive = ('model',)
@@ -99,6 +110,7 @@ class TraySerializer(LayoutObjectSerializer):
         view_name='traylayout-detail', queryset=TrayLayout.objects.all(),
         write_only=True, required=False
     )
+    resources = serializers.SerializerMethodField()
 
     def create_sites(self, instance, layout):
         for layout_site in layout.plant_sites.all():
@@ -133,8 +145,9 @@ class TraySerializer(LayoutObjectSerializer):
         return instance
 
 for entity_name, entity_model in dynamic_models.items():
-    class Serializer(LayoutObjectSerializer):
+    class Serializer(LayoutObjectSerializer, ResourcesMixin):
         class Meta:
             model = entity_model
             never_nest = ('parent',)
             nest_if_recursive = ('model',)
+        resources = serializers.SerializerMethodField()

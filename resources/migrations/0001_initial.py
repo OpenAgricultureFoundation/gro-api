@@ -6,7 +6,8 @@ from django.db import models, migrations
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('layout', '0001_initial')
+        ('layout', '0001_initial'),
+        ('contenttypes', '0002_remove_content_type_name'),
     ]
 
     operations = [
@@ -15,7 +16,8 @@ class Migration(migrations.Migration):
             fields=[
                 ('id', models.AutoField(auto_created=True, serialize=False, verbose_name='ID', primary_key=True)),
                 ('name', models.CharField(max_length=100, blank=True)),
-                ('location', models.ForeignKey(to='layout.LayoutObject', related_name='resources')),
+                ('location_id', models.PositiveIntegerField()),
+                ('location_type', models.ForeignKey(to='contenttypes.ContentType')),
             ],
             options={
                 'abstract': False,

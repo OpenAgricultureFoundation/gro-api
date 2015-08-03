@@ -1,13 +1,15 @@
 from django.db import models
 from django.db.utils import OperationalError
 from django.db.models.signals import post_save
-from django.dispatch import receiver
 from django.conf import settings
+from django.contrib.contenttypes.fields import GenericRelation
+from django.dispatch import receiver
 from model_utils.managers import InheritanceManager
 from cityfarm_api.utils.state import system_layout
 from cityfarm_api.models import Model, SingletonModel, GenerateNameMixin
 from cityfarm_api.fields import LayoutForeignKey
 from farms.models import Farm
+from resources.models import Resource
 from .schemata import all_schemata
 
 
@@ -71,18 +73,7 @@ class ParentField(LayoutForeignKey):
         return name, path, args, kwargs
 
 
-class LayoutObject(Model, GenerateNameMixin):
-    super_id = models.AutoField(primary_key=True)
-    objects = InheritanceManager()
-
-    def __str__(self):
-        return LayoutObject.objects.get_subclass(
-            super_id=self.super_id
-        ).__str__()
-
-
-class Enclosure(LayoutObject, SingletonModel):
-    id = models.AutoField(primary_key=True)
+class Enclosure(GenerateNameMixin, SingletonModel):
     name = models.CharField(max_length=100, blank=True)
     x = models.FloatField(default=0)
     y = models.FloatField(default=0)
@@ -91,9 +82,7 @@ class Enclosure(LayoutObject, SingletonModel):
     width = models.FloatField(default=0)
     height = models.FloatField(default=0)
     model = models.ForeignKey(Model3D, null=True, related_name='+')
-    layout_object = models.OneToOneField(
-        LayoutObject, parent_link=True, editable=False
-    )
+    resources = GenericRelation(Resource)
 
     def __str__(self):
         return self.name
@@ -107,8 +96,7 @@ def create_singleton_instance(sender, instance, **kwargs):
             pass
 
 
-class Tray(LayoutObject):
-    id = models.AutoField(primary_key=True)
+class Tray(GenerateNameMixin, Model):
     name = models.CharField(max_length=100, blank=True)
     x = models.FloatField(default=0)
     y = models.FloatField(default=0)
@@ -120,8 +108,9 @@ class Tray(LayoutObject):
     num_rows = models.IntegerField(default=0, editable=False)
     num_cols = models.IntegerField(default=0, editable=False)
     parent = ParentField(model_name='Tray')
-    layout_object = models.OneToOneField(
-        LayoutObject, parent_link=True, editable=False
+    resources = GenericRelation(
+        Resource, object_id_field='location_id',
+        content_type_field='location_type'
     )
 
     def __str__(self):
@@ -146,7 +135,6 @@ def generate_model_from_entity(entity):
     model_attrs = {
         "__module__": __name__,
         "model_name": entity.name,
-        "id": models.AutoField(primary_key=True),
         "name": models.CharField(max_length=100, blank=True),
         "x": models.FloatField(default=0),
         "y": models.FloatField(default=0),
@@ -156,12 +144,10 @@ def generate_model_from_entity(entity):
         "height": models.FloatField(default=0),
         "model": models.ForeignKey(Model3D, null=True, related_name='+'),
         "parent": ParentField(entity.name),
-        "layout_object": models.OneToOneField(
-            LayoutObject, parent_link=True, editable=False
-        ),
+        "resources": GenericRelation(Resource),
         "__str__": to_string,
     }
-    return type(entity.name, (LayoutObject,), model_attrs)
+    return type(entity.name, (GenerateNameMixin, Model,), model_attrs)
 
 # A dictionary of all of the classes in the layout tree that have been created
 # so we can be sure not to create a class that has already been created

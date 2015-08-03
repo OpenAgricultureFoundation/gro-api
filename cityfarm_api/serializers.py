@@ -38,6 +38,15 @@ class DynamicHyperlinkedRelatedField(HyperlinkedRelatedField):
         super().__init__(**kwargs)
 
     @property
+    def view_name(self):
+        return get_detail_view_name(self.model_field.related_model)
+
+    @view_name.setter
+    def view_name(self, val):
+        # We should never be assigning an actual value to this property
+        assert val == DUMMY_VIEW_NAME
+
+    @property
     def queryset(self):
         if self.read_only:
             return None # So RelatedField.__init__ doesn't complain
@@ -47,15 +56,6 @@ class DynamicHyperlinkedRelatedField(HyperlinkedRelatedField):
     def queryset(self, val):
         # We should never be assigning an actual value to this property
         assert val is None
-
-    @property
-    def view_name(self):
-        return get_detail_view_name(self.model_field.related_model)
-
-    @view_name.setter
-    def view_name(self, val):
-        # We should never be assigning an actual value to this property
-        assert val == DUMMY_VIEW_NAME
 
 class SmartHyperlinkedRelatedField:
     """

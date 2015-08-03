@@ -97,6 +97,19 @@ class Model(DjangoModel):
         abstract = True
         managed = settings.SERVER_TYPE == settings.LEAF
 
+if settings.SERVER_TYPE == settings.LEAF:
+    class SingletonModel(solo_models.SingletonModel, Model):
+        class Meta(Model.Meta):
+            abstract = True
+else:
+    # On root servers, we want to save the singleton under a cache key
+    # namespaced with the slug for the current farm, which is saved in the
+    # per-request cache
+    raise NotImplementedError()
+
+# `farms.models` imports `SingletonModel`, so we can't do this import until
+# `SingletonModel` is defined.
+from farms.models import Farm
 
 class GenerateNameMixin:
     def generate_name(self):
@@ -111,14 +124,3 @@ class GenerateNameMixin:
             if kwargs.get('force_insert', False):
                 kwargs['force_insert'] = False
             super().save(*args, **kwargs)
-
-
-if settings.SERVER_TYPE == settings.LEAF:
-    class SingletonModel(solo_models.SingletonModel, Model):
-        class Meta(Model.Meta):
-            abstract = True
-else:
-    # On root servers, we want to save the singleton under a cache key
-    # namespaced with the slug for the current farm, which is saved in the
-    # per-request cache
-    raise NotImplementedError()

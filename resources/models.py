@@ -1,6 +1,8 @@
 from django.db import models
+from django.contrib.contenttypes.fields import GenericForeignKey
+from django.contrib.contenttypes.models import ContentType
 from cityfarm_api.models import Model, GenerateNameMixin
-from layout.models import LayoutObject
+from farms.models import Farm
 
 class ResourceType(Model):
     name = models.CharField(max_length=100)
@@ -19,7 +21,9 @@ class ResourceProperty(Model):
 class Resource(GenerateNameMixin, Model):
     name = models.CharField(max_length=100, blank=True)
     resource_type = models.ForeignKey(ResourceType, related_name='resources')
-    location = models.ForeignKey(LayoutObject, related_name='resources')
+    location_type = models.ForeignKey(ContentType)
+    location_id = models.PositiveIntegerField()
+    location = GenericForeignKey('location_type', 'location_id')
 
     def generate_name(self):
         farm_name = Farm.get_solo().name

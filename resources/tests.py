@@ -53,10 +53,9 @@ class ResourcePropertyTestCase(APITestCase):
 class ResourceTestCase(APITestCase):
     @run_with_any_layout
     def test_edit_resource(self):
-        location = self.client.get(self.url_for_object('layoutObject')).data[0]['url']
         data = {
             'resource_type': self.url_for_object('resourceType', 1),
-            'location': location
+            'location': self.url_for_object('enclosure', 1),
         }
         res = self.client.post(self.url_for_object('resource'), data=data)
         self.assertEqual(res.status_code, 201)
