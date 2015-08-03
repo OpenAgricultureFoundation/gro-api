@@ -96,5 +96,5 @@ class ResourceLocationRelatedField(HyperlinkedRelatedField):
 class ResourceSerializer(BaseSerializer):
     class Meta:
         model = Resource
-        fields = ('url', 'name', 'resource_type', 'location')
+        exclude = ('location_type', 'location_id')
     location = ResourceLocationRelatedField()
