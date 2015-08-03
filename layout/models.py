@@ -82,7 +82,10 @@ class Enclosure(GenerateNameMixin, SingletonModel):
     width = models.FloatField(default=0)
     height = models.FloatField(default=0)
     model = models.ForeignKey(Model3D, null=True, related_name='+')
-    resources = GenericRelation(Resource)
+    resources = GenericRelation(
+        Resource, object_id_field='location_id',
+        content_type_field='location_type'
+    )
 
     def __str__(self):
         return self.name
@@ -144,7 +147,10 @@ def generate_model_from_entity(entity):
         "height": models.FloatField(default=0),
         "model": models.ForeignKey(Model3D, null=True, related_name='+'),
         "parent": ParentField(entity.name),
-        "resources": GenericRelation(Resource),
+        "resources": GenericRelation(
+            Resource, object_id_field='location_id',
+            content_type_field='location_type'
+        ),
         "__str__": to_string,
     }
     return type(entity.name, (GenerateNameMixin, Model,), model_attrs)

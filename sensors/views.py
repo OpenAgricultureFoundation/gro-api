@@ -1,14 +1,20 @@
 import time
+from django.core.exceptions import ObjectDoesNotExist
 from rest_framework.response import Response
 from rest_framework.decorators import detail_route
 from rest_framework.exceptions import APIException
-from cityfarm_api.viewsets import ModelViewSet
+from cityfarm_api.viewsets import ModelViewSet, ReadOnlyModelViewSet
 from cityfarm_api.serializers import model_serializers
-from .models import SensingPoint, DataPoint
+from cityfarm_api.permissions import EnforceReadOnly
+from .models import SensorType, SensingPoint, DataPoint
 
 DataPointSerializer = model_serializers.get_for_model(DataPoint)
 
-class SensingPointViewSet(ModelViewSet):
+class SensorTypeViewSet(ModelViewSet):
+    model = SensorType
+    permission_classes = [EnforceReadOnly,]
+
+class SensingPointViewSet(ReadOnlyModelViewSet):
     model = SensingPoint
 
     @detail_route(methods=["get"])
@@ -22,12 +28,16 @@ class SensingPointViewSet(ModelViewSet):
         elif request.method == "POST":
             return self.post_value(request, pk=pk)
         else:
-            print(request.method)
             raise ValueError()
 
     def get_value(self, request, pk=None):
         point = self.get_object()
-        queryset = DataPoint.objects.filter(origin=point).latest()
+        try:
+            queryset = DataPoint.objects.filter(origin=point).latest()
+        except ObjectDoesNotExist:
+            raise APIException(
+                'No data has been recorded for this sensor yet'
+            )
         serializer = DataPointSerializer(
             queryset, context={'request': request}
         )

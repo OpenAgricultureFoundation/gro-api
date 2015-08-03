@@ -4,9 +4,14 @@ from rest_framework.decorators import detail_route
 from rest_framework.exceptions import APIException
 from cityfarm_api.viewsets import ModelViewSet
 from cityfarm_api.serializers import model_serializers
-from .models import Actuator, ActuatorState
+from cityfarm_api.permissions import EnforceReadOnly
+from .models import ActuatorType, Actuator, ActuatorState
 
 ActuatorStateSerializer = model_serializers.get_for_model(ActuatorState)
+
+class ActuatorTypeViewSet(ModelViewSet):
+    model = ActuatorType
+    permission_classes = [EnforceReadOnly,]
 
 class ActuatorViewSet(ModelViewSet):
     model = Actuator

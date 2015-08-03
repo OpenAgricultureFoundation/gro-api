@@ -85,6 +85,16 @@ class ModelViewSet(rest_mixins.CreateModelMixin,
     """
     pass
 
+class ReadOnlyModelViewSet(rest_mixins.RetrieveModelMixin,
+                           rest_mixins.ListModelMixin,
+                           GenericViewSet):
+    """
+    Version of :class:`rest_framework.ReadOnlyModelViewSet` that inherits from
+    :class:`cityfarm_api.views.APIView` instead of
+    :class:`rest_framework.views.APIView`.
+    """
+    pass
+
 class SingletonViewSet(rest_mixins.RetrieveModelMixin,
                        rest_mixins.UpdateModelMixin,
                        rest_mixins.ListModelMixin,
