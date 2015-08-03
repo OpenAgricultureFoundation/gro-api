@@ -5,7 +5,7 @@ from django.dispatch import receiver
 from django.conf import settings
 from model_utils.managers import InheritanceManager
 from cityfarm_api.utils.state import system_layout
-from cityfarm_api.models import Model, SingletonModel
+from cityfarm_api.models import Model, SingletonModel, GenerateNameMixin
 from cityfarm_api.fields import LayoutForeignKey
 from farms.models import Farm
 from .schemata import all_schemata
@@ -71,7 +71,7 @@ class ParentField(LayoutForeignKey):
         return name, path, args, kwargs
 
 
-class LayoutObject(Model):
+class LayoutObject(Model, GenerateNameMixin):
     super_id = models.AutoField(primary_key=True)
     objects = InheritanceManager()
 
@@ -79,22 +79,6 @@ class LayoutObject(Model):
         return LayoutObject.objects.get_subclass(
             super_id=self.super_id
         ).__str__()
-
-    def save(self, *args, **kwargs):
-        # Generate pk to include in default name
-        res = super().save(*args, **kwargs)
-        farm_name = Farm.get_solo().name
-        if self._meta.get_field('name') and not self.name and farm_name:
-            self.name = "{} {} {}".format(
-                farm_name,
-                self.__class__.__name__,
-                self.pk
-            )
-            # save() is not idempotent with force_insert=True
-            if 'force_insert' in kwargs and kwargs['force_insert']:
-                kwargs['force_insert'] = False
-            res = super().save(*args, **kwargs)
-        return res
 
 
 class Enclosure(LayoutObject, SingletonModel):
@@ -185,10 +169,6 @@ dynamic_models = {}
 
 # Generate models for all of the entities that we could encounter
 for layout in system_layout.allowed_values:
-    if layout is None:
-        assert settings.SERVER_TYPE == settings.LEAF, \
-            'This should only ever happen in a leaf server'
-        continue
     for entity in all_schemata[layout].dynamic_entities.values():
         if entity.name not in dynamic_models:
             model = generate_model_from_entity(entity)

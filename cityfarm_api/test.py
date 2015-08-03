@@ -1,3 +1,4 @@
+import random
 import inspect
 import logging
 import unittest
@@ -23,6 +24,14 @@ class APITestCase(test.APITestCase):
                 "Cannot run test %s.%s in a root server because no layout "
                 "is specified" % (self.__class__, methodName)
             )
+
+    def shortDescription(self):
+        suffix = "(with layout {})".format(system_layout.current_value)
+        desc = super().shortDescription()
+        if desc is None:
+            return suffix
+        else:
+            return desc + " " + suffix
 
     @cached_property
     def url_prefix(self):
@@ -110,9 +119,11 @@ class TestSuite(unittest.TestSuite):
             test.debug()
 
     def debug(self):
+        self.debug_unconfigured_tests()
         for layout in self.configured_tests.keys():
-            self.debug_unconfigured_tests()
+            Reset()()
             farm = Farm.get_solo()
+            farm.name = "{} farm".format(layout)
             farm.layout = layout
             farm.save()
             self.debug_configured_tests(layout)
@@ -131,7 +142,7 @@ class TestRunner(DiscoverRunner):
             return super().setup_databases()
 
     def run_tests(self, *args, **kwargs):
-        logging.disable(logging.ERROR)
+        logging.disable(logging.WARNING)
         return super().run_tests(*args, **kwargs)
 
 
@@ -140,5 +151,12 @@ def run_with_layouts(*layouts):
         f.layouts = layouts
         return f
     return wrapper
+
+
+def run_with_any_layout(f):
+    if not hasattr(run_with_any_layout, 'possible_layouts'):
+        run_with_any_layout.possible_layouts = list(all_schemata.keys())
+    f.layouts = [random.choice(run_with_any_layout.possible_layouts),]
+    return f
 
 run_with_all_layouts = run_with_layouts(*all_schemata.keys())

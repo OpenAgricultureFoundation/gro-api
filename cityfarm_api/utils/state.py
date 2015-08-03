@@ -22,6 +22,9 @@ class SystemLayout(metaclass=Singleton):
     def __init__(self):
         self.use_mock_value = False
         self.mock_value = None
+        if hasattr(settings, 'SETUP_WITH_LAYOUT'):
+            self.use_mock_value = True
+            self.mock_value = settings.SETUP_WITH_LAYOUT
 
     @property
     def current_value(self):

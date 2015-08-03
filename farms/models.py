@@ -13,7 +13,7 @@ from django.utils.translation import ugettext_lazy as _
 from rest_framework import status
 from rest_framework.exceptions import APIException
 from layout.schemata import all_schemata
-from control.commands import Migrate
+from control.commands import Migrate, ReloadWorkers
 
 logger = logging.getLogger(__name__)
 
@@ -132,7 +132,6 @@ class Farm(farm_base):
                 from cityfarm_api.utils.state import system_layout
                 with system_layout.as_value(self.layout):
                     Migrate()()
-        self._old_layout = self.layout
         if self.slug:
             # Register this farm with the root server
             if settings.SERVER_MODE == settings.DEVELOPMENT:
@@ -170,6 +169,7 @@ class Farm(farm_base):
         super().save(*args, **kwargs)
         if self.layout != self._old_layout:
             self._old_layout = self.layout
+            ReloadWorkers()()
 
     def root_save(self, *args, **kwargs):
         """ This save function is used for root servers """

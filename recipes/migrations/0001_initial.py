@@ -7,8 +7,7 @@ from django.db import models, migrations
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('layout', '0002_generate_dynamic_models'),
-        ('resources', '0001_initial'),
+        ('layout', '0001_initial'), ('resources', '0001_initial'),
     ]
 
     operations = [
@@ -46,8 +45,7 @@ class Migration(migrations.Migration):
                 ('tray', models.ForeignKey(to='layout.Tray', related_name='set_points+')),
             ],
             options={
-                'abstract': False,
-                'managed': True,
+                'get_latest_by': 'timestamp',
             },
         ),
     ]

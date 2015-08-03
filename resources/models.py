@@ -1,5 +1,5 @@
 from django.db import models
-from cityfarm_api.models import Model
+from cityfarm_api.models import Model, GenerateNameMixin
 from layout.models import LayoutObject
 
 class ResourceType(Model):
@@ -16,9 +16,17 @@ class ResourceProperty(Model):
     def __str__(self):
         return "{} {}".format(self.resource_type.name, self.name)
 
-class Resource(Model):
-    name = models.CharField(max_length=100)
+class Resource(GenerateNameMixin, Model):
+    name = models.CharField(max_length=100, blank=True)
     resource_type = models.ForeignKey(ResourceType, related_name='resources')
     location = models.ForeignKey(LayoutObject, related_name='resources')
+
+    def generate_name(self):
+        farm_name = Farm.get_solo().name
+        return "{} {} {} {}".format(
+            farm_name, self.resource_type.name, self.__class__.__name__,
+            self.pk
+        )
+
     def __str__(self):
         return self.name

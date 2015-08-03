@@ -42,5 +42,5 @@ class Restart(Routine):
 
 class Reset(Routine):
     title = 'Reset'
-    commands = (Flush(),) + tuple(Migrate(app_name, 'zero') for app_name
-            in settings.CITYFARM_API_APPS) + (Migrate(), ReloadWorkers())
+    commands = (Migrate('control', '0001'), Flush(), Migrate(),
+            ReloadWorkers())
