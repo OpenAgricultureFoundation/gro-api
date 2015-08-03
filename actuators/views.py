@@ -1,4 +1,5 @@
 import time
+from django.core.exceptions import ObjectDoesNotExist
 from rest_framework.response import Response
 from rest_framework.decorators import detail_route
 from rest_framework.exceptions import APIException
@@ -16,12 +17,42 @@ class ActuatorTypeViewSet(ModelViewSet):
 class ActuatorViewSet(ModelViewSet):
     model = Actuator
 
-    @detail_route(methods=["get"])
+    @detail_route(methods=["get", "post"])
     def state(self, request, pk=None):
+        if request.method == "GET":
+            return self.get_state(request, pk=pk)
+        elif request.method == "POST":
+            return self.post_state(request, pk=pk)
+        else:
+            raise ValueError()
+
+    def get_state(self, request, pk=None):
         actuator = self.get_object()
-        queryset = ActuatorState.filter(origin=actuator).latest()
+        try:
+            queryset = ActuatorState.objects.filter(origin=actuator).latest()
+        except ObjectDoesNotExist:
+            raise APIException(
+                'No state has been recorded for this actuator yet'
+            )
         serializer = ActuatorStateSerializer(
             queryset, context={'request': request}
+        )
+        return Response(serializer.data)
+
+    def post_state(self, request, pk=None):
+        actuator = self.get_object()
+        timestamp = request.DATA.get('timestamp', time.time())
+        value = request.DATA.get('value')
+        if value is None:
+            raise APIException(
+                'No value received for "value" in the posted dictionary'
+            )
+        actuator_state = ActuatorState(
+            origin=Actuator, timestamp=timestamp, value=value
+        )
+        actuator_state.save()
+        serializer = ActuatorStateSerializer(
+            actuator_state, context={'request': request}
         )
         return Response(serializer.data)
 

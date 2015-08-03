@@ -3,6 +3,7 @@ from django.core.exceptions import ObjectDoesNotExist
 from django.core.urlresolvers import get_script_prefix, resolve, Resolver404
 from django.utils.six.moves.urllib import parse as urlparse
 from rest_framework.relations import HyperlinkedRelatedField
+from rest_framework.serializers import HyperlinkedIdentityField
 from rest_framework.utils.field_mapping import get_detail_view_name
 from cityfarm_api.utils.state import system_layout
 from cityfarm_api.serializers import (
@@ -10,7 +11,21 @@ from cityfarm_api.serializers import (
 )
 from layout.models import Enclosure, Tray, dynamic_models
 from layout.schemata import all_schemata
-from .models import Resource
+from sensors.models import SensingPoint
+from .models import ResourceProperty, Resource
+
+class ResourcePropertySerializer(BaseSerializer):
+    class Meta:
+        model = ResourceProperty
+
+    def sensing_points_by_sensor(self):
+        sensing_point_view_name = get_detail_view_name(SensingPoint)
+        field = HyperlinkedIdentityField(view_name=sensing_point_view_name)
+        field.parent = self
+        return {
+            point.sensor.pk: field.to_representation(point) for point in
+            self.instance.sensing_points.all()
+        }
 
 class ResourceLocationRelatedField(HyperlinkedRelatedField):
     def __init__(self, **kwargs):

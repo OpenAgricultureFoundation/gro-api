@@ -1,5 +1,5 @@
 from django.db import models
-from cityfarm_api.models import Model
+from cityfarm_api.models import Model, GenerateNameMixin
 from farms.models import Farm
 from resources.models import ResourceType, ResourceProperty, Resource
 
@@ -15,23 +15,16 @@ class SensorType(Model):
     def __str__(self):
         return self.name + (' (stock)' if self.read_only else ' (custom)')
 
-class Sensor(Model):
+class Sensor(GenerateNameMixin, Model):
     name = models.CharField(max_length=100, blank=True)
     sensor_type = models.ForeignKey(SensorType, related_name='sensors')
     resource = models.ForeignKey(Resource, related_name='sensors')
-    def save(self, *args, **kwargs):
-        res = super().save(*args, **kwargs)
+
+    def generate_name(self):
         farm_name = Farm.get_solo().name
-        if self._meta.get_field('name') and not self.name and farm_name:
-            self.name = "{} {} {}".format(
-                farm_name,
-                self.__class__.__name__,
-                self.pk
-            )
-            if 'force_insert' in kwargs and kwargs['force_insert']:
-                kwargs['force_insert'] = False
-            res = super().save(*args, **kwargs)
-        return res
+        return "{} {} {}".format(
+            farm_name, self.sensor_type.name, self.pk
+        )
 
     def __str__(self):
         return self.name + ' (' + self.sensor_type.name + ')'

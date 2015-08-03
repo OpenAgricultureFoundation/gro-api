@@ -15,7 +15,8 @@ def unload_fixture(apps, schema_editor): # pylint: disable=unused-argument
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('actuators', '0001_initial'), ('control', '0002_setup')
+        ('actuators', '0001_initial'), ('resources', '0002_setup'),
+        ('control', '0002_setup')
     ]
 
     operations = [

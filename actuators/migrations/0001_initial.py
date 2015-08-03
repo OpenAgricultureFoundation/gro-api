@@ -13,8 +13,11 @@ class Migration(migrations.Migration):
         migrations.CreateModel(
             name='Actuator',
             fields=[
-                ('id', models.AutoField(primary_key=True, serialize=False, auto_created=True, verbose_name='ID')),
-                ('name', models.CharField(max_length=100)),
+                ('id', models.AutoField(
+                    primary_key=True, serialize=False, auto_created=True,
+                    verbose_name='ID'
+                )),
+                ('name', models.CharField(max_length=100, blank=True)),
             ],
             options={
                 'managed': True,
@@ -24,10 +27,15 @@ class Migration(migrations.Migration):
         migrations.CreateModel(
             name='ActuatorState',
             fields=[
-                ('id', models.AutoField(primary_key=True, serialize=False, auto_created=True, verbose_name='ID')),
+                ('id', models.AutoField(
+                    primary_key=True, serialize=False, auto_created=True,
+                    verbose_name='ID'
+                )),
                 ('timestamp', models.IntegerField()),
                 ('value', models.FloatField()),
-                ('origin', models.ForeignKey(related_name='state+', to='actuators.Actuator')),
+                ('origin', models.ForeignKey(
+                    related_name='state+', to='actuators.Actuator'
+                )),
             ],
             options={
                 'get_latest_by': 'timestamp',
@@ -37,10 +45,21 @@ class Migration(migrations.Migration):
         migrations.CreateModel(
             name='ActuatorType',
             fields=[
-                ('id', models.AutoField(primary_key=True, serialize=False, auto_created=True, verbose_name='ID')),
+                ('id', models.AutoField(
+                    primary_key=True, serialize=False, auto_created=True,
+                    verbose_name='ID'
+                )),
                 ('name', models.CharField(max_length=100)),
-                ('read_only', models.BooleanField(default=False, editable=False)),
-                ('properties', models.ManyToManyField(related_name='actuator_types', to='resources.ResourceProperty')),
+                ('resource_type', models.ForeignKey(
+                    related_name='actuator_types', to='resources.ResourceType',
+                )),
+                ('properties', models.ManyToManyField(
+                    related_name='actuator_types',
+                    to='resources.ResourceProperty'
+                )),
+                ('read_only', models.BooleanField(
+                    default=False, editable=False
+                )),
             ],
             options={
                 'managed': True,
@@ -50,11 +69,15 @@ class Migration(migrations.Migration):
         migrations.AddField(
             model_name='actuator',
             name='actuator_type',
-            field=models.ForeignKey(related_name='actuators', to='actuators.ActuatorType'),
+            field=models.ForeignKey(
+                related_name='actuators', to='actuators.ActuatorType'
+            ),
         ),
         migrations.AddField(
             model_name='actuator',
             name='resource',
-            field=models.ForeignKey(related_name='actuators', to='resources.Resource'),
+            field=models.ForeignKey(
+                related_name='actuators', to='resources.Resource'
+            ),
         ),
     ]
