@@ -262,4 +262,9 @@ for app_name in settings.CITYFARM_API_APPS:
     try:
         importlib.import_module('.serializers', app_name)
     except ImportError as err:
-        logger.debug(err)
+        module_name = "{}.{}".format(app_name, 'serializers')
+        if err.name == module_name:
+            logger.debug(err)
+        else:
+            logger.error("Failed to load module {}".format(module_name))
+            logger.error(err)
