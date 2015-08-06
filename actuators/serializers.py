@@ -1,6 +1,7 @@
-from rest_framework.serializers import ValidationError
+from rest_framework.serializers import ValidationError, ReadOnlyField
 from cityfarm_api.serializers import BaseSerializer
 from .models import ActuatorType, Actuator
+
 
 class ActuatorTypeSerializer(BaseSerializer):
     class Meta:
@@ -17,9 +18,12 @@ class ActuatorTypeSerializer(BaseSerializer):
                 )
         return data
 
+
 class ActuatorSerializer(BaseSerializer):
     class Meta:
         model = Actuator
+
+    index = ReadOnlyField(default=0)
 
     def validate(self, data):
         actuator_type = data['actuator_type']
@@ -31,3 +35,23 @@ class ActuatorSerializer(BaseSerializer):
                 )
             )
         return data
+
+    def create(self, validated_data):
+        actuator_type = validated_data['actuator_type']
+        validated_data['index'] = actuator_type.actuator_creation_count
+        if not validated_data['name']:
+            validated_data['name'] = "{} Instance {}".format(
+                actuator_type.name, validated_data['index']
+            )
+        instance = super().create(validated_data)
+        actuator_type.actuator_creation_count += 1
+        actuator_type.save()
+        return instance
+
+    def update(self, instance, validated_data):
+        if validated_data.get('actuator_type', instance.actuator_type) != \
+                instance.actuator_type:
+            raise ValidationError(
+                'Changing the type of an existing actuator is not allowed'
+            )
+        return super().update(instance, validated_data)

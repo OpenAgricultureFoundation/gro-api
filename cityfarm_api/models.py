@@ -106,21 +106,3 @@ else:
     # namespaced with the slug for the current farm, which is saved in the
     # per-request cache
     raise NotImplementedError()
-
-# `farms.models` imports `SingletonModel`, so we can't do this import until
-# `SingletonModel` is defined.
-from farms.models import Farm
-
-class GenerateNameMixin:
-    def generate_name(self):
-        farm_name = Farm.get_solo().name
-        return "{} {} {}".format(farm_name, self.__class__.__name__, self.pk)
-
-    def save(self, *args, **kwargs):
-        # Generate pk to include in the default name
-        super().save(*args, **kwargs)
-        if not self.name:
-            self.name = self.generate_name()
-            if kwargs.get('force_insert', False):
-                kwargs['force_insert'] = False
-            super().save(*args, **kwargs)

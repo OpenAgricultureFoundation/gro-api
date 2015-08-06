@@ -184,8 +184,7 @@ class FifoCommand(Command):
         This function will be called by :func:`run` if it fails to write to the
         FIFO. This allows subclasses to implement custom recovery procedures.
         """
-        return
-        yield # pylint: disable=unreachable
+        yield OutputItem('Failed to write to FIFO', True)
 
     def run(self):
         self.check()
@@ -194,7 +193,6 @@ class FifoCommand(Command):
             os.write(f, self.fifo_command)
             os.close(f)
         except OSError:
-            yield OutputItem('Failed to write to FIFO', True)
             self.returncode = 1
             yield from self.on_failure()
         else:
@@ -216,7 +214,7 @@ class ReloadWorkers(FifoCommand):
     def on_failure(self):
         yield OutputItem(
             'We are probably not running behind uWSGI. Assuming Django '
-            'development server and attempting touch reload.', True
+            'development server and attempting touch reload.'
         )
         if os.environ.get('RUN_MAIN') == 'true':
             touch_reload = TouchReload()

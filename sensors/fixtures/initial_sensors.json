@@ -1,51 +1,46 @@
 [
     {
         "model": "sensors.sensortype",
-        "pk": 1,
         "fields": {
             "name": "DHT22",
-            "resource_type": 1,
-            "properties": [1, 2],
+            "resource_type": ["A"],
+            "properties": [["A", "TM"], ["A", "HU"]],
             "read_only": "True"
         }
     },
     {
         "model": "sensors.sensortype",
-        "pk": 2,
         "fields": {
             "name": "GC0011",
-            "resource_type": 1,
-            "properties": [3],
+            "resource_type": ["A"],
+            "properties": [["A", "CO"], ["A", "TM"], ["A", "HU"]],
             "read_only": "True"
         }
     },
     {
         "model": "sensors.sensortype",
-        "pk": 3,
         "fields": {
             "name": "DS18B20 (air)",
-            "resource_type": 1,
-            "properties": [3],
+            "resource_type": ["A"],
+            "properties": [["A", "TM"]],
             "read_only": "True"
         }
     },
     {
         "model": "sensors.sensortype",
-        "pk": 4,
         "fields": {
             "name": "DS18B20 (water)",
-            "resource_type": 3,
-            "properties": [7],
+            "resource_type": ["W"],
+            "properties": [["W", "TM"]],
             "read_only": "True"
         }
     },
     {
         "model": "sensors.sensortype",
-        "pk": 5,
         "fields": {
             "name": "TSL2561",
-            "resource_type": 2,
-            "properties": [4],
+            "resource_type": ["L"],
+            "properties": [["L", "IN"]],
             "read_only": "True"
         }
     }

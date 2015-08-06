@@ -8,6 +8,7 @@ from cityfarm_api.serializers import BaseSerializer
 from .models import (
     Enclosure, Tray, PlantSite, dynamic_models, TrayLayout, PlantSiteLayout
 )
+from farms.models import Farm
 from resources.models import Resource
 
 
@@ -57,6 +58,7 @@ class TrayLayoutSerializer(BaseSerializer):
         instance.save()
         return instance
 
+
 class ResourcesMixin:
     resources_view_name = get_detail_view_name(Resource)
 
@@ -68,42 +70,64 @@ class ResourcesMixin:
         field.parent = self
         return field.to_representation(obj.resources.all())
 
+
 class EnclosureSerializer(BaseSerializer, ResourcesMixin):
     class Meta:
         model = Enclosure
         nest_if_recursive = ('model',)
+
     resources = serializers.SerializerMethodField()
 
-class LayoutObjectSerializer(BaseSerializer):
-    """ A Serializer for subclasses of LayoutObject """
-    def validate_location(self, attrs):
-        """ Ensure that this object fits inside it's parent """
-        total_length = (attrs['x'] or 0) + (attrs['length'] or 0)
-        parent_length = attrs['parent'].length
-        if parent_length and not total_length <= parent_length:
-            raise serializers.ValidationError(
-                "Model is too long to fit in its parent"
+    def create(self, validated_data):
+        if not validated_data['name']:
+            validated_data['name'] = "{} Enclosure".format(
+                Farm.get_solo().name
             )
-        total_width = (attrs['y'] or 0) + (attrs['width'] or 0)
-        parent_width = attrs['parent'].width
-        if parent_width and not total_width <= parent_width:
-            raise serializers.ValidationError(
-                "Model is too wide to fit in its parent"
+        return super().create(validated_data)
+
+
+class LayoutObjectSerializer(BaseSerializer, ResourcesMixin):
+    def create(self, validated_data):
+        instance = super().create(validated_data)
+        if not instance.name:
+            instance.name = "{} {} {}".format(
+                Farm.get_solo().name, self.Meta.model.__name__, instance.pk
             )
-        total_height = (attrs['z'] or 0) + (attrs['height'] or 0)
-        parent_height = attrs['parent'].height
-        if parent_height and not total_height <= parent_height:
-            raise serializers.ValidationError(
-                "Model is too tall to fit in its parent"
-            )
-        return attrs
+            instance.save()
+        return instance
 
     def validate(self, attrs):
-        return self.validate_location(attrs)
+        # Check which values are in attrs
+        return attrs
 
-class TraySerializer(LayoutObjectSerializer, ResourcesMixin):
+
+# class LayoutObjectSerializer(BaseSerializer):
+#     def validate(self, attrs):
+#         """ Ensure that this object fits inside it's parent """
+#         total_length = (attrs['x'] or 0) + (attrs['length'] or 0)
+#         parent_length = attrs['parent'].length
+#         if parent_length and not total_length <= parent_length:
+#             raise serializers.ValidationError(
+#                 "Model is too long to fit in its parent"
+#             )
+#         total_width = (attrs['y'] or 0) + (attrs['width'] or 0)
+#         parent_width = attrs['parent'].width
+#         if parent_width and not total_width <= parent_width:
+#             raise serializers.ValidationError(
+#                 "Model is too wide to fit in its parent"
+#             )
+#         total_height = (attrs['z'] or 0) + (attrs['height'] or 0)
+#         parent_height = attrs['parent'].height
+#         if parent_height and not total_height <= parent_height:
+#             raise serializers.ValidationError(
+#                 "Model is too tall to fit in its parent"
+#             )
+#         return attrs
+
+class TraySerializer(LayoutObjectSerializer):
     class Meta:
         model = Tray
+        never_next = ('parent', )
         nest_if_recursive = ('model',)
 
     layout = serializers.HyperlinkedRelatedField(
@@ -150,4 +174,5 @@ for entity_name, entity_model in dynamic_models.items():
             model = entity_model
             never_nest = ('parent',)
             nest_if_recursive = ('model',)
+
         resources = serializers.SerializerMethodField()

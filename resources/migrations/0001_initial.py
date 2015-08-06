@@ -12,12 +12,20 @@ class Migration(migrations.Migration):
 
     operations = [
         migrations.CreateModel(
-            name='Resource',
+            name='ResourceType',
             fields=[
-                ('id', models.AutoField(auto_created=True, serialize=False, verbose_name='ID', primary_key=True)),
-                ('name', models.CharField(max_length=100, blank=True)),
-                ('location_id', models.PositiveIntegerField()),
-                ('location_type', models.ForeignKey(to='contenttypes.ContentType')),
+                ('id', models.AutoField(
+                    primary_key=True, auto_created=True, verbose_name='ID',
+                    serialize=False
+                )),
+                ('code', models.CharField(max_length=1, unique=True)),
+                ('name', models.CharField(max_length=100, unique=True)),
+                ('read_only', models.BooleanField(
+                    default=False, editable=False
+                )),
+                ('resource_count', models.PositiveIntegerField(
+                    editable=False, default=0
+                )),
             ],
             options={
                 'abstract': False,
@@ -27,36 +35,47 @@ class Migration(migrations.Migration):
         migrations.CreateModel(
             name='ResourceProperty',
             fields=[
-                ('id', models.AutoField(primary_key=True, auto_created=True, verbose_name='ID', serialize=False)),
+                ('id', models.AutoField(
+                    primary_key=True, auto_created=True, verbose_name='ID',
+                    serialize=False
+                )),
                 ('code', models.CharField(max_length=2)),
                 ('name', models.CharField(max_length=100)),
-                ('read_only', models.BooleanField(default=False, editable=False)),
+                ('resource_type', models.ForeignKey(
+                    to='resources.ResourceType'
+                )),
+                ('read_only', models.BooleanField(
+                    default=False, editable=False
+                )),
+                ('sensing_point_count', models.PositiveIntegerField(
+                    editable=False, default=0
+                )),
             ],
             options={
-                'abstract': False,
-                'managed': True,
+                'unique_together': set([
+                    ('name', 'resource_type'), ('code', 'resource_type')
+                ]),
             },
         ),
         migrations.CreateModel(
-            name='ResourceType',
+            name='Resource',
             fields=[
-                ('id', models.AutoField(primary_key=True, auto_created=True, verbose_name='ID', serialize=False)),
-                ('name', models.CharField(max_length=100)),
-                ('read_only', models.BooleanField(default=False, editable=False)),
+                ('id', models.AutoField(
+                    auto_created=True, serialize=False, verbose_name='ID',
+                    primary_key=True
+                )),
+                ('index', models.PositiveIntegerField(editable=False)),
+                ('name', models.CharField(max_length=100, blank=True)),
+                ('resource_type', models.ForeignKey(
+                    to='resources.ResourceType'
+                )),
+                ('location_id', models.PositiveIntegerField()),
+                ('location_type', models.ForeignKey(
+                    to='contenttypes.ContentType'
+                )),
             ],
             options={
-                'abstract': False,
-                'managed': True,
+                'unique_together': set([('index', 'resource_type')]),
             },
-        ),
-        migrations.AddField(
-            model_name='resourceproperty',
-            name='resource_type',
-            field=models.ForeignKey(to='resources.ResourceType', related_name='properties'),
-        ),
-        migrations.AddField(
-            model_name='resource',
-            name='resource_type',
-            field=models.ForeignKey(to='resources.ResourceType', related_name='resources'),
         ),
     ]

@@ -12,6 +12,7 @@ SetPointSerializer = model_serializers.get_for_model(SetPoint)
 class EnclosureViewSet(SingletonViewSet):
     model = Enclosure
 
+
 class TrayViewSet(ModelViewSet):
     model = Tray
     @detail_route(methods=["get"])

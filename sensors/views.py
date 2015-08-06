@@ -14,6 +14,7 @@ class SensorTypeViewSet(ModelViewSet):
     model = SensorType
     permission_classes = [EnforceReadOnly,]
 
+
 class SensingPointViewSet(ReadOnlyModelViewSet):
     model = SensingPoint
 

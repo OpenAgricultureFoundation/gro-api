@@ -6,7 +6,7 @@ from django.contrib.contenttypes.fields import GenericRelation
 from django.dispatch import receiver
 from model_utils.managers import InheritanceManager
 from cityfarm_api.utils.state import system_layout
-from cityfarm_api.models import Model, SingletonModel, GenerateNameMixin
+from cityfarm_api.models import Model, SingletonModel
 from cityfarm_api.fields import LayoutForeignKey
 from farms.models import Farm
 from resources.models import Resource
@@ -73,7 +73,7 @@ class ParentField(LayoutForeignKey):
         return name, path, args, kwargs
 
 
-class Enclosure(GenerateNameMixin, SingletonModel):
+class Enclosure(SingletonModel):
     name = models.CharField(max_length=100, blank=True)
     x = models.FloatField(default=0)
     y = models.FloatField(default=0)
@@ -99,7 +99,7 @@ def create_singleton_instance(sender, instance, **kwargs):
             pass
 
 
-class Tray(GenerateNameMixin, Model):
+class Tray(Model):
     name = models.CharField(max_length=100, blank=True)
     x = models.FloatField(default=0)
     y = models.FloatField(default=0)
@@ -153,7 +153,7 @@ def generate_model_from_entity(entity):
         ),
         "__str__": to_string,
     }
-    return type(entity.name, (GenerateNameMixin, Model,), model_attrs)
+    return type(entity.name, (Model,), model_attrs)
 
 # A dictionary of all of the classes in the layout tree that have been created
 # so we can be sure not to create a class that has already been created

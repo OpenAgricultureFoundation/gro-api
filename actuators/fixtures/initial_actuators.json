@@ -1,21 +1,27 @@
 [
     {
         "model": "actuators.actuatortype",
-        "pk": 1,
         "fields": {
+            "code": "HEA",
             "name": "Heater",
-            "resource_type": 1,
-            "properties": [1],
+            "resource_type": ["A"],
+            "properties": [["A", "TM"]],
+            "order": 1,
+            "is_binary": "True",
+            "effect_on_active": 1,
             "read_only": "True"
         }
     },
     {
         "model": "actuators.actuatortype",
-        "pk": 2,
         "fields": {
+            "code": "HUM",
             "name": "Humidifier",
-            "resource_type": 1,
-            "properties": [2],
+            "resource_type": ["A"],
+            "properties": [["A", "HU"]],
+            "order": 1,
+            "is_binary": "True",
+            "effect_on_active": 1,
             "read_only": "True"
         }
     }

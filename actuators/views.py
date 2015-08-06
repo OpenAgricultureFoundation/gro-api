@@ -14,6 +14,7 @@ class ActuatorTypeViewSet(ModelViewSet):
     model = ActuatorType
     permission_classes = [EnforceReadOnly,]
 
+
 class ActuatorViewSet(ModelViewSet):
     model = Actuator
 

@@ -1,46 +1,67 @@
 from django.db import models
-from cityfarm_api.models import Model, GenerateNameMixin
-from farms.models import Farm
+from cityfarm_api.models import Model
 from resources.models import ResourceType, ResourceProperty, Resource
 
+
+class SensorTypeManager(models.Manager):
+    def get_by_natural_key(self, name):
+        return self.get(name=name)
+
 class SensorType(Model):
-    name = models.CharField(max_length=100)
-    resource_type = models.ForeignKey(
-        ResourceType, related_name='sensor_types'
-    )
-    properties = models.ManyToManyField(
-        ResourceProperty, related_name='sensor_types'
-    )
+    class Meta:
+        default_related_name = 'sensor_types'
+
+    name = models.CharField(max_length=100, unique=True)
+    resource_type = models.ForeignKey(ResourceType)
+    properties = models.ManyToManyField(ResourceProperty)
     read_only = models.BooleanField(editable=False, default=False)
-    def __str__(self):
-        return self.name + (' (stock)' if self.read_only else ' (custom)')
+    sensor_count = models.PositiveIntegerField(
+        editable=False, default=0
+    )
 
-class Sensor(GenerateNameMixin, Model):
+    objects = SensorTypeManager()
+
+    def natural_key(self):
+        return (self.name, )
+
+    def __str__(self):
+        return self.name
+
+
+class Sensor(Model):
+    class Meta:
+        unique_together =  ('index', 'sensor_type')
+        default_related_name = 'sensors'
+
+    index = models.PositiveIntegerField(editable=False)
     name = models.CharField(max_length=100, blank=True)
-    sensor_type = models.ForeignKey(SensorType, related_name='sensors')
-    resource = models.ForeignKey(Resource, related_name='sensors')
-
-    def generate_name(self):
-        farm_name = Farm.get_solo().name
-        return "{} {} {}".format(
-            farm_name, self.sensor_type.name, self.pk
-        )
+    sensor_type = models.ForeignKey(SensorType)
+    resource = models.ForeignKey(Resource)
+    is_active = models.BooleanField(default=True)
 
     def __str__(self):
-        return self.name + ' (' + self.sensor_type.name + ')'
+        return self.name
+
 
 class SensingPoint(Model):
-    sensor = models.ForeignKey(Sensor, related_name='sensing_points')
-    property = models.ForeignKey(
-        ResourceProperty, related_name='sensing_points'
-    )
+    class Meta:
+        unique_together = ('index', 'property')
+        default_related_name = 'sensing_points'
+
+    index = models.PositiveIntegerField(editable=False)
+    sensor = models.ForeignKey(Sensor)
+    property = models.ForeignKey(ResourceProperty)
+    is_active = models.BooleanField(default=True)
+
     def __str__(self):
         return self.sensor.name + ' - ' + self.property.name
+
 
 class DataPoint(Model):
     class Meta:
         ordering = ['timestamp']
         get_latest_by = 'timestamp'
+
     origin = models.ForeignKey(SensingPoint, related_name='data_points+')
     timestamp = models.IntegerField()
     value = models.FloatField()

@@ -141,10 +141,6 @@ class TestRunner(DiscoverRunner):
         with system_layout.as_value(None):
             return super().setup_databases()
 
-    def run_tests(self, *args, **kwargs):
-        logging.disable(logging.WARNING)
-        return super().run_tests(*args, **kwargs)
-
 
 def run_with_layouts(*layouts):
     def wrapper(f, layouts=layouts):

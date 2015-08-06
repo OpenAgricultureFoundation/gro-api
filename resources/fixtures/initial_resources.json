@@ -1,95 +1,88 @@
 [
     {
         "model": "resources.resourcetype",
-        "pk": 1,
         "fields": {
+            "code": "A",
             "name": "Air",
             "read_only": "True"
         }
     },
     {
         "model": "resources.resourcetype",
-        "pk": 2,
         "fields": {
+            "code": "L",
             "name": "Light",
             "read_only": "True"
         }
     },
     {
         "model": "resources.resourcetype",
-        "pk": 3,
         "fields": {
+            "code": "W",
             "name": "Water",
             "read_only": "True"
         }
     },
     {
         "model": "resources.resourceproperty",
-        "pk": 1,
         "fields": {
-            "code": "AT",
+            "code": "TM",
             "name": "Temperature",
-            "resource_type": 1,
+            "resource_type": ["A"],
             "read_only": "True"
         }
     },
     {
         "model": "resources.resourceproperty",
-        "pk": 2,
         "fields": {
             "code": "HU",
             "name": "Humidity",
-            "resource_type": 1,
+            "resource_type": ["A"],
             "read_only": "True"
         }
     },
     {
         "model": "resources.resourceproperty",
-        "pk": 3,
         "fields": {
-            "code": "AC",
+            "code": "CO",
             "name": "CO2",
-            "resource_type": 1,
+            "resource_type": ["A"],
             "read_only": "True"
         }
     },
     {
         "model": "resources.resourceproperty",
-        "pk": 4,
         "fields": {
-            "code": "LI",
+            "code": "IN",
             "name": "Intensity",
-            "resource_type": 2,
+            "resource_type": ["L"],
             "read_only": "True"
         }
     },
     {
         "model": "resources.resourceproperty",
-        "pk": 5,
         "fields": {
             "code": "PH",
             "name": "pH",
-            "resource_type": 3,
+            "resource_type": ["W"],
             "read_only": "True"
         }
     },
     {
         "model": "resources.resourceproperty",
-        "pk": 6,
         "fields": {
             "code": "EC",
             "name": "Electrical Conductivity",
-            "resource_type": 3,
+            "resource_type": ["W"],
             "read_only": "True"
         }
     },
     {
         "model": "resources.resourceproperty",
-        "pk": 7,
         "fields": {
-            "code": "WT",
-            "name": "Temperature",
-            "resource_type": 3,
+            "code": "TM",
+            "name": "Water Temperature",
+            "resource_type": ["W"],
             "read_only": "True"
         }
     }

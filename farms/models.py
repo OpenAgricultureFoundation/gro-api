@@ -43,7 +43,7 @@ class LayoutChangeAttempted(APIException):
     should be raised when a used tries to do that
     """
     status_code = status.HTTP_403_FORBIDDEN
-    default_detail = _('Changing the layout of a farm is disallowed')
+    default_detail = _('Changing the layout of a farm is not allowed')
 
 
 class Farm(farm_base):
