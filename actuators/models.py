@@ -7,7 +7,6 @@ class ActuatorTypeManager(models.Manager):
     def get_by_natural_key(self, type_code, actuator_code):
         resource_type = ResourceType.objects.get_by_natural_key(type_code)
         return self.get(code=actuator_code, resource_type=resource_type)
-        return self.get(code=code)
 
 
 class ActuatorType(Model):
@@ -25,8 +24,8 @@ class ActuatorType(Model):
     is_binary = models.BooleanField()
     effect_on_active = models.IntegerField()
     read_only = models.BooleanField(editable=False, default=False)
-    actuator_creation_count = models.PositiveIntegerField(
-        editable=False, default=1
+    actuator_count = models.PositiveIntegerField(
+        editable=False, default=0
     )
 
     objects = ActuatorTypeManager()
@@ -47,8 +46,8 @@ class Actuator(Model):
     name = models.CharField(max_length=100, blank=True)
     actuator_type = models.ForeignKey(ActuatorType, related_name='actuators')
     resource = models.ForeignKey(Resource, related_name='actuators')
-    override_value = models.FloatField(null=True, blank=True)
-    override_timeout = models.IntegerField(null=True, blank=True)
+    override_value = models.FloatField(editable=False, null=True)
+    override_timeout = models.IntegerField(editable=False, null=True)
 
     def __str__(self):
         return self.name

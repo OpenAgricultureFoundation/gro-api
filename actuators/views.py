@@ -57,9 +57,9 @@ class ActuatorViewSet(ModelViewSet):
             raise ValueError()
 
     def get_state(self, request, pk=None):
-        actuator = self.get_object()
+        instance = self.get_object()
         try:
-            queryset = ActuatorState.objects.filter(origin=actuator).latest()
+            queryset = ActuatorState.objects.filter(origin=instance).latest()
         except ObjectDoesNotExist:
             raise APIException(
                 'No state has been recorded for this actuator yet'
@@ -70,7 +70,7 @@ class ActuatorViewSet(ModelViewSet):
         return Response(serializer.data)
 
     def post_state(self, request, pk=None):
-        actuator = self.get_object()
+        instance = self.get_object()
         timestamp = request.DATA.get('timestamp', time.time())
         value = request.DATA.get('value', None)
         if value is None:
@@ -78,7 +78,7 @@ class ActuatorViewSet(ModelViewSet):
                 'No value received for "value" in the posted dictionary'
             )
         actuator_state = ActuatorState(
-            origin=Actuator, timestamp=timestamp, value=value
+            origin=instance, timestamp=timestamp, value=value
         )
         actuator_state.save()
         serializer = ActuatorStateSerializer(
@@ -88,7 +88,7 @@ class ActuatorViewSet(ModelViewSet):
 
     @detail_route(methods=["get"])
     def history(self, request, pk=None):
-        actuator = self.get_object()
+        instance = self.get_object()
         since = request.query_params.get('since', None)
         if not since:
             raise APIException(
@@ -96,7 +96,7 @@ class ActuatorViewSet(ModelViewSet):
             )
         before = request.query_params.get('before', time.time())
         queryset = ActuatorState.filter(
-            origin=actuator, timestamp__gt=since, timestamp__lt=before
+            origin=instance, timestamp__gt=since, timestamp__lt=before
         )
         serializer = ActuatorStateSerializer(
             queryset, context={'request': request}

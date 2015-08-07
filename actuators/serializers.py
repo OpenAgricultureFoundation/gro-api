@@ -31,6 +31,8 @@ class ActuatorSerializer(BaseSerializer):
         model = Actuator
 
     index = ReadOnlyField(default=0)
+    override_value = ReadOnlyField()
+    override_timeout = ReadOnlyField()
 
     def validate(self, data):
         actuator_type = data['actuator_type']
@@ -38,20 +40,20 @@ class ActuatorSerializer(BaseSerializer):
         if actuator_type.resource_type != resource.resource_type:
             raise ValidationError(
                 'Attempted to install a {} actuator in a {} resource'.format(
-                    actuator_type.resource_type, resource.resource_Type
+                    actuator_type.resource_type, resource.resource_type
                 )
             )
         return data
 
     def create(self, validated_data):
         actuator_type = validated_data['actuator_type']
-        validated_data['index'] = actuator_type.actuator_creation_count
-        if not validated_data['name']:
+        actuator_type.actuator_count += 1
+        validated_data['index'] = actuator_type.actuator_count
+        if not validated_data.get('name', None):
             validated_data['name'] = "{} Instance {}".format(
                 actuator_type.name, validated_data['index']
             )
         instance = super().create(validated_data)
-        actuator_type.actuator_creation_count += 1
         actuator_type.save()
         return instance
 

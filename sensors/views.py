@@ -32,9 +32,9 @@ class SensingPointViewSet(ReadOnlyModelViewSet):
             raise ValueError()
 
     def get_value(self, request, pk=None):
-        point = self.get_object()
+        instance = self.get_object()
         try:
-            queryset = DataPoint.objects.filter(origin=point).latest()
+            queryset = DataPoint.objects.filter(origin=instance).latest()
         except ObjectDoesNotExist:
             raise APIException(
                 'No data has been recorded for this sensor yet'
@@ -45,7 +45,7 @@ class SensingPointViewSet(ReadOnlyModelViewSet):
         return Response(serializer.data)
 
     def post_value(self, request, pk=None):
-        sensing_point = self.get_object()
+        instance = self.get_object()
         timestamp = request.DATA.get('timestamp', time.time())
         value = request.DATA.get('value')
         if value is None:
@@ -53,7 +53,7 @@ class SensingPointViewSet(ReadOnlyModelViewSet):
                 'No value received for "value" in the posted dictionary'
             )
         data_point = DataPoint(
-            origin=sensing_point, timestamp=timestamp, value=value
+            origin=instance, timestamp=timestamp, value=value
         )
         data_point.save()
         serializer = DataPointSerializer(
@@ -63,7 +63,7 @@ class SensingPointViewSet(ReadOnlyModelViewSet):
 
     @detail_route(methods=["get"])
     def history(self, request, pk=None):
-        point = self.get_object()
+        instance = self.get_object()
         since = request.query_params.get('since', None)
         if not since:
             raise APIException(
@@ -71,7 +71,7 @@ class SensingPointViewSet(ReadOnlyModelViewSet):
             )
         before = request.query_params.get('before', time.time())
         queryset = DataPoint.objects.filter(
-            origin=point, timestamp__gt=since, timestamp__lt=before
+            origin=instance, timestamp__gt=since, timestamp__lt=before
         )
         serializer = DataPointSerializer(
             queryset, context={'request': request}

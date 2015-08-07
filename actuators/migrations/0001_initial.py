@@ -31,8 +31,8 @@ class Migration(migrations.Migration):
                 ('read_only', models.BooleanField(
                     default=False, editable=False
                 )),
-                ('actuator_creation_count', models.PositiveIntegerField(
-                    editable=False, default=1
+                ('actuator_count', models.PositiveIntegerField(
+                    editable=False, default=0
                 )),
             ],
             options={
@@ -58,9 +58,11 @@ class Migration(migrations.Migration):
                 ('resource', models.ForeignKey(
                     to='resources.Resource', related_name='actuators'
                 )),
-                ('override_value', models.FloatField(null=True, blank=True)),
+                ('override_value', models.FloatField(
+                    editable=False, null=True
+                )),
                 ('override_timeout', models.IntegerField(
-                    null=True, blank=True
+                    editable=False, null=True
                 )),
             ],
             options={

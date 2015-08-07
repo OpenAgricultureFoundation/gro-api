@@ -1,6 +1,6 @@
 from cityfarm_api.test import APITestCase, run_with_any_layout
 from cityfarm_api.serializers import model_serializers
-from resources.models import ResourceType
+from resources.models import ResourceType, ResourceProperty
 from .models import SensorType, Sensor, SensingPoint, DataPoint
 
 class SensorTypeTestCase(APITestCase):
@@ -50,10 +50,13 @@ class SensorTypeTestCase(APITestCase):
     @run_with_any_layout
     def test_invalid_properties(self):
         water_id = ResourceType.objects.get_by_natural_key('W').pk
+        air_temp_id = ResourceProperty.objects.get_by_natural_key('A', 'TM').pk
         data = {
             'name': 'test',
             'resource_type': self.url_for_object('resourceType', water_id),
-            'properties': [self.url_for_object('resourceProperty', 1)]
+            'properties': [
+                self.url_for_object('resourceProperty', air_temp_id)
+            ]
         }
         res = self.client.post(self.url_for_object('sensorType'), data=data)
         self.assertEqual(res.status_code, 400)
