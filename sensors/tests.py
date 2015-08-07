@@ -76,8 +76,9 @@ class SensorTestCase(APITestCase):
     @run_with_any_layout
     def test_sensor_creation(self):
         # Create a resource to install the sensor in
+        air_id = ResourceType.objects.get_by_natural_key('A').pk
         resource_info = {
-            'resource_type': self.url_for_object('resourceType', 1),
+            'resource_type': self.url_for_object('resourceType', air_id),
             'location': self.url_for_object('enclosure', 1)
         }
         res = self.client.post(
@@ -86,14 +87,15 @@ class SensorTestCase(APITestCase):
         self.assertEqual(res.status_code, 201)
         resource = res.data
         # Create the sensor
+        dht22_id = SensorType.objects.get_by_natural_key('DHT22').pk
         sensor_info = {
-            'sensor_type': self.url_for_object('sensorType', 1),
+            'sensor_type': self.url_for_object('sensorType', dht22_id),
             'resource': resource['url']
         }
         res = self.client.post(self.url_for_object('sensor'), data=sensor_info)
         self.assertEqual(res.status_code, 201)
         sensor = res.data
-        # Validate the name
+        # Validate the index and name
         res = self.client.get(sensor['sensor_type'])
         self.assertEqual(res.status_code, 200)
         sensor_type = res.data
@@ -120,13 +122,17 @@ class SensorTestCase(APITestCase):
         self.assertEqual(sensor['name'], 'test')
         # Try changing the type
         old_sensor_type_url = sensor_info['sensor_type']
-        sensor_info['sensor_type'] = self.url_for_object('sensorType', 2)
+        gc0011_id = SensorType.objects.get_by_natural_key('GC0011').pk
+        sensor_info['sensor_type'] = self.url_for_object(
+            'sensorType', gc0011_id
+        )
         res = self.client.put(sensor['url'], data=sensor_info)
         self.assertEqual(res.status_code, 400)
         sensor_info['sensor_type'] = old_sensor_type_url
         # Create a new resource of a different type
+        water_id = ResourceType.objects.get_by_natural_key('W').pk
         new_resource_info = {
-            'resource_type': self.url_for_object('resourceType', 2),
+            'resource_type': self.url_for_object('resourceType', water_id),
             'location': self.url_for_object('enclosure', 1)
         }
         res = self.client.post(

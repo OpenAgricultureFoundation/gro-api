@@ -40,15 +40,6 @@ class ResourcePropertySerializer(BaseSerializer):
             )
         return val
 
-    def sensing_points_by_index(self):
-        sensing_point_view_name = get_detail_view_name(SensingPoint)
-        field = HyperlinkedIdentityField(view_name=sensing_point_view_name)
-        field.parent = self
-        return {
-            point.index: field.to_repesentation(point) for point in
-            self.instance.sensing_points.all()
-        }
-
 
 class ResourceLocationRelatedField(HyperlinkedRelatedField):
     def __init__(self, **kwargs):

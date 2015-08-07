@@ -14,10 +14,3 @@ class ResourceTypeViewSet(ModelViewSet):
 class ResourcePropertyViewSet(ModelViewSet):
     model = ResourceProperty
     permission_classes = [EnforceReadOnly,]
-
-    @detail_route(methods=["get"])
-    def sensing_points_by_index(self, request, pk=None):
-        serializer = ResourcePropertySerializer(
-            self.get_object(), context={'request': request}
-        )
-        return Response(serializer.sensing_points_by_index())

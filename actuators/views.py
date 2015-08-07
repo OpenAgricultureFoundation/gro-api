@@ -18,6 +18,35 @@ class ActuatorTypeViewSet(ModelViewSet):
 class ActuatorViewSet(ModelViewSet):
     model = Actuator
 
+    def retrieve(self, request, *args, **kwargs):
+        instance = self.get_object()
+        if instance.override_value and \
+                instance.override_timeout <= time.time():
+            instance.override_value = None
+            instance.override_timeout = None
+            instance.save()
+        serializer = self.get_serializer(instance)
+        return Response(serializer.data)
+
+    @detail_route(methods=["post"])
+    def override(self, request, pk=None):
+        instance = self.get_object()
+        value = request.DATA.get('value', None)
+        if value is None:
+            raise APIException(
+                'No value received for "value" in the posted dictionary'
+            )
+        duration = request.DATA.get('duration', None)
+        if not duration:
+            raise APIExcpetion(
+                'No value received for "duration" in the posted dictionary'
+            )
+        instance.override_value = float(value)
+        instance.override_timeout = time.time() + int(duration)
+        instance.save()
+        serializer = self.get_serializer(instance)
+        return Response(serializer.data)
+
     @detail_route(methods=["get", "post"])
     def state(self, request, pk=None):
         if request.method == "GET":
@@ -43,7 +72,7 @@ class ActuatorViewSet(ModelViewSet):
     def post_state(self, request, pk=None):
         actuator = self.get_object()
         timestamp = request.DATA.get('timestamp', time.time())
-        value = request.DATA.get('value')
+        value = request.DATA.get('value', None)
         if value is None:
             raise APIException(
                 'No value received for "value" in the posted dictionary'

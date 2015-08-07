@@ -7,6 +7,13 @@ class ActuatorTypeSerializer(BaseSerializer):
     class Meta:
         model = ActuatorType
 
+    def validate_code(self, val):
+        if not len(val) == 2:
+            raise ValidationError(
+                'ActuatorType codes must be exactly 2 characters long'
+            )
+        return val
+
     def validate(self, data):
         resource_type = data['resource_type']
         properties = data['properties']

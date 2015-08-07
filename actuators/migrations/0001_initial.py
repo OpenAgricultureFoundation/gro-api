@@ -17,8 +17,8 @@ class Migration(migrations.Migration):
                     primary_key=True, serialize=False, auto_created=True,
                     verbose_name='ID'
                 )),
-                ('code', models.CharField(max_length=3, unique=True)),
-                ('name', models.CharField(max_length=100, unique=True)),
+                ('code', models.CharField(max_length=2)),
+                ('name', models.CharField(max_length=100)),
                 ('resource_type', models.ForeignKey(
                     to='resources.ResourceType',
                 )),
@@ -35,7 +35,11 @@ class Migration(migrations.Migration):
                     editable=False, default=1
                 )),
             ],
-            options={},
+            options={
+                'unique_together': set([
+                    ('code', 'resource_type'), ('name', 'resource_type')
+                ])
+            },
         ),
         migrations.CreateModel(
             name='Actuator',
@@ -53,6 +57,10 @@ class Migration(migrations.Migration):
                 )),
                 ('resource', models.ForeignKey(
                     to='resources.Resource', related_name='actuators'
+                )),
+                ('override_value', models.FloatField(null=True, blank=True)),
+                ('override_timeout', models.IntegerField(
+                    null=True, blank=True
                 )),
             ],
             options={
