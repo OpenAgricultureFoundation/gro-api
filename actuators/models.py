@@ -23,6 +23,10 @@ class ActuatorType(Model):
     order = models.PositiveIntegerField()
     is_binary = models.BooleanField()
     effect_on_active = models.IntegerField()
+    threshold = models.FloatField(default=0)
+    operating_range_min = models.FloatField(default=0)
+    operating_range_max = models.FloatField(default=0)
+
     read_only = models.BooleanField(editable=False, default=False)
     actuator_count = models.PositiveIntegerField(
         editable=False, default=0

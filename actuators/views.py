@@ -12,7 +12,7 @@ ActuatorStateSerializer = model_serializers.get_for_model(ActuatorState)
 
 class ActuatorTypeViewSet(ModelViewSet):
     model = ActuatorType
-    permission_classes = [EnforceReadOnly,]
+    # permission_classes = [EnforceReadOnly,]
 
 
 class ActuatorViewSet(ModelViewSet):

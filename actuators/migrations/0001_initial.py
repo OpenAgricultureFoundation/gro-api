@@ -34,6 +34,9 @@ class Migration(migrations.Migration):
                 ('actuator_count', models.PositiveIntegerField(
                     editable=False, default=0
                 )),
+                ('threshold', models.FloatField(default=0)),
+                ('operating_range_min', models.FloatField(default=0)),
+                ('operating_range_max', models.FloatField(default=0))
             ],
             options={
                 'unique_together': set([
