@@ -1,3 +1,4 @@
+import time
 from django.db import models
 from cityfarm_api.models import Model
 from resources.models import ResourceType, ResourceProperty, Resource
@@ -63,5 +64,5 @@ class DataPoint(Model):
         get_latest_by = 'timestamp'
 
     origin = models.ForeignKey(SensingPoint, related_name='data_points+')
-    timestamp = models.IntegerField()
+    timestamp = models.IntegerField(blank=True, default=time.time)
     value = models.FloatField()

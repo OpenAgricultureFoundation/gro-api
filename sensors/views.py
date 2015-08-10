@@ -77,3 +77,16 @@ class SensingPointViewSet(ReadOnlyModelViewSet):
             queryset, context={'request': request}
         )
         return Response(serializer.data)
+
+
+class DataPoint(ModelViewSet):
+    model = DataPoint
+
+    def get_serializer(self, *args, **kwargs):
+        serializer_class = self.get_serializer_class()
+        context = self.get_serializer_context()
+        kwargs['context'] = context
+        request = context['request']
+        if 'many' in request.QUERY_PARAMS:
+            kwargs['many'] = request.QUERY_PARAMS['many'] == 'True'
+        return serializer_class(*args, **kwargs)
