@@ -8,7 +8,11 @@ import string
 
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
-REST_FRAMEWORK = {}
+REST_FRAMEWORK = {
+    'DEFAULT_FILTER_BACKENDS': ('rest_framework.filters.DjangoFilterBackend',),
+    'DEFAULT_PAGINATION_CLASS': 'cityfarm_api.pagination.Pagination',
+    'PAGE_SIZE': 100,
+}
 
 # Local Configuration
 
