@@ -51,7 +51,7 @@ class RecipeRunSerializer(BaseSerializer):
             except InvalidTimeString:
                 logger.warning(
                     'Encountered invalid time string "%s" in recipe "%s"',
-                    time_str, recipe.name
+                    time_string, recipe.name
                 )
                 continue
             command_timestamp = start_timestamp + timedelta
