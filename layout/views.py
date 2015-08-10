@@ -1,4 +1,5 @@
 import time
+from django.core.exceptions import ObjectDoesNotExist
 from rest_framework.response import Response
 from rest_framework.decorators import detail_route
 from cityfarm_api.viewsets import SingletonViewSet, ModelViewSet
@@ -20,8 +21,12 @@ class TrayViewSet(ModelViewSet):
         tray = self.get_object()
         set_points = {}
         for property in ResourceProperty.objects.all():
-            set_point = SetPoint.objects.filter(
-                tray=tray, property=property, timestamp__lt=time.time()
-            ).latest()
-            set_points[set_point.property.code] = set_point.value
+            try:
+                set_point = SetPoint.objects.filter(
+                    tray=tray, property=property, timestamp__lt=time.time()
+                ).latest()
+            except ObjectDoesNotExist:
+                continue
+            else:
+                set_points[set_point.property.code] = set_point.value
         return Response(set_points)

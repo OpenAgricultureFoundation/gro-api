@@ -8,7 +8,6 @@ import time
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('layout', '0002_generate_dynamic_models'),
         ('plants', '0008_auto_20150810_0100'),
     ]
 
