@@ -79,7 +79,7 @@ class SensingPointViewSet(ReadOnlyModelViewSet):
         return Response(serializer.data)
 
 
-class DataPoint(ModelViewSet):
+class DataPointViewSet(ModelViewSet):
     model = DataPoint
 
     def get_serializer(self, *args, **kwargs):
