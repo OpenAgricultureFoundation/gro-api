@@ -60,7 +60,10 @@ class RecipeRunSerializer(BaseSerializer):
             ).earliest().start_timestamp
         except ObjectDoesNotExist:
             next_start_timestamp = float("inf")
-        set_points = []
+        set_points = [SetPoint(
+            tray=tray, property=property, timestamp=start_timestamp-1,
+            value=None
+        ) for property in ResourceProperty.objects.all()]
         for line in recipe.file:
             line = line.strip()
             if not line:
@@ -106,9 +109,13 @@ class RecipeRunSerializer(BaseSerializer):
                 )
         validated_data['end_timestamp'] = command_timestamp
         instance = super().create(validated_data)
-        for set_point in set_points:
-            set_point.recipe_run = instance
-        SetPoint.objects.bulk_create(set_points)
+        try:
+            for set_point in set_points:
+                set_point.recipe_run = instance
+            SetPoint.objects.bulk_create(set_points)
+        except:
+            instance.delete()
+            raise
         return instance
 
     def update(self, instance, validated_data):

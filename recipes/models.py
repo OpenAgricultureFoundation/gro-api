@@ -31,5 +31,5 @@ class SetPoint(Model):
     tray = models.ForeignKey('layout.Tray', related_name='set_points+')
     property = models.ForeignKey(ResourceProperty, related_name='set_points+')
     timestamp = models.IntegerField()
-    value = models.FloatField()
+    value = models.FloatField(null=True)
     recipe_run = models.ForeignKey(RecipeRun, related_name='set_points+')
