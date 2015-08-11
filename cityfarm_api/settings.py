@@ -62,6 +62,14 @@ FRAMEWORK_APPS = (
     'rest_framework',
 )
 
+if SERVER_MODE == DEVELOPMENT:
+    FRAMEWORK_APPS += ('debug_toolbar',)
+    DEBUG_TOOLBAR_PATCH_SETTINGS = False
+    DEBUG_TOOLBAR_CONFIG = {
+        'RENDER_PANELS': True
+    }
+    INTERNAL_IPS = ['127.0.0.1']
+
 INSTALLED_APPS = CITYFARM_API_APPS + FRAMEWORK_APPS
 
 # Request Handling
@@ -89,6 +97,36 @@ else:
     MIDDLEWARE_CLASSES += (
         'cityfarm_api.middleware.FarmIsConfiguredCheckMiddleware',
     )
+
+if SERVER_MODE == DEVELOPMENT:
+    MIDDLEWARE_CLASSES += (
+        'debug_toolbar.middleware.DebugToolbarMiddleware',
+        'cityfarm_api.settings.NonHtmlDebugToolbarMiddleware',
+    )
+    import json
+    from django.http import HttpResponse
+    class NonHtmlDebugToolbarMiddleware(object):
+        """
+        Trick Django Debug Toolbar into working for JSON requests if the
+        request has a 'debug' query parameter
+        """
+        @staticmethod
+        def process_response(request, response):
+            if request.GET.get('debug') == '':
+                if response['Content-Type'] == 'application/octet-stream':
+                    new_content = '<html><body>Binary Data, Length: '\
+                            '{}</body></html>'.format(len(response.content))
+                    response = HttpResponse(new_content)
+                elif response['Content-Type'] != 'text/html':
+                    content = response.content.decode('ascii')
+                    try:
+                        json_ = json.loads(content)
+                        content = json.dumps(json_, sort_keys=True, indent=4)
+                    except ValueError:
+                        pass
+                    response = HttpResponse('<html><body><pre>{}</pre></body>'
+                                            '</html>'.format(content))
+            return response
 
 CORS_ORIGIN_ALLOW_ALL = True
 
@@ -165,12 +203,16 @@ CONN_MAX_AGE = None
 
 # Caching
 
-# TODO: Make this better
-CACHES = {
-    'default': {
-        'BACKEND': 'django.core.cache.backends.dummy.DummyCache'
+if SERVER_TYPE == LEAF:
+    CACHES = {
+        'default': {
+            'BACKEND': 'django.core.cache.backends.locmem.LocMemCache',
+        }
     }
-}
+    SOLO_CACHE = 'default'
+    SOLO_CACHE_TIMEOUT = 60
+else:
+    raise NotImplementedError()
 
 # Logging
 
@@ -223,18 +265,18 @@ if SERVER_MODE == DEVELOPMENT:
 else:
     LOGGING['handlers']['file']['level'] = 'INFO'
     LOGGING['handlers']['file']['filename'] = '/var/log/cityfarm_api.log'
-    if 'django.security' not in LOGGING['loggers']:
-        LOGGING['loggers']['django.security'] = {
-            'handlers': [],
-        }
-    LOGGING['loggers']['django.security']['handlers'].append('file')
-    LOGGING['loggers']['django.security']['level'] = 'INFO'
-    if 'django.request' not in LOGGING['loggers']:
-        LOGGING['loggers']['django.request'] = {
-            'handlers': [],
-        }
-    LOGGING['loggers']['django.request']['handlers'].append('file')
-    LOGGING['loggers']['django.request']['level'] = 'INFO'
+if 'django.security' not in LOGGING['loggers']:
+    LOGGING['loggers']['django.security'] = {
+        'handlers': [],
+    }
+LOGGING['loggers']['django.security']['handlers'].append('file')
+LOGGING['loggers']['django.security']['level'] = 'INFO'
+if 'django.request' not in LOGGING['loggers']:
+    LOGGING['loggers']['django.request'] = {
+        'handlers': [],
+    }
+LOGGING['loggers']['django.request']['handlers'].append('file')
+LOGGING['loggers']['django.request']['level'] = 'INFO'
 
 # Testing
 

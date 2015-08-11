@@ -1,5 +1,6 @@
 import time
 from django.core.exceptions import ObjectDoesNotExist
+from rest_framework import status
 from rest_framework.response import Response
 from rest_framework.decorators import detail_route
 from rest_framework.exceptions import APIException
@@ -82,11 +83,21 @@ class SensingPointViewSet(ReadOnlyModelViewSet):
 class DataPointViewSet(ModelViewSet):
     model = DataPoint
 
-    def get_serializer(self, *args, **kwargs):
-        serializer_class = self.get_serializer_class()
-        context = self.get_serializer_context()
-        kwargs['context'] = context
-        request = context['request']
-        if 'many' in request.QUERY_PARAMS:
-            kwargs['many'] = request.QUERY_PARAMS['many'] == 'True'
-        return serializer_class(*args, **kwargs)
+    def create(self, request, *args, **kwargs):
+        many = request.QUERY_PARAMS.get('many', False)
+        serializer = self.get_serializer(data=request.data, many=many)
+        serializer.is_valid(raise_exception=True)
+        self.perform_create(serializer)
+        headers = self.get_success_headers(serializer.data)
+        return Response(
+            serializer.data, status=status.HTTP_201_CREATED, headers=headers
+        )
+
+    def perform_create(self, serializer):
+        if getattr(serializer, 'many', False):
+            self.model.objects.bulk_create([
+                self.model(**child_attrs) for child_attrs in
+                serializer.validated_data
+            ])
+        else:
+            serializer.save()

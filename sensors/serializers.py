@@ -1,7 +1,9 @@
-from rest_framework.serializers import ValidationError, ReadOnlyField
+from rest_framework.fields import SkipField
+from rest_framework.relations import HyperlinkedIdentityField
 from rest_framework.exceptions import APIException
+from rest_framework.serializers import ValidationError, ReadOnlyField
 from cityfarm_api.serializers import BaseSerializer
-from .models import SensorType, Sensor, SensingPoint
+from .models import SensorType, Sensor, SensingPoint, DataPoint
 
 
 class SensorTypeSerializer(BaseSerializer):
@@ -91,3 +93,19 @@ class SensingPointSerializer(BaseSerializer):
         validated_data['index'] = property.sensing_point_count
         instance = super().create(validated_data)
         property.save()
+
+
+class OptionalHyperlinkedIdentityField(HyperlinkedIdentityField):
+    def get_attribute(self, instance):
+        try:
+            instance.pk
+        except AttributeError:
+            raise SkipField()
+        return super().get_attribute(instance)
+
+
+class DataPointSerializer(BaseSerializer):
+    class Meta:
+        model = DataPoint
+
+    serializer_url_field = OptionalHyperlinkedIdentityField
