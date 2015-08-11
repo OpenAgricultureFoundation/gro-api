@@ -1,7 +1,9 @@
+import time
 from django.db import models
 from django.db.utils import OperationalError
 from django.db.models.signals import post_save
 from django.conf import settings
+from django.core.exceptions import ObjectDoesNotExist
 from django.contrib.contenttypes.fields import GenericRelation
 from django.dispatch import receiver
 from model_utils.managers import InheritanceManager
@@ -10,6 +12,7 @@ from cityfarm_api.models import Model, SingletonModel
 from cityfarm_api.fields import LayoutForeignKey
 from farms.models import Farm
 from resources.models import Resource
+from recipes.models import RecipeRun
 from .schemata import all_schemata
 
 
@@ -115,6 +118,27 @@ class Tray(Model):
         Resource, object_id_field='location_id',
         content_type_field='location_type'
     )
+    current_recipe_run = models.ForeignKey(
+        RecipeRun, null=True, related_name='+', on_delete=models.SET_NULL,
+        editable=False
+    )
+
+    def update_current_recipe_run(self):
+        current_time = time.time()
+        if self.current_recipe_run and \
+                current_time > self.current_recipe_run.end_timestamp:
+            self.current_recipe_run = None
+            self.save()
+        if not self.current_recipe_run:
+            try:
+                next_recipe_run = RecipeRun.objects.filter(
+                    tray=self, end_timestamp__gte=time.time()
+                ).earliest()
+                if current_time >= next_recipe_run.start_timestamp:
+                    self.current_recipe_run = next_recipe_run
+                    self.save()
+            except ObjectDoesNotExist:
+                pass
 
     def __str__(self):
         return self.name

@@ -1,7 +1,6 @@
 import time
 from django.db import models
 from cityfarm_api.models import Model
-from layout.models import PlantSite
 
 
 class PlantModel(Model):
@@ -40,7 +39,7 @@ class Plant(Model):
     index = models.PositiveIntegerField(editable=False)
     plant_type = models.ForeignKey(PlantType, related_name='plants')
     site = models.OneToOneField(
-        PlantSite, null=True, related_name='plant'
+        'layout.PlantSite', null=True, related_name='plant'
     )
 
     def __str__(self):
@@ -49,7 +48,7 @@ class Plant(Model):
 
 class SowEvent(Model):
     plant = models.OneToOneField(Plant, related_name='sow_event')
-    site = models.ForeignKey(PlantSite, related_name='sow_events+')
+    site = models.ForeignKey('layout.PlantSite', related_name='sow_events+')
     timestamp = models.IntegerField(default=time.time)
 
     def __str__(self):
@@ -58,8 +57,8 @@ class SowEvent(Model):
 
 class TransferEvent(Model):
     plant = models.ForeignKey(Plant, related_name='transfer_events')
-    from_site = models.ForeignKey(PlantSite, related_name='+')
-    to_site = models.ForeignKey(PlantSite, related_name='+')
+    from_site = models.ForeignKey('layout.PlantSite', related_name='+')
+    to_site = models.ForeignKey('layout.PlantSite', related_name='+')
     timestamp = models.IntegerField(default=time.time)
 
     def __str__(self):

@@ -1,7 +1,6 @@
 import time
 from django.db import models
 from cityfarm_api.models import Model
-from layout.models import Tray
 from plants.models import PlantType
 from resources.models import ResourceProperty
 
@@ -16,17 +15,20 @@ class Recipe(Model):
 
 
 class RecipeRun(Model):
-    recipe = models.ForeignKey(Recipe, related_name='runs')
-    tray = models.ForeignKey(Tray, related_name='recipe_runs+')
+    class Meta:
+        get_latest_by = 'start_timestamp'
+
     start_timestamp = models.IntegerField(blank=True, default=time.time)
     end_timestamp = models.IntegerField(editable=False)
+    recipe = models.ForeignKey(Recipe, related_name='runs')
+    tray = models.ForeignKey('layout.Tray', related_name='recipe_runs+')
 
 
 class SetPoint(Model):
     class Meta:
         get_latest_by = 'timestamp'
 
-    tray = models.ForeignKey(Tray, related_name='set_points+')
+    tray = models.ForeignKey('layout.Tray', related_name='set_points+')
     property = models.ForeignKey(ResourceProperty, related_name='set_points+')
     timestamp = models.IntegerField()
     value = models.FloatField()

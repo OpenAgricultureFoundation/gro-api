@@ -1,6 +1,9 @@
 import time
 import logging
-from rest_framework.exceptions import APIException
+from django.core.exceptions import ObjectDoesNotExist
+from django.utils.functional import cached_property
+from rest_framework.exceptions import APIException, ValidationError
+from rest_framework.serializers import IntegerField
 from cityfarm_api.serializers import BaseSerializer
 from resources.models import ResourceProperty
 from .models import RecipeRun, SetPoint
@@ -16,6 +19,12 @@ class RecipeRunSerializer(BaseSerializer):
     class Meta:
         model = RecipeRun
 
+    start_timestamp = IntegerField(allow_null=True)
+
+    @cached_property
+    def current_time(self):
+        return time.time()
+
     def parse_time_string(self, time_string):
         time_args = time_string.split(b':')
         if len(time_args) != 4:
@@ -24,27 +33,39 @@ class RecipeRunSerializer(BaseSerializer):
         return time_args.pop() + 60*time_args.pop() + 60*60*time_args.pop() + \
                 60*60*24*time_args.pop()
 
+    def validate_start_timestamp(self, val):
+        return val or self.current_time
+
     def create(self, validated_data):
         recipe = validated_data['recipe']
         tray = validated_data['tray']
-        start_timestamp = validated_data.get('start_timestamp', time.time())
-        # We have to create this object now so that set points we create during
-        # parsing can reference it. Thus, we have to save a fake value here and
-        # overwrite it later
-        validated_data['end_timestamp'] = 0
-        instance = super().create(validated_data)
+        start_timestamp = validated_data.get(
+            'start_timestamp', self.current_time
+        )
+        if start_timestamp < self.current_time:
+            raise ValidationError(
+                'Start timestamp must be a time in the future.'
+            )
+        qs = RecipeRun.objects.filter(
+            tray=tray, start_timestamp__lt=start_timestamp,
+            end_timestamp__gt=start_timestamp
+        )
+        if qs.count():
+            raise ValidationError(
+                'The proposed recipe run overlaps with an existing recipe run.'
+            )
+        try:
+            next_start_timestamp = RecipeRun.objects.filter(
+                tray=tray, start_timestamp__gte=start_timestamp
+            ).earliest().start_timestamp
+        except ObjectDoesNotExist:
+            next_start_timestamp = float("inf")
         set_points = []
         for line in recipe.file:
             line = line.strip()
             if not line:
                 continue
             args = line.split(b' ')
-            if len(args) != 3:
-                logger.warning(
-                    'Encountered invalid recipe command "%s" in recipe "%s"',
-                    line, recipe.name
-                )
-                continue
             time_string = args.pop(0)
             try:
                 timedelta = self.parse_time_string(time_string)
@@ -55,6 +76,12 @@ class RecipeRunSerializer(BaseSerializer):
                 )
                 continue
             command_timestamp = start_timestamp + timedelta
+            if command_timestamp >= next_start_timestamp:
+                instance.delete()
+                raise ValidationError(
+                    'The proposed recipe run overlaps with an existing recipe '
+                    'run.'
+                )
             command = args.pop(0)
             command_type = command[0:1]
             if command_type == b'S':
@@ -64,18 +91,24 @@ class RecipeRunSerializer(BaseSerializer):
                 value = float(args.pop(0))
                 set_point = SetPoint(
                     tray=tray, property=property, timestamp=command_timestamp,
-                    value=value, recipe_run=instance
+                    value=value
                 )
-                set_point.save()
+                set_points.append(set_point)
             else:
                 logger.warning(
                     'Encountered invalid command type "%s" in recipe "%s"',
                     command_type, recipe.name
                 )
                 continue
-            assert not args
-        instance.end_timestamp = command_timestamp
-        instance.save()
+            if args:
+                logger.warning(
+                    'Recipe line "%s" contained extra arguments'.format(line)
+                )
+        validated_data['end_timestamp'] = command_timestamp
+        instance = super().create(validated_data)
+        for set_point in set_points:
+            set_point.recipe_run = instance
+        SetPoint.objects.bulk_create(set_points)
         return instance
 
     def update(self, instance, validated_data):
