@@ -49,5 +49,6 @@ class TrayViewSet(ModelViewSet):
             except ObjectDoesNotExist:
                 continue
             else:
-                set_points[set_point.property.code] = set_point.value
+                code = ''.join(set_point.property.natural_key())
+                set_points[code] = set_point.value
         return Response(set_points)
