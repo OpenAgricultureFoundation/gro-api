@@ -13,10 +13,14 @@ class PlantTypeSerializer(BaseSerializer):
 
     def update(self, instance, validated_data):
         new_parent = validated_data['parent']
-        if instance.is_above(new_parent):
+        if new_parent and instance.is_above(new_parent):
             raise ValidationError(
                 'That operation would create a cycle in the plant type graph, '
                 'which is not allowed.'
+            )
+        if new_parent == instance:
+            raise ValidationError(
+                'A plant type cannot be it\'s own parent.'
             )
         return super().update(instance, validated_data)
 

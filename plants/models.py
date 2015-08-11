@@ -26,8 +26,8 @@ class PlantType(Model):
         plant type graph. Used in form validation to prevent cycles in the
         graph.
         """
-        for child in self.children:
-            if child is target or child.is_above(target):
+        for child in self.children.all():
+            if child == target or child.is_above(target):
                 return True
         return False
 

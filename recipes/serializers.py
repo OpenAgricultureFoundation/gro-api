@@ -6,9 +6,28 @@ from rest_framework.exceptions import APIException, ValidationError
 from rest_framework.serializers import IntegerField
 from cityfarm_api.serializers import BaseSerializer
 from resources.models import ResourceProperty
-from .models import RecipeRun, SetPoint
+from .models import Recipe, RecipeRun, SetPoint
 
 logger = logging.getLogger(__name__)
+
+
+class RecipeSerializer(BaseSerializer):
+    class Meta:
+        model = Recipe
+
+    def validate_plant_types(self, value):
+        for first_type in value:
+            for second_type in value:
+                if first_type is second_type:
+                    continue
+                if first_type.is_above(second_type):
+                    raise ValidationError(
+                        'Supplied set of plant types is redundant. Plant type '
+                        '"{}" is contained in plant type "{}"'.format(
+                            second_type.common_name, first_type.common_name
+                        )
+                    )
+        return value
 
 
 class InvalidTimeString(Exception):

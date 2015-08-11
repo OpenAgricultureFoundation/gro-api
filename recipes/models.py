@@ -7,8 +7,8 @@ from resources.models import ResourceProperty
 
 class Recipe(Model):
     name = models.CharField(max_length=100)
-    plant_type = models.ManyToManyField(PlantType, related_name='recipes')
-    file = models.FileField(upload_to="recipes")
+    plant_types = models.ManyToManyField(PlantType, related_name='recipes')
+    file = models.FileField(upload_to='recipes')
 
     def __str__(self):
         return self.name
@@ -18,7 +18,7 @@ class RecipeRun(Model):
     class Meta:
         get_latest_by = 'start_timestamp'
 
-    start_timestamp = models.IntegerField(blank=True, default=time.time)
+    start_timestamp = models.IntegerField(blank=True)
     end_timestamp = models.IntegerField(editable=False)
     recipe = models.ForeignKey(Recipe, related_name='runs')
     tray = models.ForeignKey('layout.Tray', related_name='recipe_runs+')
