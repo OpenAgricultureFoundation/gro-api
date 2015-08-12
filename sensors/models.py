@@ -8,6 +8,7 @@ class SensorTypeManager(models.Manager):
     def get_by_natural_key(self, name):
         return self.get(name=name)
 
+
 class SensorType(Model):
     class Meta:
         default_related_name = 'sensor_types'

@@ -4,49 +4,37 @@ from cityfarm_api.models import Model
 from resources.models import ResourceType, ResourceProperty, Resource
 
 
-class ActuatorCodeManager(models.Manager):
+class ActuatorClassManager(models.Manager):
     def get_by_natural_key(self, val):
         return self.get(val=val)
 
 
-class ActuatorCode(Model):
-    val = models.CharField(max_length=2, unique=True)
-    description = models.CharField(max_length=100, unique=True)
+class ActuatorClass(Model):
+    code = models.CharField(max_length=2, unique=True)
+    name = models.CharField(max_length=100, unique=True)
 
-    objects = ActuatorCodeManager()
+    objects = ActuatorClassManager()
 
     def natural_key(self):
-        return (self.val, )
+        return (self.code, )
 
-
-class ActuatorTypeManager(models.Manager):
-    def get_by_natural_key(self, type_code, actuator_code):
-        resource_type = ResourceType.objects.get_by_natural_key(type_code)
-        return self.get(code=actuator_code, resource_type=resource_type)
+    def __str__(self):
+        return self.name
 
 
 class ActuatorType(Model):
     class Meta:
-        unique_together = (
-            ('code', 'resource_type'), ('name', 'resource_type')
-        )
         default_related_name = 'actuator_types'
 
-    code = models.CharField(max_length=2)
-    name = models.CharField(max_length=100)
     resource_type = models.ForeignKey(ResourceType)
+    actuator_class = models.ForeignKey(ActuatorClass)
+    name = models.CharField(max_length=100)
     properties = models.ManyToManyField(ResourceProperty)
     order = models.PositiveIntegerField()
     is_binary = models.BooleanField()
     actuator_count = models.PositiveIntegerField(
         editable=False, default=0
     )
-
-    objects = ActuatorTypeManager()
-
-    def natural_key(self):
-        return (self.resource_type.code, self.code)
-    natural_key.dependencies = ['resources.ResourceType']
 
     def __str__(self):
         return self.name
@@ -58,7 +46,7 @@ class ControlProfile(Model):
         ActuatorType, related_name='allowed_control_profiles'
     )
     properties = models.ManyToManyField(
-        ResourceProperty, through='ActuatorEffect', related_name='+',
+        ResourceProperty, through='ActuatorEffect'
     )
     period = models.FloatField()
     pulse_width = models.FloatField()

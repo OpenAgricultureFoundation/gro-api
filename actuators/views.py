@@ -9,6 +9,7 @@ from .models import ActuatorType, Actuator, ActuatorState
 
 ActuatorStateSerializer = model_serializers.get_for_model(ActuatorState)
 
+
 class ActuatorViewSet(ModelViewSet):
     model = Actuator
 

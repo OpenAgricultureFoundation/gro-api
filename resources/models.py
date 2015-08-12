@@ -54,7 +54,7 @@ class ResourceProperty(Model):
     natural_key.dependencies = ['resources.ResourceType']
 
     def __str__(self):
-        return self.resource_type.name + self.name
+        return self.resource_type.name + ' ' + self.name
 
 
 class Resource(Model):

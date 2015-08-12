@@ -32,6 +32,7 @@ class ResourceTypeSerializer(BaseSerializer):
 class ResourcePropertySerializer(BaseSerializer):
     class Meta:
         model = ResourceProperty
+        exclude = ('controlprofile_set',)
 
     def validate_code(self, val):
         if not len(val) == 2:
