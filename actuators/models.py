@@ -10,8 +10,8 @@ class ActuatorCodeManager(models.Manager):
 
 
 class ActuatorCode(Model):
-    val = models.CharField(max_length=2)
-    description = models.CharField(max_length=100)
+    val = models.CharField(max_length=2, unique=True)
+    description = models.CharField(max_length=100, unique=True)
 
     objects = ActuatorCodeManager()
 
@@ -32,28 +32,12 @@ class ActuatorType(Model):
         )
         default_related_name = 'actuator_types'
 
-    def code_choices():
-        try:
-            return ((code.val, code.val) for code in ActuatorCode.objects.all())
-        except OperationalError:
-            # This can happen during migrations if the table for ActuatorCode
-            # isn't set up yet
-            return ()
-
-    code = models.CharField(
-        max_length=2, choices=code_choices()
-    )
+    code = models.CharField(max_length=2)
     name = models.CharField(max_length=100)
     resource_type = models.ForeignKey(ResourceType)
     properties = models.ManyToManyField(ResourceProperty)
     order = models.PositiveIntegerField()
     is_binary = models.BooleanField()
-    effect_on_active = models.IntegerField()
-    threshold = models.FloatField(default=0)
-    operating_range_min = models.FloatField(default=0)
-    operating_range_max = models.FloatField(default=0)
-
-    read_only = models.BooleanField(editable=False, default=False)
     actuator_count = models.PositiveIntegerField(
         editable=False, default=0
     )
@@ -68,13 +52,37 @@ class ActuatorType(Model):
         return self.name
 
 
+class ControlProfile(Model):
+    name = models.CharField(max_length=100)
+    actuator_type = models.ForeignKey(
+        ActuatorType, related_name='allowed_control_profiles'
+    )
+    properties = models.ManyToManyField(
+        ResourceProperty, through='ActuatorEffect', related_name='+',
+    )
+    period = models.FloatField()
+    pulse_width = models.FloatField()
+
+    def __str__(self):
+        return self.name
+
+
+class ActuatorEffect(Model):
+    control_profile = models.ForeignKey(ControlProfile, related_name='effects')
+    property = models.ForeignKey(ResourceProperty, related_name='+')
+    effect_on_active = models.FloatField(default=0)
+    threshold = models.FloatField(default=0)
+
+
 class Actuator(Model):
     class Meta:
         unique_together = ('index', 'actuator_type')
+        default_related_name = 'actuators'
 
     index = models.PositiveIntegerField(editable=False)
     name = models.CharField(max_length=100, blank=True)
-    actuator_type = models.ForeignKey(ActuatorType, related_name='actuators')
+    actuator_type = models.ForeignKey(ActuatorType)
+    control_profile = models.ForeignKey(ControlProfile)
     resource = models.ForeignKey(Resource, related_name='actuators')
     override_value = models.FloatField(editable=False, null=True)
     override_timeout = models.IntegerField(editable=False, null=True)

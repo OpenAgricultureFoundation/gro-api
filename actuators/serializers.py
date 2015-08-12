@@ -1,11 +1,34 @@
+from collections import OrderedDict
+from rest_framework.fields import ChoiceField
 from rest_framework.serializers import ValidationError, ReadOnlyField
 from cityfarm_api.serializers import BaseSerializer
-from .models import ActuatorType, Actuator
+from .models import (
+    ActuatorCode, ActuatorType, ControlProfile, ActuatorEffect, Actuator
+)
+
+
+class CodeChoiceField(ChoiceField):
+    def __init__(self, *args, **kwargs):
+        super(ChoiceField, self).__init__(*args, **kwargs)
+
+    def to_internal_value(self, data):
+        return data
+
+    def to_representation(self, value):
+        return value
+
+    @property
+    def choices(self):
+        return OrderedDict([
+            (code.val, code.val) for code in ActuatorCode.objects.all()
+        ])
 
 
 class ActuatorTypeSerializer(BaseSerializer):
     class Meta:
         model = ActuatorType
+
+    code = CodeChoiceField()
 
     def validate_code(self, val):
         if not len(val) == 2:
@@ -24,6 +47,19 @@ class ActuatorTypeSerializer(BaseSerializer):
                     'type other than the one it claims to affect'
                 )
         return data
+
+
+class ActuatorEffectSerializer(BaseSerializer):
+    class Meta:
+        model = ActuatorEffect
+
+
+class ControlProfileSerializer(BaseSerializer):
+    class Meta:
+        model = ControlProfile
+        exclude = ('properties',)
+
+    effects = ActuatorEffectSerializer(many=True, read_only=True)
 
 
 class ActuatorSerializer(BaseSerializer):
