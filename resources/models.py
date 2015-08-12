@@ -12,7 +12,6 @@ class ResourceTypeManager(models.Manager):
 class ResourceType(Model):
     code = models.CharField(max_length=1, unique=True)
     name = models.CharField(max_length=100, unique=True)
-    read_only = models.BooleanField(editable=False, default=False)
     resource_count = models.PositiveIntegerField(
         editable=False, default=0
     )
@@ -42,7 +41,8 @@ class ResourceProperty(Model):
     code = models.CharField(max_length=2)
     name = models.CharField(max_length=100)
     resource_type = models.ForeignKey(ResourceType)
-    read_only = models.BooleanField(editable=False, default=False)
+    min_operating_value = models.FloatField()
+    max_operating_value = models.FloatField()
     sensing_point_count = models.PositiveIntegerField(
         editable=False, default=0
     )

@@ -15,7 +15,6 @@ class SensorType(Model):
     name = models.CharField(max_length=100, unique=True)
     resource_type = models.ForeignKey(ResourceType)
     properties = models.ManyToManyField(ResourceProperty)
-    read_only = models.BooleanField(editable=False, default=False)
     sensor_count = models.PositiveIntegerField(
         editable=False, default=0
     )
@@ -50,9 +49,11 @@ class SensingPoint(Model):
         default_related_name = 'sensing_points'
 
     index = models.PositiveIntegerField(editable=False)
-    sensor = models.ForeignKey(Sensor)
+    sensor = models.ForeignKey(Sensor, null=True)
     property = models.ForeignKey(ResourceProperty)
     is_active = models.BooleanField(default=True)
+    is_pseudo = models.BooleanField(default=True)
+    auto_created = models.BooleanField(editable=False, default=False)
 
     def __str__(self):
         return self.sensor.name + ' - ' + self.property.name

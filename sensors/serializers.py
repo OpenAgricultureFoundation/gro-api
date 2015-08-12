@@ -53,7 +53,7 @@ class SensorSerializer(BaseSerializer):
         for resource_property in instance.sensor_type.properties.all():
             serializer.create({
                 'sensor': instance, 'property': resource_property,
-                'is_active': True
+                'is_active': True, 'is_pseudo': False, 'auto_created': True
             })
         return instance
 
@@ -78,12 +78,19 @@ class SensingPointSerializer(BaseSerializer):
     index = ReadOnlyField()
 
     def validate(self, data):
-        sensor = data['sensor']
-        property = data['property']
-        if property not in sensor.sensor_type.properties:
+        sensor = data.get('sensor', None)
+        property = data.get('property', None)
+        if sensor and property and \
+                property not in sensor.sensor_type.properties.all():
             raise ValidationError(
-                'Attempted to create a sensor point for a property that it\'s '
+                'Attempted to create a sensing point for a property that it\'s '
                 'parent sensor does not measure'
+            )
+        is_pseudo = data.get('is_pseudo', None)
+        if is_pseudo and sensor:
+            raise ValidationError(
+                'Installing a pseudo sensing point in a real sensor is not '
+                'allowed.'
             )
         return data
 
@@ -93,6 +100,22 @@ class SensingPointSerializer(BaseSerializer):
         validated_data['index'] = property.sensing_point_count
         instance = super().create(validated_data)
         property.save()
+
+    def update(self, instance, validated_data):
+        if instance.auto_created:
+            new_sensor = validated_data.get('sensor', instance.sensor)
+            new_property = validated_data.get('property', instance.property)
+            if new_sensor != instance.sensor:
+                raise ValidationError(
+                    'This sensing point was automatically generated. Moving '
+                    'it to a different sensor is not allowed.'
+                )
+            if new_property != instance.property:
+                raise ValidationError(
+                    'This sensing point was automatically generated. Changing '
+                    'the property that is measures is not allowed.'
+                )
+        return super().update(instance, validated_data)
 
 
 class OptionalHyperlinkedIdentityField(HyperlinkedIdentityField):

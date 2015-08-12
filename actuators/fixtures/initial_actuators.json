@@ -1,5 +1,40 @@
 [
     {
+        "model": "actuators.actuatorcode",
+        "fields": {
+            "code": "HE",
+            "description": "Heater"
+        }
+    },
+    {
+        "model": "actuators.actuatorcode",
+        "fields": {
+            "code": "HU",
+            "description": "Humidifier"
+        }
+    },
+    {
+        "model": "actuators.actuatorcode",
+        "fields": {
+            "code": "VE",
+            "description": "Venting Fan"
+        }
+    },
+    {
+        "model": "actuators.actuatorcode",
+        "fields": {
+            "code": "CR",
+            "description": "Circulation Fan"
+        }
+    },
+    {
+        "model": "actuators.actuatorcode",
+        "fields": {
+            "code": "PN",
+            "description": "Light Panel"
+        }
+    },
+    {
         "model": "actuators.actuatortype",
         "fields": {
             "code": "HE",

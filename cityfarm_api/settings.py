@@ -65,9 +65,6 @@ FRAMEWORK_APPS = (
 if SERVER_MODE == DEVELOPMENT:
     FRAMEWORK_APPS += ('debug_toolbar',)
     DEBUG_TOOLBAR_PATCH_SETTINGS = False
-    DEBUG_TOOLBAR_CONFIG = {
-        'RENDER_PANELS': True
-    }
     INTERNAL_IPS = ['127.0.0.1']
 
 INSTALLED_APPS = CITYFARM_API_APPS + FRAMEWORK_APPS
@@ -101,32 +98,7 @@ else:
 if SERVER_MODE == DEVELOPMENT:
     MIDDLEWARE_CLASSES += (
         'debug_toolbar.middleware.DebugToolbarMiddleware',
-        'cityfarm_api.settings.NonHtmlDebugToolbarMiddleware',
     )
-    import json
-    from django.http import HttpResponse
-    class NonHtmlDebugToolbarMiddleware(object):
-        """
-        Trick Django Debug Toolbar into working for JSON requests if the
-        request has a 'debug' query parameter
-        """
-        @staticmethod
-        def process_response(request, response):
-            if request.GET.get('debug') == '':
-                if response['Content-Type'] == 'application/octet-stream':
-                    new_content = '<html><body>Binary Data, Length: '\
-                            '{}</body></html>'.format(len(response.content))
-                    response = HttpResponse(new_content)
-                elif response['Content-Type'] != 'text/html':
-                    content = response.content.decode('ascii')
-                    try:
-                        json_ = json.loads(content)
-                        content = json.dumps(json_, sort_keys=True, indent=4)
-                    except ValueError:
-                        pass
-                    response = HttpResponse('<html><body><pre>{}</pre></body>'
-                                            '</html>'.format(content))
-            return response
 
 CORS_ORIGIN_ALLOW_ALL = True
 

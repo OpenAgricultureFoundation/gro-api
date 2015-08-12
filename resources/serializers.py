@@ -40,6 +40,17 @@ class ResourcePropertySerializer(BaseSerializer):
             )
         return val
 
+    def validate(self, data):
+        min_operating_value = data.get('min_operating_value', None)
+        max_operating_value = data.get('max_operating_value', None)
+        if min_operating_value and max_operating_value and \
+                min_operating_value > max_operating_value:
+            raise ValidationError(
+                'Maximum operating value must be greater than minimum '
+                'operating value.'
+            )
+        return data
+
 
 class ResourceLocationRelatedField(HyperlinkedRelatedField):
     def __init__(self, **kwargs):

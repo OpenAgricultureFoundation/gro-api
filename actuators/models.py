@@ -1,6 +1,22 @@
 from django.db import models
+from django.db.utils import OperationalError
 from cityfarm_api.models import Model
 from resources.models import ResourceType, ResourceProperty, Resource
+
+
+class ActuatorCodeManager(models.Manager):
+    def get_by_natural_key(self, val):
+        return self.get(val=val)
+
+
+class ActuatorCode(Model):
+    val = models.CharField(max_length=2)
+    description = models.CharField(max_length=100)
+
+    objects = ActuatorCodeManager()
+
+    def natural_key(self):
+        return (self.val, )
 
 
 class ActuatorTypeManager(models.Manager):
@@ -16,7 +32,17 @@ class ActuatorType(Model):
         )
         default_related_name = 'actuator_types'
 
-    code = models.CharField(max_length=2)
+    def code_choices():
+        try:
+            return ((code.val, code.val) for code in ActuatorCode.objects.all())
+        except OperationalError:
+            # This can happen during migrations if the table for ActuatorCode
+            # isn't set up yet
+            return ()
+
+    code = models.CharField(
+        max_length=2, choices=code_choices()
+    )
     name = models.CharField(max_length=100)
     resource_type = models.ForeignKey(ResourceType)
     properties = models.ManyToManyField(ResourceProperty)
@@ -52,6 +78,12 @@ class Actuator(Model):
     resource = models.ForeignKey(Resource, related_name='actuators')
     override_value = models.FloatField(editable=False, null=True)
     override_timeout = models.IntegerField(editable=False, null=True)
+
+    def update_override(self):
+        if self.override_value and self.override_timeout <= time.time():
+            self.override_value = None
+            self.override_timeout = None
+            self.save()
 
     def __str__(self):
         return self.name

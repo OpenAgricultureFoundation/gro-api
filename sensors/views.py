@@ -6,17 +6,15 @@ from rest_framework.decorators import detail_route
 from rest_framework.exceptions import APIException
 from cityfarm_api.viewsets import ModelViewSet, ReadOnlyModelViewSet
 from cityfarm_api.serializers import model_serializers
-from cityfarm_api.permissions import EnforceReadOnly
 from .models import SensorType, SensingPoint, DataPoint
+from .serializers import DataPointSerializer
 
-DataPointSerializer = model_serializers.get_for_model(DataPoint)
 
 class SensorTypeViewSet(ModelViewSet):
     model = SensorType
-    permission_classes = [EnforceReadOnly,]
 
 
-class SensingPointViewSet(ReadOnlyModelViewSet):
+class SensingPointViewSet(ModelViewSet):
     model = SensingPoint
 
     @detail_route(methods=["get"])

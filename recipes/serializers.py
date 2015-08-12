@@ -38,7 +38,7 @@ class RecipeRunSerializer(BaseSerializer):
     class Meta:
         model = RecipeRun
 
-    start_timestamp = IntegerField(allow_null=True)
+    start_timestamp = IntegerField(required=False, allow_null=True)
 
     @cached_property
     def current_time(self):
@@ -48,7 +48,10 @@ class RecipeRunSerializer(BaseSerializer):
         time_args = time_string.split(b':')
         if len(time_args) != 4:
             raise InvalidTimeString()
-        time_args = [int(arg) for arg in time_args]
+        try:
+            time_args = [int(arg) for arg in time_args]
+        except ValueError:
+            raise InvalidTimeString()
         return time_args.pop() + 60*time_args.pop() + 60*60*time_args.pop() + \
                 60*60*24*time_args.pop()
 
@@ -83,6 +86,7 @@ class RecipeRunSerializer(BaseSerializer):
             tray=tray, property=property, timestamp=start_timestamp-1,
             value=None
         ) for property in ResourceProperty.objects.all()]
+        command_timestamp = None
         for line in recipe.file:
             line = line.strip()
             if not line:
@@ -126,7 +130,7 @@ class RecipeRunSerializer(BaseSerializer):
                 logger.warning(
                     'Recipe line "%s" contained extra arguments'.format(line)
                 )
-        validated_data['end_timestamp'] = command_timestamp
+        validated_data['end_timestamp'] = command_timestamp or start_timestamp
         instance = super().create(validated_data)
         try:
             for set_point in set_points:

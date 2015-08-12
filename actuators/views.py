@@ -5,27 +5,31 @@ from rest_framework.decorators import detail_route
 from rest_framework.exceptions import APIException
 from cityfarm_api.viewsets import ModelViewSet
 from cityfarm_api.serializers import model_serializers
-from cityfarm_api.permissions import EnforceReadOnly
 from .models import ActuatorType, Actuator, ActuatorState
 
 ActuatorStateSerializer = model_serializers.get_for_model(ActuatorState)
-
-class ActuatorTypeViewSet(ModelViewSet):
-    model = ActuatorType
-    # permission_classes = [EnforceReadOnly,]
-
 
 class ActuatorViewSet(ModelViewSet):
     model = Actuator
 
     def retrieve(self, request, *args, **kwargs):
         instance = self.get_object()
-        if instance.override_value and \
-                instance.override_timeout <= time.time():
-            instance.override_value = None
-            instance.override_timeout = None
-            instance.save()
+        instance.update_override()
         serializer = self.get_serializer(instance)
+        return Response(serializer.data)
+
+    def list(self, request, *args, **kwargs):
+        queryset = self.filter_queryset(self.get_queryset())
+
+        for instance in queryset:
+            instance.update_override()
+
+        page = self.paginate_queryset(queryset)
+        if page is not None:
+            serializer = self.get_serializer(page, many=True)
+            return self.get_paginated_response(serializer.data)
+
+        serializer = self.get_serializer(queryset, many=True)
         return Response(serializer.data)
 
     @detail_route(methods=["post"])

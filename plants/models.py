@@ -6,7 +6,6 @@ from cityfarm_api.models import Model
 class PlantModel(Model):
     name = models.CharField(max_length=100)
     file = models.FileField(upload_to='plant_models')
-    read_only = models.BooleanField(editable=False, default=False)
 
     def __str__(self):
         return self.name
@@ -18,7 +17,6 @@ class PlantType(Model):
     parent = models.ForeignKey('self', null=True, related_name='children')
     model = models.ForeignKey(PlantModel, related_name='plant_types')
     plant_count = models.PositiveIntegerField(editable=False, default=0)
-    read_only = models.BooleanField(editable=False, default=False)
 
     def is_above(self, target):
         """
