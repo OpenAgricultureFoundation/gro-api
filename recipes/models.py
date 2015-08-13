@@ -19,7 +19,7 @@ class RecipeRun(Model):
         get_latest_by = 'start_timestamp'
 
     start_timestamp = models.IntegerField(blank=True)
-    end_timestamp = models.IntegerField(editable=False)
+    end_timestamp = models.IntegerField(blank=True)
     recipe = models.ForeignKey(Recipe, related_name='runs')
     tray = models.ForeignKey('layout.Tray', related_name='recipe_runs+')
 

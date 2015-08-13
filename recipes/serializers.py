@@ -39,10 +39,7 @@ class RecipeRunSerializer(BaseSerializer):
         model = RecipeRun
 
     start_timestamp = IntegerField(required=False, allow_null=True)
-
-    @cached_property
-    def current_time(self):
-        return time.time()
+    end_timestamp = IntegerField(required=False, allow_null=True)
 
     def parse_time_string(self, time_string):
         time_args = time_string.split(b':')
@@ -55,16 +52,12 @@ class RecipeRunSerializer(BaseSerializer):
         return time_args.pop() + 60*time_args.pop() + 60*60*time_args.pop() + \
                 60*60*24*time_args.pop()
 
-    def validate_start_timestamp(self, val):
-        return val or self.current_time
-
     def create(self, validated_data):
+        current_time = time.time()
         recipe = validated_data['recipe']
         tray = validated_data['tray']
-        start_timestamp = validated_data.get(
-            'start_timestamp', self.current_time
-        )
-        if start_timestamp < self.current_time:
+        start_timestamp = validated_data['start_timestamp'] or current_time
+        if start_timestamp < current_time:
             raise ValidationError(
                 'Start timestamp must be a time in the future.'
             )
@@ -82,11 +75,8 @@ class RecipeRunSerializer(BaseSerializer):
             ).earliest().start_timestamp
         except ObjectDoesNotExist:
             next_start_timestamp = float("inf")
-        set_points = [SetPoint(
-            tray=tray, property=property, timestamp=start_timestamp-1,
-            value=None
-        ) for property in ResourceProperty.objects.all()]
-        command_timestamp = None
+        set_points = []
+        end_timestamp = None
         for line in recipe.file:
             line = line.strip()
             if not line:
@@ -103,7 +93,6 @@ class RecipeRunSerializer(BaseSerializer):
                 continue
             command_timestamp = start_timestamp + timedelta
             if command_timestamp >= next_start_timestamp:
-                instance.delete()
                 raise ValidationError(
                     'The proposed recipe run overlaps with an existing recipe '
                     'run.'
@@ -120,6 +109,16 @@ class RecipeRunSerializer(BaseSerializer):
                     value=value
                 )
                 set_points.append(set_point)
+            elif command_type == b'G':
+                if command == b'GTFO':
+                    end_timestamp = command_timestamp
+                    set_points.extend([
+                        SetPoint(
+                            tray=tray, property=property,
+                            timestamp=end_timestamp, value=None
+                        ) for property in ResourceProperty.objects.all()
+                    ])
+                    break
             else:
                 logger.warning(
                     'Encountered invalid command type "%s" in recipe "%s"',
@@ -130,7 +129,12 @@ class RecipeRunSerializer(BaseSerializer):
                 logger.warning(
                     'Recipe line "%s" contained extra arguments'.format(line)
                 )
-        validated_data['end_timestamp'] = command_timestamp or start_timestamp
+        if not end_timestamp:
+            raise ValidationError(
+                'Recipe file did not include an end timestamp.'
+            )
+        validated_data['start_timestamp'] = start_timestamp
+        validated_data['end_timestamp'] = end_timestamp
         instance = super().create(validated_data)
         try:
             for set_point in set_points:
@@ -142,8 +146,42 @@ class RecipeRunSerializer(BaseSerializer):
         return instance
 
     def update(self, instance, validated_data):
-        raise APIException(
-            'Recipe runs can only be created and deleted. To change what the '
-            'recipe will do, either edit the set points manually or delete '
-            'this run and start a new one.'
+        start_timestamp = validated_data.get(
+            'start_timestamp', instance.start_timestamp
         )
+        if start_timestamp != instance.start_timestamp:
+            raise ValidationError(
+                'Changing the start time of an existing recipe run is not '
+                'allowed.'
+            )
+        recipe = validated_data.get('recipe', instance.recipe)
+        if recipe != instance.recipe:
+            raise ValidationError(
+                'Changing the recipe of a recipe run is not allowed. To '
+                'switch recipes, stop the current one and then start the '
+                'desired one.'
+            )
+        tray = validated_data.get('tray', instance.tray)
+        if tray != instance.tray:
+            raise ValidationError(
+                'Changing the tray of a recipe run is not allowed.'
+            )
+        end_timestamp = validated_data.get(
+            'end_timestamp', instance.end_timestamp
+        )
+        if end_timestamp > instance.end_timestamp:
+            raise ValidationError(
+                'Extending a recipe run is not allowed.'
+            )
+        if end_timestamp < instance.end_timestamp:
+            SetPoint.objects.filter(
+                recipe_run=instance,
+                timestamp__gt=validated_data['end_timestamp']
+            ).delete()
+            SetPoint.objects.bulk_create([
+                SetPoint(
+                    tray=tray, property=property, timestamp=end_timestamp,
+                    value=None, recipe_run=instance
+                ) for property in ResourceProperty.objects.all()
+            ])
+        return super().update(instance, validated_data)
