@@ -1,3 +1,4 @@
+import time
 from django.db import models
 from django.db.utils import OperationalError
 from cityfarm_api.models import Model
