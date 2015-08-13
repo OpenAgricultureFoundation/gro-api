@@ -6,18 +6,26 @@ from resources.models import ResourceType, ResourceProperty, Resource
 
 
 class ActuatorClassManager(models.Manager):
-    def get_by_natural_key(self, val):
-        return self.get(val=val)
+    def get_by_natural_key(self, type_code, class_code):
+        resource_type = ResourceType.objects.get_by_natural_key(type_code)
+        return self.get(resource_type=resource_type, code=class_code)
 
 
 class ActuatorClass(Model):
+    class Meta:
+        unique_together = (
+            ('code', 'resource_type'), ('name', 'resource_type')
+        )
+        default_related_name = 'actuator_classes'
+
     code = models.CharField(max_length=2, unique=True)
     name = models.CharField(max_length=100, unique=True)
+    resource_type = models.ForeignKey(ResourceType)
 
     objects = ActuatorClassManager()
 
     def natural_key(self):
-        return (self.code, )
+        return (self.resource_type.code, self.code)
 
     def __str__(self):
         return self.name
@@ -27,9 +35,8 @@ class ActuatorType(Model):
     class Meta:
         default_related_name = 'actuator_types'
 
-    resource_type = models.ForeignKey(ResourceType)
-    actuator_class = models.ForeignKey(ActuatorClass)
     name = models.CharField(max_length=100)
+    actuator_class = models.ForeignKey(ActuatorClass)
     properties = models.ManyToManyField(ResourceProperty)
     order = models.PositiveIntegerField()
     is_binary = models.BooleanField()

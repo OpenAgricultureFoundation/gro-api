@@ -11,26 +11,26 @@ class ActuatorTypeSerializer(BaseSerializer):
     class Meta:
         model = ActuatorType
 
-    def validate_properties_with_resource_type(self, properties, resource_type):
+    def validate_properties_with_class(self, properties, actuator_class):
         for property in properties:
-            if property.resource_type != resource_type:
+            if property.resource_type != actuator_class.resource_type:
                 raise ValidationError(
                     'Proposed actuator type affects properties of a resource '
-                    'type than the one that it is to be installed in.'
+                    'type other than the one that it is to be installed in.'
                 )
 
     def create(self, validated_data):
+        actuator_class = validated_data['actuator_class']
         properties = validated_data['properties']
-        resource_type = validated_data['resource_type']
-        self.validate_properties_with_resource_type(properties, resource_type)
+        self.validate_properties_with_class(properties, actuator_class)
         return super().create(validated_data)
 
     def update(self, instance, validated_data):
-        properties = validated_data.get('properties', instance.properties)
-        resource_type = validated_data.get(
-            'resource_type', instance.resource_type
+        actuator_class = validated_data.get(
+            'actuator_class', instance.actuator_class
         )
-        self.validate_properties_with_resource_type(properties, resource_type)
+        properties = validated_data.get('properties', instance.properties)
+        self.validate_properties_with_class(properties, actuator_class)
         return super().update(instance, validated_data)
 
 
@@ -39,7 +39,8 @@ class ActuatorEffectSerializer(BaseSerializer):
         model = ActuatorEffect
 
     def validate_property_with_profile(self, property, profile):
-        if property.resource_type != profile.actuator_type.resource_type:
+        correct_type = profile.actuator_type.actuator_class.resource_type
+        if property.resource_type != correct_type:
             raise ValidationError(
                 'An actuator cannot affect a property on a resource type '
                 'than the one it affects.'
@@ -90,7 +91,7 @@ class ActuatorSerializer(BaseSerializer):
     override_timeout = ReadOnlyField()
 
     def validate_resource_with_type(self, resource, actuator_type):
-        if actuator_type.resource_type != resource.resource_type:
+        if actuator_type.actuator_class.resource_type != resource.resource_type:
             raise ValidationError(
                 'Attempted to install a {} actuator in a {} resource'.format(
                     actuator_type.resource_type, resource.resource_type
