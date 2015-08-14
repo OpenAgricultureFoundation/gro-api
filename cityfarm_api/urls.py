@@ -6,8 +6,8 @@ from .routers import BaseRouter
 
 def get_current_urls():
     urls = BaseRouter.get_instance().urls + [
-        url(r'^auth/', include('rest_auth.urls')),
-        url(r'^auth/registration/', include('rest_auth.registration.urls')),
+        url(r'^/', include('rest_auth.urls')),
+        url(r'^/registration/', include('rest_auth.registration.urls')),
     ] + static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
     if settings.DEBUG:
         import debug_toolbar

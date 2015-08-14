@@ -61,6 +61,7 @@ FRAMEWORK_APPS = (
     'django_cron',
     'corsheaders',
     'rest_framework',
+    # Authentication apps
     'rest_framework.authtoken',
     'rest_auth',
     'allauth',
