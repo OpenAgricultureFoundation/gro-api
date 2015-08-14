@@ -1,11 +1,10 @@
 import time
 from django.db import models
-from cityfarm_api.models import Model
 from plants.models import PlantType
 from resources.models import ResourceProperty
 
 
-class Recipe(Model):
+class Recipe(models.Model):
     name = models.CharField(max_length=100)
     plant_types = models.ManyToManyField(PlantType, related_name='recipes')
     file = models.FileField(upload_to='recipes')
@@ -14,7 +13,7 @@ class Recipe(Model):
         return self.name
 
 
-class RecipeRun(Model):
+class RecipeRun(models.Model):
     class Meta:
         get_latest_by = 'start_timestamp'
 
@@ -24,7 +23,7 @@ class RecipeRun(Model):
     tray = models.ForeignKey('layout.Tray', related_name='recipe_runs+')
 
 
-class SetPoint(Model):
+class SetPoint(models.Model):
     class Meta:
         get_latest_by = 'timestamp'
 

@@ -3,8 +3,14 @@ from rest_framework.fields import ChoiceField
 from rest_framework.serializers import ValidationError, ReadOnlyField
 from cityfarm_api.serializers import BaseSerializer
 from .models import (
-    ActuatorClass, ActuatorType, ControlProfile, ActuatorEffect, Actuator
+    ActuatorClass, ActuatorType, ControlProfile, ActuatorEffect, Actuator,
+    ActuatorState
 )
+
+
+class ActuatorClassSerializer(BaseSerializer):
+    class Meta:
+        model = ActuatorClass
 
 
 class ActuatorTypeSerializer(BaseSerializer):
@@ -135,3 +141,8 @@ class ActuatorSerializer(BaseSerializer):
                 'Changing the type of an existing actuator is not allowed'
             )
         return super().update(instance, validated_data)
+
+
+class ActuatorStateSerializer(BaseSerializer):
+    class Meta:
+        model = ActuatorState

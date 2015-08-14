@@ -2,20 +2,29 @@ import time
 from django.core.exceptions import ObjectDoesNotExist
 from rest_framework import status
 from rest_framework.response import Response
+from rest_framework.viewsets import ModelViewSet, ReadOnlyModelViewSet
 from rest_framework.decorators import detail_route
 from rest_framework.exceptions import APIException
-from cityfarm_api.viewsets import ModelViewSet, ReadOnlyModelViewSet
-from cityfarm_api.serializers import model_serializers
-from .models import SensorType, SensingPoint, DataPoint
-from .serializers import DataPointSerializer
+from .models import SensorType, Sensor, SensingPoint, DataPoint
+from .serializers import (
+    SensorTypeSerializer, SensorSerializer, SensingPointSerializer,
+    DataPointSerializer
+)
 
 
 class SensorTypeViewSet(ModelViewSet):
-    model = SensorType
+    queryset = SensorType.objects.all()
+    serializer_class = SensorTypeSerializer
+
+
+class SensorViewSet(ModelViewSet):
+    queryset = Sensor.objects.all()
+    serializer_class = SensorSerializer
 
 
 class SensingPointViewSet(ModelViewSet):
-    model = SensingPoint
+    queryset = SensingPoint.objects.all()
+    serializer_class = SensingPointSerializer
 
     @detail_route(methods=["get"])
     def data(self, request, pk=None):
@@ -79,7 +88,8 @@ class SensingPointViewSet(ModelViewSet):
 
 
 class DataPointViewSet(ModelViewSet):
-    model = DataPoint
+    queryset = DataPoint.objects.all()
+    serializer_class = DataPoint.objects.all()
 
     def create(self, request, *args, **kwargs):
         many = request.QUERY_PARAMS.get('many', False)

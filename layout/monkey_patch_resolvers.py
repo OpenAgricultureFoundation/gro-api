@@ -12,7 +12,7 @@ from django.http.multipartparser import MultiPartParserError
 from django.utils import lru_cache
 from django.utils.encoding import force_text
 from django.views import debug
-from cityfarm_api.utils.state import system_layout
+from cityfarm_api.utils import system_layout
 
 django_handlers_logger = logging.getLogger('django.request')
 

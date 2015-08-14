@@ -7,10 +7,8 @@ from rest_framework.serializers import (
     HyperlinkedIdentityField, ReadOnlyField, ValidationError
 )
 from rest_framework.utils.field_mapping import get_detail_view_name
-from cityfarm_api.utils.state import system_layout
-from cityfarm_api.serializers import (
-    BaseSerializer, model_serializers, DUMMY_VIEW_NAME
-)
+from cityfarm_api.utils import system_layout
+from cityfarm_api.serializers import BaseSerializer, DUMMY_VIEW_NAME
 from layout.models import Enclosure, Tray, dynamic_models
 from layout.schemata import all_schemata
 from sensors.models import SensingPoint

@@ -1,9 +1,8 @@
 import time
 from django.db import models
-from cityfarm_api.models import Model
 
 
-class PlantModel(Model):
+class PlantModel(models.Model):
     name = models.CharField(max_length=100)
     file = models.FileField(upload_to='plant_models')
 
@@ -11,7 +10,7 @@ class PlantModel(Model):
         return self.name
 
 
-class PlantType(Model):
+class PlantType(models.Model):
     common_name = models.CharField(max_length=100)
     latin_name = models.CharField(max_length=100)
     parent = models.ForeignKey('self', null=True, related_name='children')
@@ -33,7 +32,7 @@ class PlantType(Model):
         return self.common_name
 
 
-class Plant(Model):
+class Plant(models.Model):
     index = models.PositiveIntegerField(editable=False)
     plant_type = models.ForeignKey(PlantType, related_name='plants')
     site = models.OneToOneField(
@@ -44,7 +43,7 @@ class Plant(Model):
         return "{} {}".format(self.plant_type.common_name, self.index)
 
 
-class SowEvent(Model):
+class SowEvent(models.Model):
     plant = models.OneToOneField(Plant, related_name='sow_event')
     site = models.ForeignKey('layout.PlantSite', related_name='sow_events+')
     timestamp = models.IntegerField(default=time.time)
@@ -53,7 +52,7 @@ class SowEvent(Model):
         return 'Sowed plant {} in site {}'.format(self.plant, self.site)
 
 
-class TransferEvent(Model):
+class TransferEvent(models.Model):
     plant = models.ForeignKey(Plant, related_name='transfer_events')
     from_site = models.ForeignKey('layout.PlantSite', related_name='+')
     to_site = models.ForeignKey('layout.PlantSite', related_name='+')
@@ -65,7 +64,7 @@ class TransferEvent(Model):
         )
 
 
-class HarvestEvent(Model):
+class HarvestEvent(models.Model):
     plant = models.OneToOneField(Plant, related_name='harvest_event')
     timestamp = models.IntegerField(default=time.time)
 
@@ -73,7 +72,7 @@ class HarvestEvent(Model):
         return 'Harvested plant {}'.format(self.plant)
 
 
-class PlantComment(Model):
+class PlantComment(models.Model):
     plant = models.ForeignKey(Plant, related_name='comments')
     content = models.TextField()
     timestamp = models.IntegerField(editable=False, default=time.time)

@@ -8,13 +8,16 @@ from collections import OrderedDict
 from django.apps import apps
 from django.conf import settings
 from django.utils.functional import cached_property
-from rest_framework import routers, views, reverse, response
-from .utils.state import system_layout
-from .viewsets import model_viewsets
+from rest_framework.views import APIView
+from rest_framework.reverse import reverse
+from rest_framework.routers import DefaultRouter
+from rest_framework.response import Response
+from .utils import system_layout
 
 logger = logging.getLogger(__name__)
 
-class BaseRouter(routers.DefaultRouter):
+
+class BaseRouter(DefaultRouter):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self._api_view_urls = {}
@@ -33,37 +36,24 @@ class BaseRouter(routers.DefaultRouter):
                     # Try to use the `contribute_to_router` function in the
                     # `urls` submodule for app
                     app_urls = importlib.import_module('.urls', app_name)
-                    # Register the app normally if the `urls` submodule tells
-                    # us to
-                    if hasattr(app_urls, 'GENERATE_DEFAULT_ROUTES') and \
-                            app_urls.GENERATE_DEFAULT_ROUTES:
-                        router.register_app(app_name)
+                except ImportError as err:
+                    module_name = "{}.{}".format(app_name, 'urls')
+                    if err.name == module_name:
+                        # The app has no `urls` submodule
+                        logger.info(err)
+                        continue
+                    else:
+                        raise
+                if hasattr(app_urls, 'contribute_to_router'):
                     app_urls.contribute_to_router(router)
-                except ImportError:
-                    # App has no `urls` submodule`. Just register the app
-                    # normally
-                    router.register_app(app_name)
-                except AttributeError:
-                    logger.info(
-                        'Failed to load urls for app "%s". `urls` submodule '
-                        'should define a function `contribute_to_router`.',
-                        app_name
+                else:
+                    raise Exception(
+                        'Failed to load urls for app "{}". `urls` submodule '
+                        'should define a function '
+                        '`contribute_to_router`.'.format(app_name)
                     )
             setattr(cls, internal_name, router)
         return getattr(cls, internal_name)
-
-    def register_app(self, app_name):
-        """ Register all of the models in the app with the given name """
-        for model in apps.get_app_config(app_name).get_models():
-            self.register_model(model)
-
-    def register_model(self, model):
-        """ Register the given model to this router """
-        model_name = model._meta.object_name
-        lower_model_name = model_name[0].lower() + model_name[1:]
-        self.register(
-            lower_model_name, model_viewsets.get_for_model(model)
-        )
 
     def add_api_view(self, name, url):
         """
@@ -103,33 +93,30 @@ class BaseRouter(routers.DefaultRouter):
         return self.get_urls()
 
     def get_api_root_view(self):
-        # Copy the following block from Default Router
         api_root_dict = {}
         list_name = self.routes[0].name
         for prefix, _, basename in self.registry:
             api_root_dict[prefix] = list_name.format(basename=basename)
         api_view_urls = self._api_view_urls
 
-        class APIRoot(views.APIView):
+        class APIRoot(APIView):
             _ignore_model_permissions = True
             allow_on_unconfigured_farm = True
 
             def get(self, request, **kwargs):
-                """ GET the root view """
                 ret = {}
                 for key, url_name in api_root_dict.items():
-                    ret[key] = reverse.reverse(
+                    ret[key] = reverse(
                         url_name,
                         request=request,
                         format=kwargs.pop('format', None)
                     )
-                # In addition to what had been added, now add the APIView urls
                 for api_view_key in api_view_urls.keys():
-                    ret[api_view_key] = reverse.reverse(
+                    ret[api_view_key] = reverse(
                         api_view_urls[api_view_key].name,
                         request=request,
                         format=kwargs.pop('format', None)
                     )
-                return response.Response(OrderedDict(sorted(ret.items())))
+                return Response(OrderedDict(sorted(ret.items())))
 
         return APIRoot.as_view()

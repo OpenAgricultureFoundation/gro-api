@@ -2,7 +2,7 @@ from django.db.migrations.state import ModelState
 from django.db.migrations.operations.base import Operation
 from django.db.migrations.operations.models import CreateModel
 from django.db.migrations.operations.fields import AlterField
-from cityfarm_api.utils.state import system_layout
+from cityfarm_api.utils import system_layout
 from layout.models import dynamic_models, ParentField
 from layout.schemata import all_schemata
 

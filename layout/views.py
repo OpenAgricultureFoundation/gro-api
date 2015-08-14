@@ -1,21 +1,45 @@
 import time
 from django.core.exceptions import ObjectDoesNotExist
 from rest_framework.response import Response
+from rest_framework.viewsets import ModelViewSet
 from rest_framework.decorators import detail_route
-from cityfarm_api.viewsets import SingletonViewSet, ModelViewSet
-from cityfarm_api.serializers import model_serializers
+from cityfarm_api.viewsets import SingletonModelViewSet
 from recipes.models import SetPoint
 from resources.models import ResourceProperty
-from .models import Enclosure, Tray
+from .serializers import (
+    Model3DSerializer, TrayLayoutSerializer, PlantSiteLayoutSerializer,
+    EnclosureSerializer, TraySerializer, PlantSiteSerializer,
+    dynamic_serializers
+)
+from .models import (
+    Model3D, TrayLayout, PlantSiteLayout, Enclosure, Tray, PlantSite,
+    dynamic_models
+)
 
-SetPointSerializer = model_serializers.get_for_model(SetPoint)
 
-class EnclosureViewSet(SingletonViewSet):
-    model = Enclosure
+class Model3DViewSet(ModelViewSet):
+    queryset = Model3D.objects.all()
+    serializer_class = Model3DSerializer
+
+
+class TrayLayoutViewSet(ModelViewSet):
+    queryset = TrayLayout.objects.all()
+    serializer_class = TrayLayoutSerializer
+
+
+class PlantSiteLayoutViewSet(ModelViewSet):
+    queryset = PlantSiteLayout.objects.all()
+    serializer_class = PlantSiteLayoutSerializer
+
+
+class EnclosureViewSet(SingletonModelViewSet):
+    queryset = Enclosure.objects.all()
+    serializer_class = EnclosureSerializer
 
 
 class TrayViewSet(ModelViewSet):
-    model = Tray
+    queryset = Tray.objects.all()
+    serializer_class = TraySerializer
 
     def retrieve(self, request, *args, **kwargs):
         instance = self.get_object()
@@ -52,3 +76,19 @@ class TrayViewSet(ModelViewSet):
                 code = ''.join(set_point.property.natural_key())
                 set_points[code] = set_point.value
         return Response(set_points)
+
+
+class PlantSiteViewSet(ModelViewSet):
+    queryset = PlantSite.objects.all()
+    serializer_class = PlantSiteSerializer
+
+
+dynamic_viewsets = {}
+for model_name in dynamic_models.keys():
+    Model = dynamic_models[model_name]
+    Serializer = dynamic_serializers[model_name]
+    class ViewSet(ModelViewSet):
+        class Meta:
+            queryset = Model.objects.all()
+            serializer_class = Serializer
+    dynamic_viewsets[model_name] = ViewSet

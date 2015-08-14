@@ -56,7 +56,7 @@ class RecipeRunSerializer(BaseSerializer):
         current_time = time.time()
         recipe = validated_data['recipe']
         tray = validated_data['tray']
-        start_timestamp = validated_data['start_timestamp'] or current_time
+        start_timestamp = validated_data.get('start_timestamp', current_time)
         if start_timestamp < current_time:
             raise ValidationError(
                 'Start timestamp must be a time in the future.'
@@ -185,3 +185,8 @@ class RecipeRunSerializer(BaseSerializer):
                 ) for property in ResourceProperty.objects.all()
             ])
         return super().update(instance, validated_data)
+
+
+class SetPointSerializer(BaseSerializer):
+    class Meta:
+        model = SetPoint

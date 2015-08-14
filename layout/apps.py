@@ -1,6 +1,6 @@
 from django.apps import AppConfig
 from cityfarm_api.models import DynamicOptions
-from cityfarm_api.utils.state import system_layout
+from cityfarm_api.utils import system_layout
 from .schemata import all_schemata
 
 class LayoutConfig(AppConfig):

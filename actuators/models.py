@@ -1,7 +1,6 @@
 import time
 from django.db import models
 from django.db.utils import OperationalError
-from cityfarm_api.models import Model
 from resources.models import ResourceType, ResourceProperty, Resource
 
 
@@ -11,7 +10,7 @@ class ActuatorClassManager(models.Manager):
         return self.get(resource_type=resource_type, code=class_code)
 
 
-class ActuatorClass(Model):
+class ActuatorClass(models.Model):
     class Meta:
         unique_together = (
             ('code', 'resource_type'), ('name', 'resource_type')
@@ -31,7 +30,7 @@ class ActuatorClass(Model):
         return self.name
 
 
-class ActuatorType(Model):
+class ActuatorType(models.Model):
     class Meta:
         default_related_name = 'actuator_types'
 
@@ -48,7 +47,7 @@ class ActuatorType(Model):
         return self.name
 
 
-class ControlProfile(Model):
+class ControlProfile(models.Model):
     name = models.CharField(max_length=100)
     actuator_type = models.ForeignKey(
         ActuatorType, related_name='allowed_control_profiles'
@@ -63,14 +62,14 @@ class ControlProfile(Model):
         return self.name
 
 
-class ActuatorEffect(Model):
+class ActuatorEffect(models.Model):
     control_profile = models.ForeignKey(ControlProfile, related_name='effects')
     property = models.ForeignKey(ResourceProperty, related_name='+')
     effect_on_active = models.FloatField(default=0)
     threshold = models.FloatField(default=0)
 
 
-class Actuator(Model):
+class Actuator(models.Model):
     class Meta:
         unique_together = ('index', 'actuator_type')
         default_related_name = 'actuators'
@@ -93,7 +92,7 @@ class Actuator(Model):
         return self.name
 
 
-class ActuatorState(Model):
+class ActuatorState(models.Model):
     class Meta:
         ordering = ['timestamp']
         get_latest_by = 'timestamp'

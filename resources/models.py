@@ -1,7 +1,6 @@
 from django.db import models
 from django.contrib.contenttypes.fields import GenericForeignKey
 from django.contrib.contenttypes.models import ContentType
-from cityfarm_api.models import Model
 
 
 class ResourceTypeManager(models.Manager):
@@ -9,7 +8,7 @@ class ResourceTypeManager(models.Manager):
         return self.get(code=code)
 
 
-class ResourceType(Model):
+class ResourceType(models.Model):
     code = models.CharField(max_length=1, unique=True)
     name = models.CharField(max_length=100, unique=True)
     resource_count = models.PositiveIntegerField(
@@ -31,7 +30,7 @@ class ResourcePropertyManager(models.Manager):
         return self.get(resource_type=resource_type, code=property_code)
 
 
-class ResourceProperty(Model):
+class ResourceProperty(models.Model):
     class Meta:
         unique_together = (
             ('code', 'resource_type'), ('name', 'resource_type')
@@ -57,7 +56,7 @@ class ResourceProperty(Model):
         return self.resource_type.name + ' ' + self.name
 
 
-class Resource(Model):
+class Resource(models.Model):
     class Meta:
         unique_together = ('index', 'resource_type')
         default_related_name = 'resources'

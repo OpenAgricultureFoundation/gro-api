@@ -6,15 +6,22 @@ from rest_framework import serializers
 from rest_framework.utils.field_mapping import get_detail_view_name
 from cityfarm_api.serializers import BaseSerializer
 from .models import (
-    Enclosure, Tray, PlantSite, dynamic_models, TrayLayout, PlantSiteLayout
+    Model3D, TrayLayout, PlantSiteLayout, Enclosure, Tray, PlantSite,
+    dynamic_models
 )
 from farms.models import Farm
 from resources.models import Resource
 
 
+class Model3DSerializer(BaseSerializer):
+    class Meta:
+        model = Model3D
+
+
 class TrayLayoutSerializer(BaseSerializer):
     class Meta:
         model = TrayLayout
+    # TODO: Remove this once it is implemented in the frontend
     condition = serializers.ChoiceField(
         ('all', 'odd', 'even', 'none'), write_only=True, required=False
     )
@@ -32,11 +39,14 @@ class TrayLayoutSerializer(BaseSerializer):
         elif condition == 'none':
             def should_create(row, col):
                 return False
+        sites = []
         for row in range(instance.num_rows):
             for col in range(instance.num_cols):
                 if should_create(row, col):
-                    site = PlantSiteLayout(parent=instance, row=row, col=col)
-                    site.save()
+                    sites.append(
+                        PlantSiteLayout(parent=instance, row=row, col=col)
+                    )
+        PlantSiteLayout.objects.bulk_create(sites)
 
     def clear_sites(self, instance):
         for site in instance.plant_sites.all():
@@ -59,7 +69,16 @@ class TrayLayoutSerializer(BaseSerializer):
         return instance
 
 
+class PlantSiteLayoutSerializer(BaseSerializer):
+    class Meta:
+        model = PlantSiteLayout
+
 class ResourcesMixin:
+    """
+    :class:`cityfarm_api.serializers.BaseSerializer` doesn't know how to
+    automatically serialize generic relations, so we treat them as serializer
+    methods and implement the getter in this mixin for reuse
+    """
     resources_view_name = get_detail_view_name(Resource)
 
     def get_resources(self, obj):
@@ -101,7 +120,6 @@ class LayoutObjectSerializer(BaseSerializer, ResourcesMixin):
         return attrs
 
 
-# class LayoutObjectSerializer(BaseSerializer):
 #     def validate(self, attrs):
 #         """ Ensure that this object fits inside it's parent """
 #         total_length = (attrs['x'] or 0) + (attrs['length'] or 0)
@@ -168,6 +186,13 @@ class TraySerializer(LayoutObjectSerializer):
             self.create_sites(instance, layout)
         return instance
 
+
+class PlantSiteSerializer(BaseSerializer):
+    class Meta:
+        model = PlantSite
+
+
+dynamic_serializers = {}
 for entity_name, entity_model in dynamic_models.items():
     class Serializer(LayoutObjectSerializer, ResourcesMixin):
         class Meta:
@@ -176,3 +201,4 @@ for entity_name, entity_model in dynamic_models.items():
             nest_if_recursive = ('model',)
 
         resources = serializers.SerializerMethodField()
+    dynamic_serializers[entity_name] = Serializer

@@ -7,7 +7,7 @@ from django.db.models import Model as DjangoModel
 from django.db.models.options import Options as DjangoOptions
 from django.conf import settings
 from solo import models as solo_models
-from .utils.state import (
+from .utils import (
     system_layout, LayoutDependentAttribute, LayoutDependentCachedProperty
 )
 
@@ -88,21 +88,17 @@ class DynamicOptions(DjangoOptions):
         return self._dynamic_relation_tree + self.__dict__['_relation_tree']
 
 
-class Model(DjangoModel):
-    """
-    Base model class from which all database models in this project should
-    inherit. By default, these models will be managed only on leaf servers.
-    """
-    class Meta:
-        abstract = True
-        managed = settings.SERVER_TYPE == settings.LEAF
-
 if settings.SERVER_TYPE == settings.LEAF:
-    class SingletonModel(solo_models.SingletonModel, Model):
-        class Meta(Model.Meta):
-            abstract = True
+    SingletonModel = solo_models.SingletonModel
 else:
-    # On root servers, we want to save the singleton under a cache key
-    # namespaced with the slug for the current farm, which is saved in the
-    # per-request cache
-    raise NotImplementedError()
+    from .middleware import get_request_cache
+    class SingletonModel(solo_models.SingletonModel):
+        class Meta:
+            abstract = True
+
+        @classmethod
+        def get_cache_key(cls):
+            request_cache = get_request_cache()
+            farm = request_cache.get('farm')
+            prefix = solo_settings.SOLO_CACHE_PREFIX
+            return '{}:{}:{}'.format(prefix, farm, cls.__name__.lower())

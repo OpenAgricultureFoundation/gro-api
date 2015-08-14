@@ -2,15 +2,26 @@ from contextlib import contextmanager
 from django.db.utils import OperationalError
 from django.conf import settings
 from django.utils.functional import cached_property
-from .functional import Singleton
 from layout.schemata import all_schemata
 
 if settings.SERVER_TYPE == settings.LEAF:
     from django.core.cache import caches
-    get_cache = lambda: caches['default']
+    get_layout_cache = lambda: caches['default']
 else:
-    # Use the per-request cache
-    raise NotImplementedError()
+    from .middleware import get_request_cache
+    get_layout_cache = get_request_cache
+
+
+class Singleton(type):
+    def __init__(cls, name, bases, attrs):
+        super().__init__(name, bases, attrs)
+        cls.instance = None
+
+    def __call__(cls, *args, **kwargs):
+        if cls.instance is None:
+            cls.instance = super().__call__(*args, **kwargs)
+        return cls.instance
+
 
 class SystemLayout(metaclass=Singleton):
     """
@@ -30,7 +41,7 @@ class SystemLayout(metaclass=Singleton):
     def current_value(self):
         if self.use_mock_value:
             return self.mock_value
-        cache = get_cache()
+        cache = get_layout_cache()
         if self.cache_key in cache:
             return cache.get(self.cache_key)
         from farms.models import Farm
@@ -63,6 +74,7 @@ class SystemLayout(metaclass=Singleton):
 
 system_layout = SystemLayout()
 
+
 class LayoutDependentAttribute:
     """
     A descriptor that behaves like an attribute but stores a different value
@@ -75,7 +87,8 @@ class LayoutDependentAttribute:
         # dict
         self.name = name
         if 'default' in kwargs:
-            self.default = kwargs.pop('default')
+            default = kwargs.pop('default')
+            self.default = default if callable(default) else lambda: default
         assert len(kwargs) == 0
 
     @property
@@ -91,6 +104,7 @@ class LayoutDependentAttribute:
 
     def __set__(self, instance, value):
         setattr(instance, self.internal_name, value)
+
 
 class LayoutDependentCachedProperty:
     """

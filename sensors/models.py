@@ -1,6 +1,5 @@
 import time
 from django.db import models
-from cityfarm_api.models import Model
 from resources.models import ResourceType, ResourceProperty, Resource
 
 
@@ -9,7 +8,7 @@ class SensorTypeManager(models.Manager):
         return self.get(name=name)
 
 
-class SensorType(Model):
+class SensorType(models.Model):
     class Meta:
         default_related_name = 'sensor_types'
 
@@ -29,7 +28,7 @@ class SensorType(Model):
         return self.name
 
 
-class Sensor(Model):
+class Sensor(models.Model):
     class Meta:
         unique_together =  ('index', 'sensor_type')
         default_related_name = 'sensors'
@@ -44,7 +43,7 @@ class Sensor(Model):
         return self.name
 
 
-class SensingPoint(Model):
+class SensingPoint(models.Model):
     class Meta:
         unique_together = ('index', 'property')
         default_related_name = 'sensing_points'
@@ -60,7 +59,7 @@ class SensingPoint(Model):
         return self.sensor.name + ' - ' + self.property.name
 
 
-class DataPoint(Model):
+class DataPoint(models.Model):
     class Meta:
         ordering = ['timestamp']
         get_latest_by = 'timestamp'

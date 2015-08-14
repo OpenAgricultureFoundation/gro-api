@@ -5,15 +5,15 @@ to be serialized correctly.
 import logging
 import importlib
 from django.conf import settings
-from rest_framework import serializers
 from rest_framework.settings import api_settings
 from rest_framework.relations import HyperlinkedRelatedField
-from rest_framework.serializers import SerializerMetaclass, ValidationError
+from rest_framework.serializers import (
+    HyperlinkedModelSerializer, ValidationError
+)
 from rest_framework.utils.field_mapping import (
     get_detail_view_name, get_relation_kwargs, get_nested_relation_kwargs
 )
-from .utils.state import LayoutDependentAttribute
-from .utils.datastructures import ModelDict
+from .utils import LayoutDependentAttribute
 
 logger = logging.getLogger(__name__)
 
@@ -57,6 +57,7 @@ class DynamicHyperlinkedRelatedField(HyperlinkedRelatedField):
         # We should never be assigning an actual value to this property
         assert val is None
 
+
 class SmartHyperlinkedRelatedField:
     """
     A class that encapsulates a :class:`DynamicHyperlinkedRelatedField` if it's
@@ -79,91 +80,13 @@ class SmartHyperlinkedRelatedField:
         else:
             return setattr(object.__getattribute__(self, 'field'), name, val)
 
-class SerializerRegistry(ModelDict):
-    """
-    A registry that keeps track of all of the serializer that have been
-    registered for this project. :class:`BaseSerializer` will read from the
-    registry when determining what serializer to use for nested relations. By
-    default, :class:`BaseSerializer` is used.
-    """
-    def register(self, serializer):
-        try:
-            # This may fail if serializer is abstract, such as BaseSerializer
-            self[serializer.Meta.model] = serializer
-        except AttributeError:
-            pass
 
-    def get_for_model(self, model):
-        """
-        Gets the serializer associated with the model `model`. If no serializer
-        has been registered for the model, returns a :class:`BaseSerializer`
-        subclass that can operate on the given model.
-        """
-        if model not in self:
-            _model = model # Scoping is weird
-            class Serializer(BaseSerializer): # pylint: disable=used-before-assignment
-                class Meta:
-                    model = _model
-            self[model] = Serializer
-        return self[model]
-
-model_serializers = SerializerRegistry()
-
-class MySerializerMetaclass(SerializerMetaclass):
-    """
-    Modify :class:`~rest_framework.serializer.SerializerMetaclass` to also
-    provide default values for a set of attributes on the Meta and automatically
-    register the serializer with `model_serializers`.
-    """
-    def __init__(cls, name, bases, attrs):
-        super().__init__(name, bases, attrs)
-        meta_defaults = {
-            'extra_fields': (),
-            'nest_if_recursive': (),
-            'never_nest': (),
-            'models_already_nested': set(),
-        }
-        if 'Meta' in attrs:
-            meta = attrs['Meta']
-            for attr_name, attr_val in meta_defaults.items():
-                if getattr(meta, attr_name, None) is None:
-                    setattr(meta, attr_name, attr_val)
-            if hasattr(meta, 'model'):
-                model_key = model_serializers.get_key_for_model(meta.model)
-                meta.models_already_nested.add(model_key)
-            meta.models_being_nested = set()
-        model_serializers.register(cls)
-
-class BaseSerializer(serializers.HyperlinkedModelSerializer,
-                     metaclass=MySerializerMetaclass):
+class BaseSerializer(HyperlinkedModelSerializer):
     """
     Base class used for all serializers in this project.
     """
     _fields = LayoutDependentAttribute('fields')
     serializer_related_field = SmartHyperlinkedRelatedField
-
-    def __init__(self, *args, **kwargs):
-        # We can't access self.context until super().__init__ has been called,
-        # but we can't pass is_recursive into into super().__init__, so we pop
-        # is_recursive now and don't use it until later
-        is_recursive = kwargs.pop('is_recursive', None)
-        super().__init__(*args, **kwargs)
-        request = self.context.get('request', None)
-        if request:
-            if 'depth' in request.query_params:
-                val = request.query_params['depth']
-                try:
-                    val = int(val)
-                except TypeError:
-                    self.Meta.depth = 0
-                else:
-                    val = min(max(val, 0), 10)
-                    self.Meta.depth = val
-            else:
-                self.Meta.depth = 0
-            self.is_recursive = self.Meta.depth > 0
-        else:
-            self.is_recursive = is_recursive
 
     def get_default_field_names(self, declared_fields, model_info):
         return (
@@ -174,30 +97,13 @@ class BaseSerializer(serializers.HyperlinkedModelSerializer,
             list(model_info.reverse_relations.keys())
         )
 
-    def get_field_names(self, declared_fields, info):
-        field_names = tuple(super().get_field_names(declared_fields, info))
-        return field_names + self.Meta.extra_fields
-
     def build_field(self, field_name, info, model_class, nested_depth):
-        if self.is_recursive and field_name in self.Meta.nest_if_recursive:
-            relation_info = info.relations[field_name]
-            field_class, field_kwargs = self.build_nested_field(
-                field_name,
-                relation_info,
-                max(nested_depth, 1)
-            )
-        elif field_name in info.fields_and_pk:
+        if field_name in info.fields_and_pk:
             model_field = info.fields_and_pk[field_name]
-            field_class, field_kwargs = self.build_standard_field(
-                field_name, model_field
-            )
+            return self.build_standard_field(field_name, model_field)
         elif field_name in info.relations:
             relation_info = info.relations[field_name]
-            to_model_key = model_serializers.get_key_for_model(
-                relation_info.related_model
-            )
-            if not nested_depth or field_name in self.Meta.never_nest or \
-                    to_model_key in self.Meta.models_already_nested:
+            if not nested_depth:
                 field_class, field_kwargs = self.build_relational_field(
                     field_name, relation_info
                 )
@@ -205,30 +111,19 @@ class BaseSerializer(serializers.HyperlinkedModelSerializer,
                 field_class, field_kwargs = self.build_nested_field(
                     field_name, relation_info, nested_depth
                 )
+            # TODO: Make sure this actually does something
             # Don't allow writes to relations resulting from foreign keys
             # pointing to this class
             if relation_info.model_field is None:
                 field_kwargs['read_only'] = True
                 if 'queryset' in field_kwargs:
                     field_kwargs.pop('queryset')
+            return field_class, field_kwargs
         elif hasattr(model_class, field_name):
-            field_class, field_kwargs = self.build_property_field(
-                field_name, model_class
-            )
+            return self.build_property_field(field_name, model_class)
         elif field_name == api_settings.URL_FIELD_NAME:
-            field_class, field_kwargs = self.build_url_field(
-                field_name, model_class
-            )
-        else:
-            field_class, field_kwargs = self.build_unknown_field(
-                field_name, model_class
-            )
-        # Disable writes in recursive queries
-        if self.is_recursive:
-            field_kwargs['read_only'] = True
-            if 'queryset' in field_kwargs:
-                field_kwargs.pop('queryset')
-        return field_class, field_kwargs
+            return self.build_url_field(field_name, model_class)
+        return self.build_unknown_field(field_name, model_class)
 
     def build_relational_field(self, field_name, relation_info):
         field_class = self.serializer_related_field
@@ -243,28 +138,12 @@ class BaseSerializer(serializers.HyperlinkedModelSerializer,
         return field_class, field_kwargs
 
     def build_nested_field(self, field_name, relation_info, nested_depth):
-        NestedBase = model_serializers.get_for_model(
-            relation_info.related_model
-        )
-        class NestedSerializer(NestedBase):
-            class Meta(getattr(NestedBase, 'Meta', object)):
+        class NestedSerializer(BaseSerializer):
+            class Meta:
                 model = relation_info.related_model
                 depth = nested_depth - 1
-                models_already_nested = self.Meta.models_already_nested.copy()
+
         field_class = NestedSerializer
         field_kwargs = get_nested_relation_kwargs(relation_info)
-        field_kwargs['is_recursive'] = self.is_recursive
-        return field_class, field_kwargs
 
-# Populate the serializer registry by making sure all serializer modules in this
-# project have been imported
-for app_name in settings.CITYFARM_API_APPS:
-    try:
-        importlib.import_module('.serializers', app_name)
-    except ImportError as err:
-        module_name = "{}.{}".format(app_name, 'serializers')
-        if err.name == module_name:
-            logger.debug(err)
-        else:
-            logger.error("Failed to load module {}".format(module_name))
-            logger.error(err)
+        return field_class, field_kwargs

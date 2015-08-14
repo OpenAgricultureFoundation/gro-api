@@ -7,6 +7,11 @@ from .models import (
 )
 
 
+class PlantModelSerializer(BaseSerializer):
+    class Meta:
+        model = PlantModel
+
+
 class PlantTypeSerializer(BaseSerializer):
     class Meta:
         model = PlantType
@@ -45,7 +50,7 @@ class PlantCommentSerializer(BaseSerializer):
         model = PlantComment
 
 
-class Plant(BaseSerializer):
+class PlantSerializer(BaseSerializer):
     class Meta:
         model = Plant
 

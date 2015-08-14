@@ -4,6 +4,7 @@ This module subclasses several of the classes in the MRO of
 :class:`LayoutForeignKey` field which can point to a different model depending
 on the layout of the current farm.
 """
+
 from django.apps import apps
 from django.core import checks
 from django.db.models import CASCADE
@@ -16,7 +17,7 @@ from django.db.models.fields.related import (
 from django.utils.encoding import force_text
 from django.utils.functional import cached_property
 from django.utils.translation import ugettext_lazy as _
-from cityfarm_api.utils.state import (
+from cityfarm_api.utils import (
     system_layout, LayoutDependentAttribute, LayoutDependentCachedProperty
 )
 
@@ -25,16 +26,10 @@ class LayoutRelatedField(RelatedField):
     A :class:`django.db.models.fields.related.RelatedField` subclass that works
     for dynamic relations that point to different models depending on the
     layout of the current farm
-
-    Subclasses of this class must define a method :meth:`get_other_model` that
-    returns the name of the model that this field points to for the current
-    layout.  They must also define a method `contribute_to_related_class` that
-    takes 2 arguments, `cls` (the other class to contribute to) and `related`
-    (the rel object describing the relation to the other class).
     """
     # It is useful to have some indicator that this field is dynamic
     is_dynamic = True
-    to = LayoutDependentAttribute('to', default=lambda: None)
+    to = LayoutDependentAttribute('to', default=None)
 
     def __init__(self, *args, **kwargs):
         for state in system_layout.allowed_values:
@@ -44,18 +39,14 @@ class LayoutRelatedField(RelatedField):
 
     def get_other_model(self):
         """
-        Returns the name of the model that this field points to for the
-        given state. Subclasses of this class must implement
-        :meth:`get_other_model`.
-
-        :param: The application state to inspect.
+        Returns the name of the model that this field points to. Subclasses of
+        :class:`LayoutRelatedField` must implement this method.
         """
         raise NotImplementedError()
 
     @property
     def related_model(self):
         # This property can't be cached in a dynamic field
-        apps.check_models_ready()
         return self.to
 
     def check(self, **kwargs):
@@ -109,8 +100,7 @@ class LayoutRelatedField(RelatedField):
 
     def contribute_to_related_class(self, cls, related):
         """
-        Subclasses of this class must implement
-        `contribute_to_related_class`
+        Subclasses of class:`LayoutRelatedfield` must implement this method.
         """
         raise NotImplementedError()
 
@@ -144,7 +134,7 @@ class LayoutForeignObjectRel(ForeignObjectRel):
     @property
     def model(self):
         """ We can't cache this because `to` is dynamic """
-        return self.to
+        return self.field.to
 
 class LayoutManyToOneRel(LayoutForeignObjectRel):
     """
@@ -166,6 +156,12 @@ class LayoutManyToOneRel(LayoutForeignObjectRel):
                 self.field_name = field_name
 
 class LayoutForeignRelatedObjectsDescriptor(ForeignRelatedObjectsDescriptor):
+    """
+    We can't pass the related class to this descriptor on initialization
+    because it varies by layout, so we make the various forward fields set the
+    related attribute of this object in their
+    :meth:`contribute_to_related_class` methods.
+    """
     related = LayoutDependentAttribute('related')
     def __init__(self):
         pass
@@ -176,18 +172,14 @@ class LayoutForeignRelatedObjectsDescriptor(ForeignRelatedObjectsDescriptor):
 
 class LayoutForeignObject(ForeignObject, LayoutRelatedField):
     """
-    A version of :class:`django.db.models.fields.related.ForeignObject`
-    that works for dynamic relations that point to different models depending on
+    A version of :class:`django.db.models.fields.related.ForeignObject` that
+    works for dynamic relations that point to different models depending on
     the layout of the current farm. The main difference between this and
     `ForeignObject` is that the constructor for this class does not accept the
     `to` attribute, because that is provided dynamically.
-
-    Subclasses of this class must define a method :meth:`get_other_model` that
-    returns the name of the model that this field points to for the current
-    state.
     """
     _related_fields = LayoutDependentAttribute(
-        'related_fields', default=lambda: None
+        'related_fields', default=None
     )
     related_accessor_class = LayoutForeignRelatedObjectsDescriptor
 
@@ -206,9 +198,14 @@ class LayoutForeignObject(ForeignObject, LayoutRelatedField):
             )
         kwargs['verbose_name'] = kwargs.get('verbose_name', None)
 
+        # We want to skip ForeignObject in the MRO, so we can't use super here
         LayoutRelatedField.__init__(self, **kwargs)
 
     def get_other_model(self):
+        """
+        Returns the name of the model that this field points to. Subclasses of
+        :class:`LayoutRelatedField` must implement this method.
+        """
         raise NotImplementedError()
 
     def check(self, **kwargs):
@@ -263,10 +260,6 @@ class LayoutForeignKey(LayoutForeignObject, ForeignKey):
     for dynamic relations that point to different models depending on the
     layout of the current farm . The main difference between this class and
     `ForeignKey` is that the constructor does not accept the `to` attribute
-
-    Subclasses of the returned class must define a method
-    :meth:`get_other_model` that returns the name of the model that this field
-    points to for the current state.
     """
     empty_strings_allowed = False
     default_error_messages = {
@@ -275,6 +268,7 @@ class LayoutForeignKey(LayoutForeignObject, ForeignKey):
         )
     }
     description = _('Foreign Key (type determined by related field)')
+
     def __init__(self, to_field=None, rel_class=LayoutManyToOneRel, \
             db_constraint=True, **kwargs):
         if to_field:
@@ -292,6 +286,10 @@ class LayoutForeignKey(LayoutForeignObject, ForeignKey):
         LayoutForeignObject.__init__(self, ['self'], [to_field], **kwargs)
 
     def get_other_model(self):
+        """
+        Returns the name of the model that this field points to. Subclasses of
+        :class:`LayoutRelatedField` must implement this method.
+        """
         raise NotImplementedError()
 
     @cached_property

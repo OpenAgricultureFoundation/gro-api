@@ -57,9 +57,15 @@ FRAMEWORK_APPS = (
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
+    'django.contrib.sites',
     'django_cron',
     'corsheaders',
     'rest_framework',
+    'rest_framework.authtoken',
+    'rest_auth',
+    'allauth',
+    'allauth.account',
+    'rest_auth.registration',
 )
 
 if SERVER_MODE == DEVELOPMENT:
@@ -261,6 +267,10 @@ REST_FRAMEWORK['TEST_REQUEST_DEFAULT_FORMAT'] = 'json'
 CRON_CLASSES = (
     'farms.cron.UpdateFarmIp',
 )
+
+# Sites
+
+SITE_ID = 1
 
 # Internationalization
 

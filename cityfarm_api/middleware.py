@@ -8,8 +8,8 @@ from django.conf import settings
 from django.core.exceptions import MiddlewareNotUsed
 from django.core.cache.backends.locmem import LocMemCache
 from rest_framework.views import APIView
-from .errors import FarmNotConfiguredError
-from .utils.state import system_layout
+from rest_framework.exceptions import APIException
+from .utils import system_layout
 
 _request_cache = {}
 
@@ -19,12 +19,14 @@ def get_request_cache():
         _request_cache[currentThread()] = RequestCache()
     return _request_cache[currentThread()]
 
+
 class RequestCache(LocMemCache):
     """ A local memory cache specific to the current thread """
     def __init__(self):
         name = 'locmemcache@%i' % hash(currentThread())
         params = dict()
         super().__init__(name, params)
+
 
 class RequestCacheMiddleware:
     """
@@ -34,6 +36,7 @@ class RequestCacheMiddleware:
         if currentThread() in _request_cache:
             _request_cache[currentThread()].clear()
 
+
 class FarmRoutingMiddleware:
     """
     Saves the name of the farm being accessed in the per-request cache during
@@ -42,6 +45,18 @@ class FarmRoutingMiddleware:
     def process_view(self, request, view_func, view_args, view_kwargs):
         if 'farm' in view_kwargs:
             get_request_cache().set('farm', view_kwargs['farm'])
+
+
+class FarmNotConfiguredError(APIException):
+    """
+    This exception should be thrown when a user attempts to input data for a
+    model in farm that has not yet been configured.
+    """
+    status_code = 403
+    default_detail = (
+        "Please configure your farm before attempting to save data in this API"
+    )
+
 
 class FarmIsConfiguredCheckMiddleware:
     """
@@ -72,3 +87,9 @@ class FarmDbRouter:
     """
     def db_for_read(self, model, **hints):
         return get_request_cache().get('farm')
+
+    def allow_migrate(db, app_label, model_name=None, **hints):
+        if settings.SERVER_TYPE == ROOT:
+            # TODO: Rework this. The will be some tables in the root server
+            # that will need to be migrated at some point.
+            return False

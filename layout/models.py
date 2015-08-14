@@ -7,8 +7,8 @@ from django.core.exceptions import ObjectDoesNotExist
 from django.contrib.contenttypes.fields import GenericRelation
 from django.dispatch import receiver
 from model_utils.managers import InheritanceManager
-from cityfarm_api.utils.state import system_layout
-from cityfarm_api.models import Model, SingletonModel
+from cityfarm_api.utils import system_layout
+from cityfarm_api.models import SingletonModel
 from cityfarm_api.fields import LayoutForeignKey
 from farms.models import Farm
 from resources.models import Resource
@@ -16,7 +16,7 @@ from recipes.models import RecipeRun
 from .schemata import all_schemata
 
 
-class Model3D(Model):
+class Model3D(models.Model):
     name = models.CharField(max_length=100)
     file = models.FileField(upload_to="3D_models")
     width = models.FloatField()
@@ -27,7 +27,7 @@ class Model3D(Model):
         return self.name
 
 
-class TrayLayout(Model):
+class TrayLayout(models.Model):
     name = models.CharField(max_length=100)
     num_rows = models.IntegerField()
     num_cols = models.IntegerField()
@@ -36,7 +36,7 @@ class TrayLayout(Model):
         return self.name
 
 
-class PlantSiteLayout(Model):
+class PlantSiteLayout(models.Model):
     parent = models.ForeignKey(TrayLayout, related_name="plant_sites")
     row = models.IntegerField()
     col = models.IntegerField()
@@ -102,7 +102,7 @@ def create_singleton_instance(sender, instance, **kwargs):
             pass
 
 
-class Tray(Model):
+class Tray(models.Model):
     name = models.CharField(max_length=100, blank=True)
     x = models.FloatField(default=0)
     y = models.FloatField(default=0)
@@ -144,7 +144,7 @@ class Tray(Model):
         return self.name
 
 
-class PlantSite(Model):
+class PlantSite(models.Model):
     parent = models.ForeignKey(Tray, related_name='plant_sites')
     row = models.IntegerField()
     col = models.IntegerField()
@@ -177,7 +177,7 @@ def generate_model_from_entity(entity):
         ),
         "__str__": to_string,
     }
-    return type(entity.name, (Model,), model_attrs)
+    return type(entity.name, (models.Model,), model_attrs)
 
 # A dictionary of all of the classes in the layout tree that have been created
 # so we can be sure not to create a class that has already been created

@@ -33,8 +33,7 @@ if settings.SERVER_TYPE == settings.ROOT:
     root_id_kwargs = {
         'primary_key': True
     }
-    from cityfarm_api.models import Model
-    farm_base = Model
+    farm_base = models.Model
 
 
 class LayoutChangeAttempted(APIException):
@@ -129,7 +128,7 @@ class Farm(farm_base):
                 raise LayoutChangeAttempted()
             else:
                 Migrate('layout', '0001')()
-                from cityfarm_api.utils.state import system_layout
+                from cityfarm_api.utils import system_layout
                 with system_layout.as_value(self.layout):
                     Migrate()()
         if self.slug:
