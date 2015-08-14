@@ -1,6 +1,5 @@
 import time
 from django.db import models
-from django.db.utils import OperationalError
 from resources.models import ResourceType, ResourceProperty, Resource
 
 

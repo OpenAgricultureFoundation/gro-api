@@ -4,7 +4,6 @@ used by this app.
 """
 
 import logging
-from django.conf import settings
 from control.commands import Command, Flush, Migrate, ReloadWorkers
 logger = logging.getLogger(__name__)
 

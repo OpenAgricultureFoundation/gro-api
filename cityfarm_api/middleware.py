@@ -89,7 +89,7 @@ class FarmDbRouter:
         return get_request_cache().get('farm')
 
     def allow_migrate(db, app_label, model_name=None, **hints):
-        if settings.SERVER_TYPE == ROOT:
+        if settings.SERVER_TYPE == settings.ROOT:
             # TODO: Rework this. The will be some tables in the root server
             # that will need to be migrated at some point.
             return False

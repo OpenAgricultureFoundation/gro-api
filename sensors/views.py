@@ -2,7 +2,7 @@ import time
 from django.core.exceptions import ObjectDoesNotExist
 from rest_framework import status
 from rest_framework.response import Response
-from rest_framework.viewsets import ModelViewSet, ReadOnlyModelViewSet
+from rest_framework.viewsets import ModelViewSet
 from rest_framework.decorators import detail_route
 from rest_framework.exceptions import APIException
 from .models import SensorType, Sensor, SensingPoint, DataPoint

@@ -1,8 +1,7 @@
 import time
 import logging
 from django.core.exceptions import ObjectDoesNotExist
-from django.utils.functional import cached_property
-from rest_framework.exceptions import APIException, ValidationError
+from rest_framework.exceptions import ValidationError
 from rest_framework.serializers import IntegerField
 from cityfarm_api.serializers import BaseSerializer
 from resources.models import ResourceProperty
@@ -127,7 +126,7 @@ class RecipeRunSerializer(BaseSerializer):
                 continue
             if args:
                 logger.warning(
-                    'Recipe line "%s" contained extra arguments'.format(line)
+                    'Recipe line "%s" contained extra arguments', line
                 )
         if not end_timestamp:
             raise ValidationError(

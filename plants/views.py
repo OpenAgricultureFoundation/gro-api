@@ -1,4 +1,3 @@
-from rest_framework import mixins
 from rest_framework.viewsets import ModelViewSet, ReadOnlyModelViewSet
 from .models import (
     PlantModel, PlantType, Plant, SowEvent, TransferEvent, HarvestEvent,

@@ -3,45 +3,45 @@ This module defines a base model class form which all models in this project
 should inherit.
 """
 from collections import defaultdict
-from django.db.models import Model as DjangoModel
-from django.db.models.options import Options as DjangoOptions
+from django.db.models.options import Options
 from django.conf import settings
 from solo import models as solo_models
+from solo import settings as solo_settings
 from .utils import (
     system_layout, LayoutDependentAttribute, LayoutDependentCachedProperty
 )
 
-class DynamicOptions(DjangoOptions):
+class DynamicOptions(Options):
     is_dynamic = True
     _get_fields_cache = LayoutDependentAttribute('get_fields_cache', default=dict)
 
     @LayoutDependentCachedProperty
     def fields(self):
-        return DjangoOptions.fields.func(self)
+        return Options.fields.func(self)
 
     @LayoutDependentCachedProperty
     def concrete_fields(self):
-        return DjangoOptions.concrete_fields.func(self)
+        return Options.concrete_fields.func(self)
 
     @LayoutDependentCachedProperty
     def local_concrete_fields(self):
-        return DjangoOptions.local_concrete_fields.func(self)
+        return Options.local_concrete_fields.func(self)
 
     @LayoutDependentCachedProperty
     def many_to_many(self):
-        return DjangoOptions.many_to_many.func(self)
+        return Options.many_to_many.func(self)
 
     @LayoutDependentCachedProperty
     def related_objects(self):
-        return DjangoOptions.related_objects.func(self)
+        return Options.related_objects.func(self)
 
     @LayoutDependentCachedProperty
     def _forward_fields_map(self):
-        return DjangoOptions._forward_fields_map.func(self)
+        return Options._forward_fields_map.func(self)
 
     @LayoutDependentCachedProperty
     def fields_map(self):
-        return DjangoOptions.fields_map.func(self)
+        return Options.fields_map.func(self)
 
     def _populate_dynamic_directed_relation_graph(self):
         dynamic_related_objects_graph = defaultdict(lambda: defaultdict(list))

@@ -68,7 +68,7 @@ class ActuatorViewSet(ModelViewSet):
             )
         duration = request.DATA.get('duration', None)
         if not duration:
-            raise APIExcpetion(
+            raise APIException(
                 'No value received for "duration" in the posted dictionary'
             )
         instance.override_value = float(value)

@@ -5,7 +5,6 @@ This module subclasses several of the classes in the MRO of
 on the layout of the current farm.
 """
 
-from django.apps import apps
 from django.core import checks
 from django.db.models import CASCADE
 from django.db.models.fields import Field

@@ -1,4 +1,3 @@
-import time
 from django.db import models
 from plants.models import PlantType
 from resources.models import ResourceProperty

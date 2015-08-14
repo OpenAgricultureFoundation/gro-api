@@ -1,6 +1,5 @@
 from rest_framework.fields import SkipField
 from rest_framework.relations import HyperlinkedIdentityField
-from rest_framework.exceptions import APIException
 from rest_framework.serializers import ValidationError, ReadOnlyField
 from cityfarm_api.serializers import BaseSerializer
 from .models import SensorType, Sensor, SensingPoint, DataPoint
@@ -100,6 +99,7 @@ class SensingPointSerializer(BaseSerializer):
         validated_data['index'] = property.sensing_point_count
         instance = super().create(validated_data)
         property.save()
+        return instance
 
     def update(self, instance, validated_data):
         if instance.auto_created:

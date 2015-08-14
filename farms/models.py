@@ -26,14 +26,13 @@ if settings.SERVER_TYPE == settings.LEAF:
         'editable': False,
         'null': True
     }
-    from cityfarm_api.models import SingletonModel
-    farm_base = SingletonModel
-if settings.SERVER_TYPE == settings.ROOT:
+    from cityfarm_api.models import SingletonModel as FarmBase
+else:
     RootIdField = models.AutoField
     root_id_kwargs = {
         'primary_key': True
     }
-    farm_base = models.Model
+    FarmBase = models.Model
 
 
 class LayoutChangeAttempted(APIException):
@@ -45,7 +44,7 @@ class LayoutChangeAttempted(APIException):
     default_detail = _('Changing the layout of a farm is not allowed')
 
 
-class Farm(farm_base):
+class Farm(FarmBase):
     """
     This model represents a growing device in the abstract. It is a singleton
     on leaf servers but not on root servers. It also handles the logic of

@@ -1,17 +1,14 @@
+from urllib.parse import urlparse
 from collections import OrderedDict
 from django.core.exceptions import ObjectDoesNotExist
 from django.core.urlresolvers import get_script_prefix, resolve, Resolver404
-from django.utils.six.moves.urllib import parse as urlparse
 from rest_framework.relations import HyperlinkedRelatedField
-from rest_framework.serializers import (
-    HyperlinkedIdentityField, ReadOnlyField, ValidationError
-)
+from rest_framework.serializers import ReadOnlyField, ValidationError
 from rest_framework.utils.field_mapping import get_detail_view_name
 from cityfarm_api.utils import system_layout
 from cityfarm_api.serializers import BaseSerializer, DUMMY_VIEW_NAME
 from layout.models import Enclosure, Tray, dynamic_models
 from layout.schemata import all_schemata
-from sensors.models import SensingPoint
 from .models import ResourceType, ResourceProperty, Resource
 
 
@@ -81,7 +78,6 @@ class ResourceLocationRelatedField(HyperlinkedRelatedField):
         return res
 
     def to_internal_value(self, data):
-        request = self.context.get('request', None)
         try:
             http_prefix = data.startswith(('http:', 'https:'))
         except AttributeError:
@@ -89,7 +85,7 @@ class ResourceLocationRelatedField(HyperlinkedRelatedField):
 
         if http_prefix:
             # If needed convert absolute URLs to relative path
-            data = urlparse.urlparse(data).path
+            data = urlparse(data).path
             prefix = get_script_prefix()
             if data.startswith(prefix):
                 data = '/' + data[len(prefix):]

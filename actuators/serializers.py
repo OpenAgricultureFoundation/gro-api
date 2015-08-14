@@ -1,5 +1,3 @@
-from collections import OrderedDict
-from rest_framework.fields import ChoiceField
 from rest_framework.serializers import ValidationError, ReadOnlyField
 from cityfarm_api.serializers import BaseSerializer
 from .models import (
@@ -136,6 +134,7 @@ class ActuatorSerializer(BaseSerializer):
             'control_profile', instance.control_profile
         )
         self.validate_resource_with_type(resource, actuator_type)
+        self.validate_profile_with_type(control_profile, actuator_type)
         if actuator_type != instance.actuator_type:
             raise ValidationError(
                 'Changing the type of an existing actuator is not allowed'

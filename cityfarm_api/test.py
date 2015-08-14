@@ -9,7 +9,7 @@ from django.conf import settings
 from django.test.runner import DiscoverRunner
 from django.utils.functional import cached_property
 from rest_framework import test
-from .utils.state import system_layout
+from .utils import system_layout
 from farms.models import Farm
 from layout.schemata import all_schemata
 from control.routines import Reset

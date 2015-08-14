@@ -1,9 +1,8 @@
 language: python
 python: 3.4
 install:
-    - bash setup_environment.sh -d
+    - pip install .
     - pip install coverage
     - pip install coveralls
-    - source .env
-script: coverage run --source=. --omit=env/*,*test*,*migrations* manage.py test
+script: coverage run --source=. --omit=env/*,*test*,*migrations* setup.py test
 after_success: coveralls

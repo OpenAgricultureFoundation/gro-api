@@ -3,13 +3,9 @@ This module defines a set of classes that together allow models in this project
 to be serialized correctly.
 """
 import logging
-import importlib
-from django.conf import settings
 from rest_framework.settings import api_settings
 from rest_framework.relations import HyperlinkedRelatedField
-from rest_framework.serializers import (
-    HyperlinkedModelSerializer, ValidationError
-)
+from rest_framework.serializers import HyperlinkedModelSerializer
 from rest_framework.utils.field_mapping import (
     get_detail_view_name, get_relation_kwargs, get_nested_relation_kwargs
 )

@@ -2,11 +2,9 @@ import time
 from django.db import models
 from django.db.utils import OperationalError
 from django.db.models.signals import post_save
-from django.conf import settings
 from django.core.exceptions import ObjectDoesNotExist
 from django.contrib.contenttypes.fields import GenericRelation
 from django.dispatch import receiver
-from model_utils.managers import InheritanceManager
 from cityfarm_api.utils import system_layout
 from cityfarm_api.models import SingletonModel
 from cityfarm_api.fields import LayoutForeignKey
