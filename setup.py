@@ -6,7 +6,7 @@ setup(
     name = "OAPI",
     version = "0.1.0a0",
     packages = find_packages(),
-    scripts = ['generate_openag_env.sh'],
+    # scripts = ['generate_openag_env.sh'],
     install_requires = [
         'awesome-slugify==1.6.5',
         'Django==1.8.3',
