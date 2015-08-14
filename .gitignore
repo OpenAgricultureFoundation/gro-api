@@ -58,6 +58,7 @@ target/
 
 # Database
 db.*
+*.db
 
 env
 .env

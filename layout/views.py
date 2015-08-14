@@ -33,11 +33,13 @@ class PlantSiteLayoutViewSet(ModelViewSet):
 
 
 class EnclosureViewSet(SingletonModelViewSet):
+    model = Enclosure
     queryset = Enclosure.objects.all()
     serializer_class = EnclosureSerializer
 
 
 class TrayViewSet(ModelViewSet):
+    model = Tray
     queryset = Tray.objects.all()
     serializer_class = TraySerializer
 
@@ -89,6 +91,7 @@ for model_name in dynamic_models.keys():
     Serializer = dynamic_serializers[model_name]
     class ViewSet(ModelViewSet):
         class Meta:
+            model = Model
             queryset = Model.objects.all()
             serializer_class = Serializer
     dynamic_viewsets[model_name] = ViewSet
