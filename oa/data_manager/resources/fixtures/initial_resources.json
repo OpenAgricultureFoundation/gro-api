@@ -1,0 +1,93 @@
+[
+    {
+        "model": "resources.resourcetype",
+        "fields": {
+            "code": "A",
+            "name": "Air"
+        }
+    },
+    {
+        "model": "resources.resourcetype",
+        "fields": {
+            "code": "L",
+            "name": "Light"
+        }
+    },
+    {
+        "model": "resources.resourcetype",
+        "fields": {
+            "code": "W",
+            "name": "Water"
+        }
+    },
+    {
+        "model": "resources.resourceproperty",
+        "fields": {
+            "code": "TM",
+            "name": "Temperature",
+            "resource_type": ["A"],
+            "min_operating_value": 0,
+            "max_operating_value": 0
+        }
+    },
+    {
+        "model": "resources.resourceproperty",
+        "fields": {
+            "code": "HU",
+            "name": "Humidity",
+            "resource_type": ["A"],
+            "min_operating_value": 0,
+            "max_operating_value": 0
+        }
+    },
+    {
+        "model": "resources.resourceproperty",
+        "fields": {
+            "code": "CO",
+            "name": "CO2",
+            "resource_type": ["A"],
+            "min_operating_value": 0,
+            "max_operating_value": 0
+        }
+    },
+    {
+        "model": "resources.resourceproperty",
+        "fields": {
+            "code": "IN",
+            "name": "Intensity",
+            "resource_type": ["L"],
+            "min_operating_value": 0,
+            "max_operating_value": 0
+        }
+    },
+    {
+        "model": "resources.resourceproperty",
+        "fields": {
+            "code": "PH",
+            "name": "pH",
+            "resource_type": ["W"],
+            "min_operating_value": 0,
+            "max_operating_value": 0
+        }
+    },
+    {
+        "model": "resources.resourceproperty",
+        "fields": {
+            "code": "EC",
+            "name": "Electrical Conductivity",
+            "resource_type": ["W"],
+            "min_operating_value": 0,
+            "max_operating_value": 0
+        }
+    },
+    {
+        "model": "resources.resourceproperty",
+        "fields": {
+            "code": "TM",
+            "name": "Water Temperature",
+            "resource_type": ["W"],
+            "min_operating_value": 0,
+            "max_operating_value": 0
+        }
+    }
+]

@@ -66,5 +66,5 @@ fifo
 *.swp
 *.swo
 secret.txt
-cityfarm_api/media/*
-cityfarm_api/static/*
+oa/data_manager/data_manager/media/*
+oa/data_manager/data_manager/static/*
