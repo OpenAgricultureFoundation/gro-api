@@ -19,10 +19,13 @@ class SensorTypeTestCase(APITestCase):
     @run_with_any_layout
     def test_edit_stock_type(self):
         air_id = ResourceType.objects.get_by_natural_key('A').pk
+        air_temp_id = ResourceProperty.objects.get_by_natural_key('A', 'TM').pk
         data = {
             'name': 'test',
             'resource_type': self.url_for_object('resourceType', air_id),
-            'properties': []
+            'properties': [
+                self.url_for_object('resourceProperty', air_temp_id)
+            ]
         }
         dht22_id = SensorType.objects.get_by_natural_key('DHT22').pk
         res = self.client.put(
@@ -33,10 +36,13 @@ class SensorTypeTestCase(APITestCase):
     @run_with_any_layout
     def test_edit_custom_type(self):
         air_id = ResourceType.objects.get_by_natural_key('A').pk
+        air_temp_id = ResourceProperty.objects.get_by_natural_key('A', 'TM').pk
         data = {
             'name': 'test',
             'resource_type': self.url_for_object('resourceType', air_id),
-            'properties': []
+            'properties': [
+                self.url_for_object('resourceProperty', air_temp_id)
+            ]
         }
         res = self.client.post(self.url_for_object('sensorType'), data=data)
         self.assertEqual(res.status_code, 201)

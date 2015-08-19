@@ -22,10 +22,13 @@ class ActuatorTypeTestCase(APITestCase):
     @run_with_any_layout
     def test_edit_stock_type(self):
         heater_id = ResourceEffect.objects.get_by_natural_key('A', 'HE').pk
+        air_temp_id = ResourceProperty.objects.get_by_natural_key('A', 'TM').pk
         data = {
             'name': 'test',
             'resource_effect': self.url_for_object('resourceEffect', heater_id),
-            'properties': [],
+            'properties': [
+                self.url_for_object('resourceProperty', air_temp_id)
+            ],
             'order': 0,
             'is_binary': True,
         }
@@ -40,10 +43,13 @@ class ActuatorTypeTestCase(APITestCase):
     @run_with_any_layout
     def test_edit_custom_type(self):
         humidifier_id = ResourceEffect.objects.get_by_natural_key('A', 'HU').pk
+        air_temp_id = ResourceProperty.objects.get_by_natural_key('A', 'TM').pk
         data = {
             'name': 'Magic Humidifier',
             'resource_effect' : self.url_for_object('resourceEffect', humidifier_id),
-            'properties': [],
+            'properties': [
+                self.url_for_object('resourceProperty', air_temp_id)
+            ],
             'order': 0,
             'is_binary': True,
         }

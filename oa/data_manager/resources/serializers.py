@@ -61,7 +61,7 @@ class ResourceLocationRelatedField(HyperlinkedRelatedField):
     @queryset.setter
     def queryset(self, val):
         # We should never be assigning an actual value to this property
-        assert val is None
+        assert val is True
 
     @property
     def choices(self):
