@@ -10,7 +10,7 @@ setup(
     name = "OA Data Manager",
     version = "0.1.0a0",
     namespace_packages = ['oa'],
-    packages = ['oa.data_manager'],
+    packages = find_packages(),
     entry_points = {
         'console_scripts': [
             'oa_data_manager_configure = oa.data_manager.scripts.configure:configure',
