@@ -1,9 +1,9 @@
 language: python
 python: 3.4
 install:
-    - python setup.py develop
+    - pip install -e .
     - pip install coverage
     - pip install coveralls
     - oa_data_manager_configure -d
-script: coverage run --source=. --omit=env/*,*test*,*migrations* setup.py test
+script: coverage run --source=oa/data_manager --omit=*test*,*migrations* setup.py test
 after_success: coveralls
