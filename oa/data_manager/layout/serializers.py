@@ -4,13 +4,13 @@ layout.models module
 """
 from rest_framework import serializers
 from rest_framework.utils.field_mapping import get_detail_view_name
-from ..serializers import BaseSerializer
+from ..data_manager.serializers import BaseSerializer
+from ..farms.models import Farm
+from ..resources.models import Resource
 from .models import (
     Model3D, TrayLayout, PlantSiteLayout, Enclosure, Tray, PlantSite,
     dynamic_models
 )
-from ..farms.models import Farm
-from ..resources.models import Resource
 
 
 class Model3DSerializer(BaseSerializer):

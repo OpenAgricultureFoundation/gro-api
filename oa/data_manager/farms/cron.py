@@ -8,9 +8,10 @@ logger = logging.getLogger(__name__)
 
 class UpdateFarmIp(CronJobBase):
     """
-    This job calls the :meth:`farms.models.Farm.check_network` function every
-    hour to re-calculate the :attr:`ip` attribute of the
-    :class:`~farms.models.Farm` just in case it changed.
+    This job calls the :meth:`~oa.data_manager.farms.models.Farm.check_network`
+    function on the :class:`~oa.data_manager.farms.model.Farm` singleton object
+    every hour to re-calculate the :attr:`ip` attribute of the
+    :class:`~oa.data_manager.farms.models.Farm` just in case it changed.
     """
     RUN_EVERY_MINS = 60
     schedule = Schedule(run_every_mins=RUN_EVERY_MINS)
@@ -18,9 +19,10 @@ class UpdateFarmIp(CronJobBase):
 
     @staticmethod
     def do():
-        logger.info('Running cron job `farms.cron.UpdateFarmIp`')
+        logger.info('Running cron job %s', UpdateFarmIp.code)
         if not settings.SERVER_TYPE == settings.LEAF:
             logger.error('This cron job should only be run on leaf servers')
+            return
         farm = Farm.get_solo()
         old_ip = farm.ip
         farm.check_network()

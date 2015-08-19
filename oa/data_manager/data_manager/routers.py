@@ -30,7 +30,7 @@ class BaseRouter(DefaultRouter):
         internal_name = '_{}_router'.format(system_layout.current_value)
         if not hasattr(cls, internal_name):
             router = cls(*args, **kwargs)
-            for app_name in settings.CITYFARM_API_APPS:
+            for app_name in settings.OA_DATA_MANAGER_APPS:
                 try:
                     # Try to use the `contribute_to_router` function in the
                     # `urls` submodule for app

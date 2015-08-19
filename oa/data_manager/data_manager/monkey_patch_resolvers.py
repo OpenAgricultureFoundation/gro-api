@@ -24,7 +24,7 @@ class FakeURLConfModule:
 def inner_get_resolver(urlconf, layout):
     # Loading this upon module import causes problems, so we're going to be
     # lazy about it
-    from oa.data_manager.urls import get_current_urls
+    from ..data_manager.urls import get_current_urls
     return urlresolvers.RegexURLResolver(
         r'^/', FakeURLConfModule(get_current_urls())
     )

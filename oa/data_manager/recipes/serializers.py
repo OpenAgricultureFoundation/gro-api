@@ -3,7 +3,7 @@ import logging
 from django.core.exceptions import ObjectDoesNotExist
 from rest_framework.exceptions import ValidationError
 from rest_framework.serializers import IntegerField
-from ..serializers import BaseSerializer
+from ..data_manager.serializers import BaseSerializer
 from ..resources.models import ResourceProperty
 from .models import Recipe, RecipeRun, SetPoint
 

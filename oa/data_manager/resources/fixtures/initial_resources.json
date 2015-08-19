@@ -3,41 +3,24 @@
         "model": "resources.resourcetype",
         "fields": {
             "code": "A",
-            "name": "Air"
+            "name": "Air",
+            "read_only": "True"
         }
     },
     {
         "model": "resources.resourcetype",
         "fields": {
             "code": "L",
-            "name": "Light"
+            "name": "Light",
+            "read_only": "True"
         }
     },
     {
         "model": "resources.resourcetype",
         "fields": {
             "code": "W",
-            "name": "Water"
-        }
-    },
-    {
-        "model": "resources.resourceproperty",
-        "fields": {
-            "code": "TM",
-            "name": "Temperature",
-            "resource_type": ["A"],
-            "min_operating_value": 0,
-            "max_operating_value": 0
-        }
-    },
-    {
-        "model": "resources.resourceproperty",
-        "fields": {
-            "code": "HU",
-            "name": "Humidity",
-            "resource_type": ["A"],
-            "min_operating_value": 0,
-            "max_operating_value": 0
+            "name": "Water",
+            "read_only": "True"
         }
     },
     {
@@ -47,7 +30,30 @@
             "name": "CO2",
             "resource_type": ["A"],
             "min_operating_value": 0,
-            "max_operating_value": 0
+            "max_operating_value": 0,
+            "read_only": "True"
+        }
+    },
+    {
+        "model": "resources.resourceproperty",
+        "fields": {
+            "code": "HU",
+            "name": "Humidity",
+            "resource_type": ["A"],
+            "min_operating_value": 0,
+            "max_operating_value": 0,
+            "read_only": "True"
+        }
+    },
+    {
+        "model": "resources.resourceproperty",
+        "fields": {
+            "code": "TM",
+            "name": "Temperature",
+            "resource_type": ["A"],
+            "min_operating_value": 0,
+            "max_operating_value": 0,
+            "read_only": "True"
         }
     },
     {
@@ -57,17 +63,8 @@
             "name": "Intensity",
             "resource_type": ["L"],
             "min_operating_value": 0,
-            "max_operating_value": 0
-        }
-    },
-    {
-        "model": "resources.resourceproperty",
-        "fields": {
-            "code": "PH",
-            "name": "pH",
-            "resource_type": ["W"],
-            "min_operating_value": 0,
-            "max_operating_value": 0
+            "max_operating_value": 0,
+            "read_only": "True"
         }
     },
     {
@@ -77,17 +74,75 @@
             "name": "Electrical Conductivity",
             "resource_type": ["W"],
             "min_operating_value": 0,
-            "max_operating_value": 0
+            "max_operating_value": 0,
+            "read_only": "True"
+        }
+    },
+    {
+        "model": "resources.resourceproperty",
+        "fields": {
+            "code": "PH",
+            "name": "pH",
+            "resource_type": ["W"],
+            "min_operating_value": 0,
+            "max_operating_value": 0,
+            "read_only": "True"
         }
     },
     {
         "model": "resources.resourceproperty",
         "fields": {
             "code": "TM",
-            "name": "Water Temperature",
+            "name": "Temperature",
             "resource_type": ["W"],
             "min_operating_value": 0,
-            "max_operating_value": 0
+            "max_operating_value": 0,
+            "read_only": "True"
+        }
+    },
+    {
+        "model": "resources.resourceeffect",
+        "fields": {
+            "code": "CR",
+            "name": "Circulation",
+            "resource_type": ["A"],
+            "read_only": "True"
+        }
+    },
+    {
+        "model": "resources.resourceeffect",
+        "fields": {
+            "code": "HE",
+            "name": "Heater",
+            "resource_type": ["A"],
+            "read_only": "True"
+        }
+    },
+    {
+        "model": "resources.resourceeffect",
+        "fields": {
+            "code": "HU",
+            "name": "Humidifier",
+            "resource_type": ["A"],
+            "read_only": "True"
+        }
+    },
+    {
+        "model": "resources.resourceeffect",
+        "fields": {
+            "code": "VE",
+            "name": "Venting",
+            "resource_type": ["A"],
+            "read_only": "True"
+        }
+    },
+    {
+        "model": "resources.resourceeffect",
+        "fields": {
+            "code": "PN",
+            "name": "Panel",
+            "resource_type": ["L"],
+            "read_only": "True"
         }
     }
 ]

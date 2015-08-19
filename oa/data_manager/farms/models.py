@@ -9,11 +9,10 @@ from django.db.utils import OperationalError
 from django.db.models.signals import post_migrate
 from django.dispatch import receiver
 from django.conf import settings
-from django.utils.translation import ugettext_lazy as _
 from rest_framework import status
 from rest_framework.exceptions import APIException
+from ..control.commands import Migrate, ReloadWorkers, LoadInitialData
 from ..layout.schemata import all_schemata
-from ..control.commands import Migrate, ReloadWorkers
 
 logger = logging.getLogger(__name__)
 
@@ -21,6 +20,7 @@ LAYOUT_CHOICES = ((key, val.description) for key, val in all_schemata.items())
 LAYOUT_CHOICES = sorted(LAYOUT_CHOICES, key=lambda choice: choice[0])
 
 if settings.SERVER_TYPE == settings.LEAF:
+    from django.core.cache import caches
     RootIdField = models.IntegerField
     root_id_kwargs = {
         'editable': False,
@@ -35,29 +35,37 @@ else:
     FarmBase = models.Model
 
 
-class LayoutChangeAttempted(APIException):
-    """
-    Changing a farm from one layout is currently not allowed. This exception
-    should be raised when a used tries to do that
-    """
+class SlugChangeAttempted(APIException):
     status_code = status.HTTP_403_FORBIDDEN
-    default_detail = _('Changing the layout of a farm is not allowed')
+    default_detail = (
+        'Changing the slug of a farm that has already been registered to a '
+        'root server is not allowed.'
+    )
+
+
+class LayoutChangeAttempted(APIException):
+    status_code = status.HTTP_403_FORBIDDEN
+    default_detail = 'Changing the layout of a farm is not allowed.'
+
+
+class RootServerConnectionRefused(APIException):
+    status_code = status.HTTP_400_BAD_REQUEST
+    default_detail = (
+        'Failed to contact root server. Farm could not be registered.'
+    )
+
+
+class RootServerMessageRejected(APIException):
+    status_code = status.HTTP_400_BAD_REQUEST
+    default_detail = (
+        'Failed to register farm with root server.'
+    )
 
 
 class Farm(FarmBase):
-    """
-    This model represents a growing device in the abstract. It is a singleton
-    on leaf servers but not on root servers. It also handles the logic of
-    registering a farm to a root server when it is configured and sets up the
-    database replication and sharding for all of the models.
-    """
-    class Meta:
-        managed = True
-
     root_id = RootIdField(**root_id_kwargs)
     name = models.CharField(
-        max_length=100, null=(settings.SERVER_TYPE == settings.LEAF),
-        blank=False
+        max_length=100, null=(settings.SERVER_TYPE == settings.LEAF)
     )
     slug = models.SlugField(
         max_length=100, null=(settings.SERVER_TYPE == settings.LEAF),
@@ -79,18 +87,20 @@ class Farm(FarmBase):
         super().__init__(*args, **kwargs)
         if settings.SERVER_TYPE == settings.LEAF:
             self._old_layout = self.layout
+            self._old_slug = self.slug
 
     def check_network(self):
         """
-        Try to open a network connection to the root server. If this fails, try
-        to open a connection to Google's root DNS server at '8.8.8.8'.
-        Determine the IP address of this machine based on whichever connection
-        is opened successfully.
+        Try to open a network connection to the root server. If this fails,
+        open a connection to Google's root DNS server at '8.8.8.8'.  Determine
+        the IP address of this machine based on whichever connection is opened
+        successfully. This should only fail if we are running without iternet.
         """
         if not settings.SERVER_TYPE == settings.LEAF:
             logger.error(
                 '`check_network` should only be called on leaf servers'
             )
+            return
         logger.debug('Checking for network connection')
         sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
         if self.root_server:
@@ -120,6 +130,8 @@ class Farm(FarmBase):
             logger.debug(
                 'Generated slug "%s" from name "%s"', self.slug, self.name
             )
+        if self.root_id and self.slug != self._old_slug:
+            raise SlugChangeAttempted()
         if not self.ip:
             self.check_network()
         if self.layout != self._old_layout:
@@ -127,10 +139,12 @@ class Farm(FarmBase):
                 raise LayoutChangeAttempted()
             else:
                 Migrate('layout', '0001')()
-                from oa.data_manager.utils import system_layout
+                from ..data_manager.utils import system_layout
                 with system_layout.as_value(self.layout):
                     Migrate()()
-        if self.slug:
+                LoadInitialData()()
+                system_layout.clear_cache()
+        if not self.root_id and self.slug and self.root_server and self.layout:
             # Register this farm with the root server
             if settings.SERVER_MODE == settings.DEVELOPMENT:
                 logger.debug('Pretending to contact root server')
@@ -141,30 +155,23 @@ class Farm(FarmBase):
                         self._meta.fields}
                 data.pop(self._meta.pk.name)
                 try:
-                    if self.root_id:
-                        res = root_api.farms(self.root_id).put(data=data)
-                    else:
+                    if not self.root_id:
                         res = root_api.farms.post(data=data)
                 except ConnectionError:
-                    raise APIException(
-                        'Failed to contact root server. Farm information will '
-                        'not be changed.'
-                    )
-                logger.debug(
-                    "Request: %s %s %s", res.request.method, res.request.url,
-                    res.request.body
-                )
+                    raise RootServerConnectionRefused()
                 if res.status_code == 200:
                     for key, val in res.data:
                         if getattr(self, key) != val:
                             setattr(self, key, val)
                 else:
-                    raise APIException(
+                    # TODO: Make this message more readable
+                    raise RootServerMessageRejected(
                         'Root server at "{}" responsed with status code {}, '
                         'body "{}"'.format(self.root_server, res.status_code,
                         res.data)
                     )
         super().save(*args, **kwargs)
+        self._old_slug = self.slug
         if self.layout != self._old_layout:
             self._old_layout = self.layout
             ReloadWorkers()()
@@ -173,6 +180,7 @@ class Farm(FarmBase):
         """ This save function is used for root servers """
         # TODO: Set up database mirroring here
         super().save(*args, **kwargs)
+
 
 @receiver(post_migrate)
 def create_singleton_instance(sender, **kwargs):

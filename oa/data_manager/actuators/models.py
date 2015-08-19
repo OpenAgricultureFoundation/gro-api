@@ -1,32 +1,13 @@
 import time
 from django.db import models
-from ..resources.models import ResourceType, ResourceProperty, Resource
+from ..resources.models import (
+    ResourceType, ResourceProperty, ResourceEffect, Resource
+)
 
 
-class ActuatorClassManager(models.Manager):
-    def get_by_natural_key(self, type_code, class_code):
-        resource_type = ResourceType.objects.get_by_natural_key(type_code)
-        return self.get(resource_type=resource_type, code=class_code)
-
-
-class ActuatorClass(models.Model):
-    class Meta:
-        unique_together = (
-            ('code', 'resource_type'), ('name', 'resource_type')
-        )
-        default_related_name = 'actuator_classes'
-
-    code = models.CharField(max_length=2, unique=True)
-    name = models.CharField(max_length=100, unique=True)
-    resource_type = models.ForeignKey(ResourceType)
-
-    objects = ActuatorClassManager()
-
-    def natural_key(self):
-        return (self.resource_type.code, self.code)
-
-    def __str__(self):
-        return self.name
+class ActuatorTypeManager(models.Manager):
+    def get_by_natural_key(self, name):
+        return self.get(name=name)
 
 
 class ActuatorType(models.Model):
@@ -34,19 +15,34 @@ class ActuatorType(models.Model):
         default_related_name = 'actuator_types'
 
     name = models.CharField(max_length=100)
-    actuator_class = models.ForeignKey(ActuatorClass)
+    resource_effect = models.ForeignKey(ResourceEffect)
     properties = models.ManyToManyField(ResourceProperty)
     order = models.PositiveIntegerField()
     is_binary = models.BooleanField()
     actuator_count = models.PositiveIntegerField(
         editable=False, default=0
     )
+    read_only = models.BooleanField(default=False, editable=False)
+
+    objects = ActuatorTypeManager()
+
+    def natural_key(self):
+        return (self.name, )
 
     def __str__(self):
         return self.name
 
 
+class ControlProfileManager(models.Manager):
+    def get_by_natural_key(self, actuator_type, name):
+        actuator_type = ActuatorType.objects.get_by_natural_key(actuator_type)
+        return self.get(actuator_type=actuator_type, name=name)
+
+
 class ControlProfile(models.Model):
+    class Meta:
+        unique_together = (('name', 'actuator_type'))
+
     name = models.CharField(max_length=100)
     actuator_type = models.ForeignKey(
         ActuatorType, related_name='allowed_control_profiles'
@@ -56,6 +52,13 @@ class ControlProfile(models.Model):
     )
     period = models.FloatField()
     pulse_width = models.FloatField()
+    read_only = models.BooleanField(default=False, editable=False)
+
+    objects = ControlProfileManager()
+
+    def natural_key(self):
+        return (self.actuator_type.name, self.name)
+    natural_key.dependencies = ['actuators.ActuatorType']
 
     def __str__(self):
         return self.name
@@ -97,5 +100,5 @@ class ActuatorState(models.Model):
         get_latest_by = 'timestamp'
 
     origin = models.ForeignKey(Actuator, related_name='state+')
-    timestamp = models.IntegerField()
+    timestamp = models.IntegerField(blank=True, default=time.time)
     value = models.FloatField()

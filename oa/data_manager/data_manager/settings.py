@@ -1,17 +1,28 @@
 """
 Django settings for OA Data Manager project.
 """
-
 import os
 import sys
+import django
 import string
 from django.core.exceptions import ImproperlyConfigured
+
+old_setup = django.setup
+if not getattr(old_setup, 'is_patched', False):
+    def new_setup():
+        from .monkey_patch_resolvers import monkey_patch_resolvers
+        from .disable_patch import disable_patch
+        monkey_patch_resolvers()
+        disable_patch()
+        old_setup()
+    new_setup.is_patched = True
+    django.setup = new_setup
 
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
 REST_FRAMEWORK = {
     'DEFAULT_FILTER_BACKENDS': ('rest_framework.filters.DjangoFilterBackend',),
-    'DEFAULT_PAGINATION_CLASS': 'oa.data_manager.pagination.Pagination',
+    'DEFAULT_PAGINATION_CLASS': 'oa.data_manager.data_manager.pagination.Pagination',
     'PAGE_SIZE': 100,
 }
 
@@ -85,7 +96,7 @@ INSTALLED_APPS = OA_DATA_MANAGER_APPS + FRAMEWORK_APPS
 
 # Request Handling
 
-WSGI_APPLICATION = 'oa.data_manager.wsgi.application'
+WSGI_APPLICATION = 'oa.data_manager.data_manager.wsgi.application'
 
 MIDDLEWARE_CLASSES = (
     'django.contrib.sessions.middleware.SessionMiddleware',
@@ -101,12 +112,12 @@ MIDDLEWARE_CLASSES = (
 
 if SERVER_TYPE == ROOT:
     MIDDLEWARE_CLASSES += (
-        'oa.data_manager.middleware.RequestCacheMiddleware',
-        'oa.data_manager.middleware.FarmRoutingMiddleware',
+        'oa.data_manager.data_manager.middleware.RequestCacheMiddleware',
+        'oa.data_manager.data_manager.middleware.FarmRoutingMiddleware',
     )
 else:
     MIDDLEWARE_CLASSES += (
-        'oa.data_manager.middleware.FarmIsConfiguredCheckMiddleware',
+        'oa.data_manager.data_manager.middleware.FarmIsConfiguredCheckMiddleware',
     )
 
 if SERVER_MODE == DEVELOPMENT:
@@ -116,7 +127,9 @@ if SERVER_MODE == DEVELOPMENT:
 
 CORS_ORIGIN_ALLOW_ALL = True
 
-ROOT_URLCONF = 'oa.data_manager.urls'
+ROOT_URLCONF = (
+    'This is a fake module; if django tries to load this, you broke something'
+)
 
 TEMPLATES = [
     {
@@ -235,32 +248,30 @@ LOGGING = {
         },
     }
 }
-for app_name in OA_DATA_MANAGER_APPS:
-    LOGGING['loggers'][app_name] = {
-        'handlers': ['file', ],
-        'level': 'DEBUG',
-        'propagate': True,
-    }
 
 if SERVER_MODE == DEVELOPMENT:
     LOGGING['handlers']['file']['filename'] = \
         os.path.join(BASE_DIR, 'debug.log')
     LOGGING['loggers']['oa.data_manager']['handlers'].append('console')
-    for app_name in OA_DATA_MANAGER_APPS:
-        LOGGING['loggers'][app_name]['handlers'].append('console')
 else:
     LOGGING['handlers']['file']['level'] = 'INFO'
     LOGGING['handlers']['file']['filename'] = '/var/log/oa_data_manager.log'
 if 'django.security' not in LOGGING['loggers']:
     LOGGING['loggers']['django.security'] = {
         'handlers': [],
+        'level': 'INFO',
     }
+if 'handlers' not in LOGGING['loggers']['django.security']:
+    LOGGING['loggers']['django.security']['handlers'] = []
 LOGGING['loggers']['django.security']['handlers'].append('file')
 LOGGING['loggers']['django.security']['level'] = 'INFO'
 if 'django.request' not in LOGGING['loggers']:
     LOGGING['loggers']['django.request'] = {
         'handlers': [],
+        'level': 'INFO',
     }
+if 'handlers' not in LOGGING['loggers']['django.request']:
+    LOGGING['loggers']['django.request']['handlers'] = []
 LOGGING['loggers']['django.request']['handlers'].append('file')
 LOGGING['loggers']['django.request']['level'] = 'INFO'
 

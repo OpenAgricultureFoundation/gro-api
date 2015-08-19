@@ -1,68 +1,37 @@
 from rest_framework.serializers import ValidationError, ReadOnlyField
 from ..data_manager.serializers import BaseSerializer
 from .models import (
-    ActuatorClass, ActuatorType, ControlProfile, ActuatorEffect, Actuator,
-    ActuatorState
+    ActuatorType, ControlProfile, ActuatorEffect, Actuator, ActuatorState
 )
-
-
-class ActuatorClassSerializer(BaseSerializer):
-    class Meta:
-        model = ActuatorClass
 
 
 class ActuatorTypeSerializer(BaseSerializer):
     class Meta:
         model = ActuatorType
 
-    def validate_properties_with_class(self, properties, actuator_class):
-        for property in properties:
-            if property.resource_type != actuator_class.resource_type:
+    def validate(self, data):
+        effect = data['resource_effect']
+        for property in data['properties']:
+            if property.resource_type != effect.resource_type:
                 raise ValidationError(
                     'Proposed actuator type affects properties of a resource '
                     'type other than the one that it is to be installed in.'
                 )
-
-    def create(self, validated_data):
-        actuator_class = validated_data['actuator_class']
-        properties = validated_data['properties']
-        self.validate_properties_with_class(properties, actuator_class)
-        return super().create(validated_data)
-
-    def update(self, instance, validated_data):
-        actuator_class = validated_data.get(
-            'actuator_class', instance.actuator_class
-        )
-        properties = validated_data.get('properties', instance.properties)
-        self.validate_properties_with_class(properties, actuator_class)
-        return super().update(instance, validated_data)
+        return data
 
 
 class ActuatorEffectSerializer(BaseSerializer):
     class Meta:
         model = ActuatorEffect
 
-    def validate_property_with_profile(self, property, profile):
-        correct_type = profile.actuator_type.actuator_class.resource_type
-        if property.resource_type != correct_type:
+    def validate(self, data):
+        correct_type = data['control_profile'].actuator_type.resource_type
+        if data['property'].resource_type != correct_type:
             raise ValidationError(
                 'An actuator cannot affect a property on a resource type '
                 'than the one it affects.'
             )
-
-    def create(self, validated_data):
-        property = validated_data['property']
-        profile = validated_data['control_profile']
-        self.validate_property_with_profile(property, profile)
-        return super().create(validated_data)
-
-    def update(self, instance, validated_data):
-        property = validated_data.get('property', instance.property)
-        profile = validated_data.get(
-            'control_profile', instance.control_profile
-        )
-        self.validate_property_with_profile(property, profile)
-        return super().update(instance, validated_data)
+        return data
 
 
 class ControlProfileSerializer(BaseSerializer):
@@ -90,31 +59,28 @@ class ActuatorSerializer(BaseSerializer):
     class Meta:
         model = Actuator
 
-    index = ReadOnlyField(default=0)
+    index = ReadOnlyField()
     override_value = ReadOnlyField()
     override_timeout = ReadOnlyField()
 
-    def validate_resource_with_type(self, resource, actuator_type):
-        if actuator_type.actuator_class.resource_type != resource.resource_type:
-            raise ValidationError(
-                'Attempted to install a {} actuator in a {} resource'.format(
-                    actuator_type.resource_type, resource.resource_type
-                )
-            )
-
-    def validate_profile_with_type(self, control_profile, actuator_type):
-        if control_profile.actuator_type != actuator_type:
+    def validate(self, data):
+        if data['control_profile'].actuator_type != data['actuator_type']:
             raise ValidationError(
                 'Selected control profile does not work for the selected '
                 'actuator type.'
             )
+        correct_type = data['actuator_type'].resource_effect.resource_type
+        if data['resource'].resource_type != correct_type:
+            raise ValidationError(
+                'Attempted to install a {} actuator in a {} resource'.format(
+                    data['actuator_type'].resource_effect.resource_type,
+                    data['resource'].resource_type
+                )
+            )
+        return data
 
     def create(self, validated_data):
-        resource = validated_data['resource']
         actuator_type = validated_data['actuator_type']
-        control_profile = validated_data['control_profile']
-        self.validate_resource_with_type(resource, actuator_type)
-        self.validate_profile_with_type(control_profile, actuator_type)
         actuator_type.actuator_count += 1
         validated_data['index'] = actuator_type.actuator_count
         if not validated_data.get('name', None):
@@ -126,20 +92,19 @@ class ActuatorSerializer(BaseSerializer):
         return instance
 
     def update(self, instance, validated_data):
-        resource = validated_data.get('resource', instance.resource)
         actuator_type = validated_data.get(
             'actuator_type', instance.actuator_type
         )
-        control_profile = validated_data.get(
-            'control_profile', instance.control_profile
-        )
-        self.validate_resource_with_type(resource, actuator_type)
-        self.validate_profile_with_type(control_profile, actuator_type)
         if actuator_type != instance.actuator_type:
             raise ValidationError(
                 'Changing the type of an existing actuator is not allowed'
             )
         return super().update(instance, validated_data)
+
+    def get_unique_together_validators(self):
+        # The default unique together validators will try to force `index` to
+        # be required, so we have to silence them
+        return []
 
 
 class ActuatorStateSerializer(BaseSerializer):

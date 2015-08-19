@@ -8,7 +8,7 @@ maps all valid schema names to their respective schema dictionaries.
 Schema files are written in YAML. Each file must define a ``name`` attribute,
 which is a short, preferably one word name of the schema, a ``description``
 attribute, which a one line description of the schema, a ``tray-parent``
-attribute, which is the name of the parent model for the trays (defaults to
+attribute, which is the name of the parent model for the tray (defaults to
 "enclosure"), and an ``entities`` attribute, which is a list of entities that
 define a system.
 

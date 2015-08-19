@@ -52,7 +52,14 @@ class SystemLayout(metaclass=Singleton):
         except OperationalError:
             return None
 
-    @cached_property
+    def clear_cache(self):
+        assert settings.SERVER_TYPE == settings.LEAF, (
+            'The layout cache only ever needs to be cached on leaf servers '
+            'when the server is reconfigured with a new layout'
+        )
+        get_layout_cache().delete(self.cache_key)
+
+    @property
     def allowed_values(self):
         if settings.SERVER_TYPE == settings.ROOT:
             return all_schemata.keys()

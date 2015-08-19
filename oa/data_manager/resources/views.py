@@ -1,18 +1,30 @@
 from rest_framework.viewsets import ModelViewSet
-from .models import ResourceType, ResourceProperty, Resource
+from ..data_manager.permissions import EnforceReadOnly
+from .models import (
+    ResourceType, ResourceProperty, ResourceEffect, Resource
+)
 from .serializers import (
-    ResourceTypeSerializer, ResourcePropertySerializer, ResourceSerializer
+    ResourceTypeSerializer, ResourcePropertySerializer,
+    ResourceEffectSerializer, ResourceSerializer
 )
 
 
 class ResourceTypeViewSet(ModelViewSet):
     queryset = ResourceType.objects.all()
     serializer_class = ResourceTypeSerializer
+    permission_classes = [EnforceReadOnly, ]
 
 
 class ResourcePropertyViewSet(ModelViewSet):
     queryset = ResourceProperty.objects.all()
     serializer_class = ResourcePropertySerializer
+    permission_classes = [EnforceReadOnly, ]
+
+
+class ResourceEffectViewSet(ModelViewSet):
+    queryset = ResourceEffect.objects.all()
+    seiralizer_class = ResourceEffectSerializer
+    permission_classes = [EnforceReadOnly, ]
 
 
 class ResourceViewSet(ModelViewSet):

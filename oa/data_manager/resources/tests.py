@@ -1,21 +1,23 @@
-from cityfarm_api.test import APITestCase, run_with_any_layout
-from cityfarm_api.serializers import model_serializers
+from ..data_manager.test import APITestCase, run_with_any_layout
 from .models import ResourceType, ResourceProperty, Resource
+from .serializers import (
+    ResourceTypeSerializer, ResourcePropertySerializer,
+    ResourceEffectSerializer, ResourceSerializer
+)
 
 class ResourceTypeTestCase(APITestCase):
     @run_with_any_layout
     def test_visible_fields(self):
-        ResourceTypeSerializer = model_serializers.get_for_model(ResourceType)
         fields = ResourceTypeSerializer().get_fields()
         fields.pop('url')
         fields.pop('code')
         fields.pop('name')
-        fields.pop('read_only')
         fields.pop('resource_count')
+        fields.pop('read_only')
         fields.pop('properties')
+        fields.pop('effects')
         fields.pop('resources')
         fields.pop('sensor_types')
-        fields.pop('actuator_types')
         self.assertFalse(fields)
 
     @run_with_any_layout
@@ -51,14 +53,13 @@ class ResourceTypeTestCase(APITestCase):
 class ResourcePropertyTestCase(APITestCase):
     @run_with_any_layout
     def test_visible_fields(self):
-        ResourcePropertySerializer = model_serializers.get_for_model(
-            ResourceProperty
-        )
         fields = ResourcePropertySerializer().get_fields()
         fields.pop('url')
         fields.pop('code')
         fields.pop('name')
         fields.pop('resource_type')
+        fields.pop('min_operating_value')
+        fields.pop('max_operating_value')
         fields.pop('read_only')
         fields.pop('sensing_point_count')
         fields.pop('sensing_points')
@@ -75,7 +76,9 @@ class ResourcePropertyTestCase(APITestCase):
         data = {
             'code': 'ATS',
             'name': 'Air Test',
-            'resource_type': self.url_for_object('resourceType', air_id)
+            'resource_type': self.url_for_object('resourceType', air_id),
+            'min_operating_value': 0,
+            'max_operating_value': 1,
         }
         res = self.client.put(
             self.url_for_object('resourceProperty', air_temp_id), data=data
@@ -88,7 +91,9 @@ class ResourcePropertyTestCase(APITestCase):
         data = {
             'code': 'TS',
             'name': 'Air Test',
-            'resource_type': self.url_for_object('resourceType', air_id)
+            'resource_type': self.url_for_object('resourceType', air_id),
+            'min_operating_value': 0,
+            'max_operating_value': 1,
         }
         res = self.client.post(
             self.url_for_object('resourceProperty'), data=data
@@ -121,7 +126,6 @@ class ResourcePropertyTestCase(APITestCase):
 class ResourceTestCase(APITestCase):
     @run_with_any_layout
     def test_visible_fields(self):
-        ResourceSerializer = model_serializers.get_for_model(Resource)
         fields = ResourceSerializer().get_fields()
         fields.pop('url')
         fields.pop('index')

@@ -1,6 +1,6 @@
 import logging
 from django.conf import settings
-from ..utils import system_layout
+from ..data_manager.utils import system_layout
 from .views import (
     Model3DViewSet, TrayLayoutViewSet, PlantSiteLayoutViewSet,
     EnclosureViewSet, TrayViewSet, PlantSiteViewSet, dynamic_viewsets
@@ -18,7 +18,7 @@ def contribute_to_router(router):
     router.register('plantSite', PlantSiteViewSet)
     current_layout = system_layout.current_value
     if settings.SERVER_TYPE == settings.ROOT and not current_layout:
-        logger.warn(
+        logger.error(
             'Root server encountered farm without layout. This should never '
             'happen'
         )

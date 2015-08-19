@@ -4,29 +4,26 @@ from rest_framework.response import Response
 from rest_framework.viewsets import ModelViewSet
 from rest_framework.decorators import detail_route
 from rest_framework.exceptions import APIException
+from ..data_manager.permissions import EnforceReadOnly
 from .models import (
-    ActuatorClass, ActuatorType, ControlProfile, ActuatorEffect, Actuator,
-    ActuatorState
+    ActuatorType, ControlProfile, ActuatorEffect, Actuator, ActuatorState
 )
 from .serializers import (
-    ActuatorClassSerializer, ActuatorTypeSerializer, ControlProfileSerializer,
-    ActuatorEffectSerializer, ActuatorSerializer, ActuatorStateSerializer
+    ActuatorTypeSerializer, ControlProfileSerializer, ActuatorEffectSerializer,
+    ActuatorSerializer, ActuatorStateSerializer
 )
-
-
-class ActuatorClassViewSet(ModelViewSet):
-    queryset = ActuatorClass.objects.all()
-    serializer_class = ActuatorClassSerializer
 
 
 class ActuatorTypeViewSet(ModelViewSet):
     queryset = ActuatorType.objects.all()
     serializer_class = ActuatorTypeSerializer
+    permission_classes = [EnforceReadOnly, ]
 
 
 class ControlProfileViewSet(ModelViewSet):
     queryset = ControlProfile.objects.all()
     serializer_class = ControlProfileSerializer
+    permission_classes = [EnforceReadOnly, ]
 
 
 class ActuatorEffectViewSet(ModelViewSet):

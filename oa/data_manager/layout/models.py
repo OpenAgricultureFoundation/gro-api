@@ -94,8 +94,11 @@ class Enclosure(SingletonModel):
 @receiver(post_save, sender=Farm)
 def create_singleton_instance(sender, instance, **kwargs):
     if instance.name is not None:
+        default_name = "{} Enclosure".format(instance.name)
         try:
-            Enclosure.get_solo()
+            enclosure, _ = Enclosure.objects.get_or_create(pk=1)
+            enclosure.name = default_name
+            enclosure.save()
         except OperationalError:
             pass
 

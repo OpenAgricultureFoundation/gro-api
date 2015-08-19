@@ -1,6 +1,6 @@
 from django.core.exceptions import ObjectDoesNotExist
 from rest_framework.serializers import ReadOnlyField, ValidationError
-from ..serializers import BaseSerializer
+from ..data_manager.serializers import BaseSerializer
 from .models import (
     PlantModel, PlantType, Plant, SowEvent, TransferEvent, HarvestEvent,
     PlantComment

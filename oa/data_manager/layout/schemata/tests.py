@@ -1,6 +1,6 @@
 from voluptuous import Invalid, SchemaError
 from django.test import TestCase
-from layout.schemata import all_schemata, Entity, Schema, register_schema
+from . import all_schemata, Entity, Schema, register_schema
 
 
 class InvalidSchemaTestCase(TestCase):

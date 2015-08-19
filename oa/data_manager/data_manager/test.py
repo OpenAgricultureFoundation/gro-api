@@ -6,39 +6,33 @@ import itertools
 from slugify import slugify
 from collections import defaultdict
 from django.conf import settings
-from django.test.runner import DiscoverRunner
+from django.test.runner import DebugSQLTextTestResult, DiscoverRunner
 from django.utils.functional import cached_property
-from rest_framework import test
+from rest_framework.test import APITestCase
 from .utils import system_layout
 from ..farms.models import Farm
 from ..layout.schemata import all_schemata
+from ..control.commands import ClearCaches
 from ..control.routines import Reset
 
-class APITestCase(test.APITestCase):
+class APITestCase(APITestCase):
     def __init__(self, methodName='runTest'):
         super().__init__(methodName)
         testMethod = getattr(self, methodName)
-        self.layouts = getattr(testMethod, 'layouts', None)
-        if self.layouts is None and settings.SERVER_TYPE == settings.ROOT:
+        if not hasattr(testMethod, 'layouts'):
             raise ValueError(
-                "Cannot run test %s.%s in a root server because no layout "
-                "is specified" % (self.__class__, methodName)
+                'Cannot run test {}.{} becasue no layout is specified'.format(
+                    self.__class__.__name__, methodName
+                )
             )
-
-    def shortDescription(self):
-        suffix = "(with layout {})".format(system_layout.current_value)
-        desc = super().shortDescription()
-        if desc is None:
-            return suffix
-        else:
-            return desc + " " + suffix
+        self.layouts = testMethod.layouts
 
     @cached_property
     def url_prefix(self):
         if settings.SERVER_TYPE == settings.LEAF:
             return ''
         else:
-            return '/{}-farm'.format(system_layout.current_value)
+            return '/{}-farm'.format(self.layout)
 
     def url_for_object(self, resource_name, resource_id=None):
         url = '{}/{}/'.format(self.url_prefix, resource_name)
@@ -73,25 +67,30 @@ class TestSuite(unittest.TestSuite):
                 issubclass(test, (unittest.TestCase, unittest.TestSuite))):
             raise TypeError("TestCases and TestSuites must be instantiated "
                             "before passing them to addTest()")
-        if isinstance(test, APITestCase) and test.layouts is not None:
+        if isinstance(test, APITestCase):
             for layout in test.layouts:
-                self.configured_tests[layout].append(test)
+                if layout is not None:
+                    self.configured_tests[layout].append(test)
+                else:
+                    self.unconfigured_tests.append(test)
         else:
             self.unconfigured_tests.append(test)
 
     def run_unconfigured_tests(self, result):
-        print('\nRunning tests on unconfigured farm')
+        result.stream.writeln('\nRunning tests on unconfigured farm')
         for test in self.unconfigured_tests:
             if result.shouldStop:
                 break
+            ClearCaches()()
             test(result)
         return result
 
     def run_configured_tests(self, layout, result):
-        print('\nRunning tests on %s farm' % layout)
+        result.stream.writeln('\nRunning tests on {} farm'.format(layout))
         for test in self.configured_tests[layout]:
             if result.shouldStop:
                 break
+            ClearCaches()()
             test(result)
         return result
 
@@ -102,6 +101,7 @@ class TestSuite(unittest.TestSuite):
         for layout in self.configured_tests.keys():
             Reset()()
             farm = Farm.get_solo()
+            farm.root_id = None
             farm.name = "{} farm".format(layout)
             farm.layout = layout
             farm.save()
@@ -123,6 +123,7 @@ class TestSuite(unittest.TestSuite):
         for layout in self.configured_tests.keys():
             Reset()()
             farm = Farm.get_solo()
+            farm.root_id = None
             farm.name = "{} farm".format(layout)
             farm.layout = layout
             farm.save()
@@ -133,6 +134,48 @@ class TestLoader(unittest.TestLoader):
     suiteClass = TestSuite
 
 
+class LayoutTextTestResult(unittest.TextTestResult):
+    def addSuccess(self, test):
+        if self.showAll:
+            self.stream.writeln('ok')
+        else:
+            self.stream.write('.')
+
+    def addError(self, test, err):
+        self.errors.append((
+            test, self._exc_info_to_string(err, test),
+            system_layout.current_value
+        ))
+        if self.showAll:
+            self.stream.writeln('ERROR')
+        else:
+            self.stream.write('E')
+
+    def addFailure(self, test, err):
+        self.failures.append((
+            test, self._exc_info_to_string(err, test),
+            system_layout.current_value
+        ))
+        if self.showAll:
+            self.stream.writeln('FAIL')
+        else:
+            self.stream.write('F')
+
+    def printErrorList(self, flavour, errors):
+        for test, err, layout in errors:
+            self.stream.writeln(self.separator1)
+            self.stream.writeln("{}: {} (with layout {})".format(
+                flavour, self.getDescription(test), layout
+            ))
+            self.stream.writeln(self.separator2)
+            self.stream.writeln("%s" % err)
+
+
+class LayoutDebugSQLTextTestResult(DebugSQLTextTestResult,
+                                   LayoutTextTestResult):
+    pass
+
+
 class TestRunner(DiscoverRunner):
     test_suite = TestSuite
     test_loader = TestLoader()
@@ -140,6 +183,12 @@ class TestRunner(DiscoverRunner):
     def setup_databases(self):
         with system_layout.as_value(None):
             return super().setup_databases()
+
+    def get_resultclass(self):
+        if self.debug_sql:
+            return LayoutDebugSQLTextTestResult
+        else:
+            return LayoutTextTestResult
 
 
 def run_with_layouts(*layouts):

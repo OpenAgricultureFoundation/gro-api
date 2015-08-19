@@ -14,6 +14,7 @@ class ResourceType(models.Model):
     resource_count = models.PositiveIntegerField(
         editable=False, default=0
     )
+    read_only = models.BooleanField(default=False, editable=False)
 
     objects = ResourceTypeManager()
 
@@ -45,8 +46,37 @@ class ResourceProperty(models.Model):
     sensing_point_count = models.PositiveIntegerField(
         editable=False, default=0
     )
+    read_only = models.BooleanField(default=False, editable=False)
 
     objects = ResourcePropertyManager()
+
+    def natural_key(self):
+        return (self.resource_type.code, self.code)
+    natural_key.dependencies = ['resources.ResourceType']
+
+    def __str__(self):
+        return self.resource_type.name + ' ' + self.name
+
+
+class ResourceEffectManager(models.Manager):
+    def get_by_natural_key(self, type_code, effect_code):
+        resource_type = ResourceType.objects.get_by_natural_key(type_code)
+        return self.get(resource_type=resource_type, code=effect_code)
+
+
+class ResourceEffect(models.Model):
+    class Meta:
+        unique_together = (
+            ('code', 'resource_type', 'name', 'resource_type')
+        )
+        default_related_name = 'effects'
+
+    code = models.CharField(max_length=2)
+    name = models.CharField(max_length=100)
+    resource_type = models.ForeignKey(ResourceType)
+    read_only = models.BooleanField(default=False, editable=False)
+
+    objects = ResourceEffectManager()
 
     def natural_key(self):
         return (self.resource_type.code, self.code)

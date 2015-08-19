@@ -18,6 +18,7 @@ class SensorType(models.Model):
     sensor_count = models.PositiveIntegerField(
         editable=False, default=0
     )
+    read_only = models.BooleanField(default=False, editable=False)
 
     objects = SensorTypeManager()
 

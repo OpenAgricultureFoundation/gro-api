@@ -6,9 +6,6 @@ from .schemata import all_schemata
 class LayoutConfig(AppConfig):
     name = 'oa.data_manager.layout'
     def ready(self):
-        from .monkey_patch_resolvers import  monkey_patch_resolvers
-        monkey_patch_resolvers()
-
         # Use DynamicOptions for dynamic models
         dynamic_fields = []
         dynamic_models = set()

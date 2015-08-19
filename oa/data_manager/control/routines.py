@@ -4,7 +4,7 @@ used by this app.
 """
 
 import logging
-from .commands import Command, Flush, Migrate, ReloadWorkers
+from .commands import Command, Flush, Migrate, ClearCaches, ReloadWorkers
 logger = logging.getLogger(__name__)
 
 
@@ -41,5 +41,7 @@ class Restart(Routine):
 
 class Reset(Routine):
     title = 'Reset'
-    commands = (Migrate('control', '0001'), Flush(), Migrate(),
-            ReloadWorkers())
+    commands = (
+        Migrate('layout', '0001'), Flush(), ClearCaches(), Migrate(),
+        ReloadWorkers()
+    )

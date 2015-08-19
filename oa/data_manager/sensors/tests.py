@@ -1,12 +1,11 @@
-from cityfarm_api.test import APITestCase, run_with_any_layout
-from cityfarm_api.serializers import model_serializers
-from resources.models import ResourceType, ResourceProperty
+from ..data_manager.test import APITestCase, run_with_any_layout
+from ..resources.models import ResourceType, ResourceProperty
 from .models import SensorType, Sensor, SensingPoint, DataPoint
+from .serializers import SensorTypeSerializer, SensorSerializer
 
 class SensorTypeTestCase(APITestCase):
     @run_with_any_layout
     def test_visible_fields(self):
-        SensorTypeSerializer = model_serializers.get_for_model(SensorType)
         fields = SensorTypeSerializer().get_fields()
         fields.pop('url')
         fields.pop('name')
@@ -65,7 +64,6 @@ class SensorTypeTestCase(APITestCase):
 class SensorTestCase(APITestCase):
     @run_with_any_layout
     def test_visible_fields(self):
-        SensorSerializer = model_serializers.get_for_model(Sensor)
         fields = SensorSerializer().get_fields()
         fields.pop('url')
         fields.pop('index')

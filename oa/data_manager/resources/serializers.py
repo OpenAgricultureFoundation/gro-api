@@ -9,7 +9,7 @@ from ..data_manager.utils import system_layout
 from ..data_manager.serializers import BaseSerializer, DUMMY_VIEW_NAME
 from ..layout.models import Enclosure, Tray, dynamic_models
 from ..layout.schemata import all_schemata
-from .models import ResourceType, ResourceProperty, Resource
+from .models import ResourceType, ResourceProperty, ResourceEffect, Resource
 
 
 class ResourceTypeSerializer(BaseSerializer):
@@ -112,6 +112,11 @@ class ResourceLocationRelatedField(HyperlinkedRelatedField):
 
         view_name = get_detail_view_name(value._meta.model)
         return self.get_url(value, view_name, request, format)
+
+
+class ResourceEffectSerializer(BaseSerializer):
+    class Meta:
+        model = ResourceEffect
 
 
 class ResourceSerializer(BaseSerializer):

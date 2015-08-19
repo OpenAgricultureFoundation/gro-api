@@ -14,7 +14,6 @@ setup(
     entry_points = {
         'console_scripts': [
             'oa_data_manager_configure = oa.data_manager.scripts.configure:configure',
-            'oa_data_manager_runserver = oa.data_manager.scripts.runserver:runserver',
             'oa_data_manager_load_env = oa.data_manager.scripts.load_env:load_env',
         ],
     },
@@ -24,10 +23,9 @@ setup(
         'django-allauth>=0.23.0',
         'django-cors-headers>=1.1.0',
         'django-cron>=0.4.3',
+        'django-filter>=0.11.0',
         'django-rest-auth>=0.4.0',
         'django-solo>=1.1.0',
-        # '-e git+https://github.com/Tivix/django-cron.git@3e1eb09616c4830cc3623d71f40d61c7e7b9613b#egg=django_cron-master',
-        # '-e git+https://github.com/lazybird/django-solo.git@c64e243a790092f47c3d0da806434c5bcb67c268#egg=django_solo-master',
         'djangorestframework>=3.1.3',
         'PyYAML>=3.11',
         'tortilla>=0.4.1',

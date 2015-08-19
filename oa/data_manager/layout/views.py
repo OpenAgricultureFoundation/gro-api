@@ -90,8 +90,7 @@ for model_name in dynamic_models.keys():
     Model = dynamic_models[model_name]
     Serializer = dynamic_serializers[model_name]
     class ViewSet(ModelViewSet):
-        class Meta:
-            model = Model
-            queryset = Model.objects.all()
-            serializer_class = Serializer
+        model = Model
+        queryset = Model.objects.all()
+        serializer_class = Serializer
     dynamic_viewsets[model_name] = ViewSet

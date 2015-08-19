@@ -43,5 +43,23 @@
             "properties": [["L", "IN"]],
             "read_only": "True"
         }
+    },
+    {
+        "model": "sensors.sensortype",
+        "fields": {
+            "name": "DFR0300",
+            "resource_type": ["W"],
+            "properties": [["W", "EC"], ["W", "TM"]],
+            "read_only": "True"
+        }
+    },
+    {
+        "model": "sensors.sensortype",
+        "fields": {
+            "name": "DFR0161",
+            "resource_type": ["W"],
+            "properties": [["W", "PH"]],
+            "read_only": "True"
+        }
     }
 ]

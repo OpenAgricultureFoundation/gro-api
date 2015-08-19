@@ -5,6 +5,7 @@ from rest_framework.response import Response
 from rest_framework.viewsets import ModelViewSet
 from rest_framework.decorators import detail_route
 from rest_framework.exceptions import APIException
+from ..data_manager.permissions import EnforceReadOnly
 from .models import SensorType, Sensor, SensingPoint, DataPoint
 from .serializers import (
     SensorTypeSerializer, SensorSerializer, SensingPointSerializer,
@@ -15,6 +16,7 @@ from .serializers import (
 class SensorTypeViewSet(ModelViewSet):
     queryset = SensorType.objects.all()
     serializer_class = SensorTypeSerializer
+    permission_classes = [EnforceReadOnly, ]
 
 
 class SensorViewSet(ModelViewSet):

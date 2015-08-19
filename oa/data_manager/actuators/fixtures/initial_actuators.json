@@ -1,114 +1,63 @@
 [
     {
-        "model": "actuators.actuatorcode",
-        "fields": {
-            "code": "HE",
-            "description": "Heater"
-        }
-    },
-    {
-        "model": "actuators.actuatorcode",
-        "fields": {
-            "code": "HU",
-            "description": "Humidifier"
-        }
-    },
-    {
-        "model": "actuators.actuatorcode",
-        "fields": {
-            "code": "VE",
-            "description": "Venting Fan"
-        }
-    },
-    {
-        "model": "actuators.actuatorcode",
-        "fields": {
-            "code": "CR",
-            "description": "Circulation Fan"
-        }
-    },
-    {
-        "model": "actuators.actuatorcode",
-        "fields": {
-            "code": "PN",
-            "description": "Light Panel"
-        }
-    },
-    {
         "model": "actuators.actuatortype",
         "fields": {
-            "code": "HE",
-            "name": "Heater",
-            "resource_type": ["A"],
+            "name": "Relay-Controlled Air Heater",
+            "resource_effect": ["A", "HE"],
             "properties": [["A", "TM"]],
             "order": 1,
             "is_binary": "True",
-            "effect_on_active": 1,
             "read_only": "True"
+        }
+    },
+    {
+        "model": "actuators.controlprofile",
+        "fields": {
+            "name": "Default Profile",
+            "actuator_type": ["Relay-Controlled Air Heater"],
+            "period": 5,
+            "pulse_width": 10
+        }
+    },
+    {
+        "model": "actuators.actuatoreffect",
+        "fields": {
+            "control_profile": ["Relay-Controlled Air Heater", "Default Profile"],
+            "property": ["A", "TM"],
+            "effect_on_active": 1,
+            "threshold": 1
         }
     },
     {
         "model": "actuators.actuatortype",
         "fields": {
-            "code": "HU",
-            "name": "Humidifier",
-            "resource_type": ["A"],
+            "name": "Relay-Controlled Humidifier",
+            "resource_effect": ["A", "HU"],
             "properties": [["A", "HU"]],
             "order": 1,
             "is_binary": "True",
-            "effect_on_active": 1,
             "read_only": "True"
         }
     },
     {
         "model": "actuators.actuatortype",
         "fields": {
-            "code": "VE",
-            "name": "Venting Fan",
-            "resource_type": ["A"],
+            "name": "Relay-Controlled Venting Fan",
+            "resource_effect": ["A", "VE"],
             "properties": [["A", "TM"], ["A", "HU"], ["A", "CO"]],
             "order": 1,
             "is_binary": "True",
-            "effect_on_active": -1,
             "read_only": "True"
         }
     },
     {
         "model": "actuators.actuatortype",
         "fields": {
-            "code": "CR",
-            "name": "Circulation Fan",
-            "resource_type": ["A"],
-            "properties": [],
-            "order": 1,
-            "is_binary": "True",
-            "effect_on_active": 0,
-            "read_only": "True"
-        }
-    },
-    {
-        "model": "actuators.actuatortype",
-        "fields": {
-            "code": "PN",
-            "name": "Light Panel",
-            "resource_type": ["L"],
+            "name": "Relay-Controlled Light Panel",
+            "resource_effect": ["L", "PN"],
             "properties": [["L", "IN"]],
-            "order": 0,
-            "is_binary": "True",
-            "effect_on_active": 1,
-            "read_only": "True"
-        }
-    },
-    {
-        "model": "actuators.actuatortype",
-        "fields": {
-            "code": "VE",
-            "name": "Light Vent",
-            "resource_type": ["L"],
-            "properties": [],
             "order": 1,
             "is_binary": "True",
-            "effect_on_active": 1,
             "read_only": "True"
         }
     }

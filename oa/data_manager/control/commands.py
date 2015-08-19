@@ -26,7 +26,6 @@ from .exceptions import (
 )
 
 fifo_path = os.environ['UWSGI_MASTER_FIFO']
-manager_path = os.path.join(settings.BASE_DIR, 'manage.py')
 logger = logging.getLogger(__name__)
 
 
@@ -162,6 +161,16 @@ class Migrate(ManagerCommand):
         self.title = title
 
 
+class LoadInitialData(ManagerCommand):
+    title = 'Load Initial Data'
+    command_args = ('loadinitialdata',)
+
+
+class ClearCaches(ManagerCommand):
+    title = 'Clear Caches'
+    command_args = ('clearcaches',)
+
+
 class FifoCommand(Command):
     """
     Base class for any commands that write a command to the uWSGI Master FIFO.
@@ -266,4 +275,4 @@ class ShellCommand(Command):
 class TouchReload(ShellCommand):
     """ Touch the manage.py file to trigger a Django code reload """
     title = 'Touch Reload'
-    command = ' '.join(['touch', manager_path])
+    command = ' '.join(['touch', __file__])
