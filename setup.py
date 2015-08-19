@@ -3,7 +3,7 @@
 from setuptools import setup, find_packages
 
 dev_reqs = [
-    'django-debug-toolbar>=1.3.2',
+    'django-debug-toolbar==1.3.2',
 ]
 
 setup(
@@ -18,18 +18,18 @@ setup(
         ],
     },
     install_requires = [
-        'awesome-slugify>=1.6.5',
-        'Django>=1.8.3',
-        'django-allauth>=0.23.0',
-        'django-cors-headers>=1.1.0',
-        'django-cron>=0.4.3',
-        'django-filter>=0.11.0',
-        'django-rest-auth>=0.4.0',
-        'django-solo>=1.1.0',
-        'djangorestframework>=3.1.3',
-        'PyYAML>=3.11',
-        'tortilla>=0.4.1',
-        'voluptuous>=0.8.7',
+        'awesome-slugify==1.6.5',
+        'Django==1.8.4',
+        'django-allauth==0.23.0',
+        'django-cors-headers==1.1.0',
+        'django-cron==0.4.3',
+        'django-filter==0.11.0',
+        'django-rest-auth==0.4.0',
+        'django-solo==1.1.0',
+        'djangorestframework==3.2.2',
+        'PyYAML==3.11',
+        'tortilla==0.4.1',
+        'voluptuous==0.8.7',
     ],
     tests_require = dev_reqs,
     extras_require = {
