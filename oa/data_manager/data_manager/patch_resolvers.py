@@ -14,6 +14,10 @@ from django.utils.encoding import force_text
 from django.views import debug
 from ..data_manager.utils import system_layout
 
+PATCH_SWAGGER = 'rest_framework_swagger' in settings.INSTALLED_APPS
+if PATCH_SWAGGER:
+    from rest_framework_swagger.urlparser import UrlParser
+
 django_handlers_logger = logging.getLogger('django.request')
 
 class FakeURLConfModule:
@@ -25,6 +29,7 @@ def inner_get_resolver(urlconf, layout):
     # Loading this upon module import causes problems, so we're going to be
     # lazy about it
     from ..data_manager.urls import get_current_urls
+
     return urlresolvers.RegexURLResolver(
         r'^/', FakeURLConfModule(get_current_urls())
     )
@@ -183,6 +188,20 @@ def new_get_response(self, request):
 
     return response
 
-def monkey_patch_resolvers():
+if PATCH_SWAGGER:
+    def new_get_apis(self, patterns=None, urlconf=None, filter_path=None, exclude_namespaces=[]):
+        # Loading this upon module import causes problems, so we're going to be
+        # lazy about it
+        from ..data_manager.urls import get_current_urls
+
+        real_urlconf = FakeURLConfModule(get_current_urls())
+        return self.old_get_apis(
+            patterns, real_urlconf, filter_path, exclude_namespaces
+        )
+
+def patch_resolvers():
     urlresolvers.get_resolver = outer_get_resolver
     BaseHandler.get_response = new_get_response
+    if PATCH_SWAGGER and not hasattr(UrlParser, 'old_get_apis'):
+        UrlParser.old_get_apis = UrlParser.get_apis
+        UrlParser.get_apis = new_get_apis

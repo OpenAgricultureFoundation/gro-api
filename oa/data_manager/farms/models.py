@@ -65,22 +65,26 @@ class RootServerMessageRejected(APIException):
 class Farm(FarmBase):
     root_id = RootIdField(**root_id_kwargs)
     name = models.CharField(
-        max_length=100, null=(settings.SERVER_TYPE == settings.LEAF)
+        max_length=100, null=(settings.SERVER_TYPE == settings.LEAF),
+        help_text='Human readable farm name'
     )
     slug = models.SlugField(
         max_length=100, null=(settings.SERVER_TYPE == settings.LEAF),
-        blank=(settings.SERVER_TYPE == settings.LEAF), unique=True
+        blank=(settings.SERVER_TYPE == settings.LEAF), unique=True,
+        help_text='Unique farm identifier'
     )
     root_server = models.URLField(
         default="http://openag.media.mit.edu",
-        null=(settings.SERVER_TYPE == settings.LEAF)
+        null=(settings.SERVER_TYPE == settings.LEAF),
+        help_text='URL of the root server to which this farm is registered'
     )
     ip = models.GenericIPAddressField(
         editable=(settings.SERVER_TYPE == settings.ROOT),
-        null=(settings.SERVER_TYPE == settings.LEAF)
+        null=(settings.SERVER_TYPE == settings.LEAF),
+        help_text='The current IP address of this farm'
     )
     layout = models.SlugField(
-        choices=LAYOUT_CHOICES, null=(settings.SERVER_TYPE == settings.LEAF)
+        choices=LAYOUT_CHOICES, null=(settings.SERVER_TYPE == settings.LEAF),
     )
 
     def __init__(self, *args, **kwargs):

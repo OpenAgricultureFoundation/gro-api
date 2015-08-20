@@ -8,10 +8,6 @@ from ..data_manager.test import (
 from .schemata import all_schemata
 
 class UnconfiguredTestCase(APITestCase):
-    """
-    Make sure none of the layout object types are accessible when the farm has
-    not been configured yet
-    """
     @run_with_layouts(None)
     def test_tray(self):
         tray_url = self.url_for_object('tray')

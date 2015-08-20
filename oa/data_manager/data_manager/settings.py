@@ -10,9 +10,9 @@ from django.core.exceptions import ImproperlyConfigured
 old_setup = django.setup
 if not getattr(old_setup, 'is_patched', False):
     def new_setup():
-        from .monkey_patch_resolvers import monkey_patch_resolvers
+        from .patch_resolvers import patch_resolvers
         from .disable_patch import disable_patch
-        monkey_patch_resolvers()
+        patch_resolvers()
         disable_patch()
         old_setup()
     new_setup.is_patched = True
@@ -85,6 +85,7 @@ FRAMEWORK_APPS = (
     'allauth',
     'allauth.account',
     'rest_auth.registration',
+    'rest_framework_swagger',
 )
 
 if SERVER_MODE == DEVELOPMENT:
@@ -151,7 +152,7 @@ if SERVER_TYPE == ROOT:
     DATABASE_ROUTERS = ['oa.data_manager.middleware.FarmDbRouter']
 
 STATIC_URL = '/static/'
-STATIC_ROOT = os.path.join(BASE_DIR, 'oa/data_manager', 'static')
+STATIC_ROOT = os.path.join(BASE_DIR, 'data_manager', 'static')
 
 MEDIA_URL = '/media/'
 MEDIA_ROOT = os.path.join(BASE_DIR, 'oa/data_manager', 'media')

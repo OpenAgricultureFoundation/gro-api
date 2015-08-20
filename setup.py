@@ -25,6 +25,7 @@ setup(
         'django-cron==0.4.3',
         'django-filter==0.11.0',
         'django-rest-auth==0.4.0',
+        'django-rest-swagger==0.3.3',
         'django-solo==1.1.0',
         'djangorestframework==3.2.2',
         'PyYAML==3.11',

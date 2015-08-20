@@ -1,7 +1,3 @@
-"""
-This module creates serializers for some of the models defines in the
-layout.models module
-"""
 from rest_framework import serializers
 from rest_framework.utils.field_mapping import get_detail_view_name
 from ..data_manager.serializers import BaseSerializer

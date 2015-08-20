@@ -46,11 +46,6 @@ class PlantSiteLayout(models.Model):
 
 
 class ParentField(LayoutForeignKey):
-    """
-    This class is the version of ForeignKey to be used on root servers. It
-    can dynamically decide which model it is pointing to based on the
-    layout of the farm being viewed.
-    """
     def __init__(self, model_name):
         self.model_name = model_name
         kwargs = {'related_name': 'children'}
@@ -155,9 +150,6 @@ class PlantSite(models.Model):
 
 
 def generate_model_from_entity(entity):
-    """
-    :param entity: The entity for which to generate a model
-    """
     def to_string(self):
         return self.name
     model_attrs = {

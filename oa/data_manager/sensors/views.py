@@ -91,7 +91,7 @@ class SensingPointViewSet(ModelViewSet):
 
 class DataPointViewSet(ModelViewSet):
     queryset = DataPoint.objects.all()
-    serializer_class = DataPoint.objects.all()
+    serializer_class = DataPointSerializer
 
     def create(self, request, *args, **kwargs):
         many = request.QUERY_PARAMS.get('many', False)

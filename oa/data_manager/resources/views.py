@@ -23,7 +23,7 @@ class ResourcePropertyViewSet(ModelViewSet):
 
 class ResourceEffectViewSet(ModelViewSet):
     queryset = ResourceEffect.objects.all()
-    seiralizer_class = ResourceEffectSerializer
+    serializer_class = ResourceEffectSerializer
     permission_classes = [EnforceReadOnly, ]
 
 
