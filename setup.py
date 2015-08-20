@@ -4,6 +4,7 @@ from setuptools import setup, find_packages
 
 dev_reqs = [
     'django-debug-toolbar==1.3.2',
+    'django-extensions==1.5.5',
 ]
 
 setup(
@@ -15,6 +16,7 @@ setup(
         'console_scripts': [
             'oa_data_manager_configure = oa.data_manager.scripts.configure:configure',
             'oa_data_manager_load_env = oa.data_manager.scripts.load_env:load_env',
+            'oa_data_manager_graph_models = oa.data_manager.scripts.graph_models:graph_models',
         ],
     },
     install_requires = [

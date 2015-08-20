@@ -89,7 +89,10 @@ FRAMEWORK_APPS = (
 )
 
 if SERVER_MODE == DEVELOPMENT:
-    FRAMEWORK_APPS += ('debug_toolbar',)
+    FRAMEWORK_APPS += (
+        'debug_toolbar',
+        'django_extensions',
+    )
     DEBUG_TOOLBAR_PATCH_SETTINGS = False
     INTERNAL_IPS = ['127.0.0.1']
 
@@ -155,7 +158,7 @@ STATIC_URL = '/static/'
 STATIC_ROOT = os.path.join(BASE_DIR, 'data_manager', 'static')
 
 MEDIA_URL = '/media/'
-MEDIA_ROOT = os.path.join(BASE_DIR, 'oa/data_manager', 'media')
+MEDIA_ROOT = os.path.join(BASE_DIR, 'data_manager', 'media')
 
 if SERVER_TYPE == LEAF:
     # TODO: We could dynamically generate this from the current ip address?

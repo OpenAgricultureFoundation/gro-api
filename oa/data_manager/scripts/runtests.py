@@ -1,8 +1,8 @@
 """ This file mainly exists to allow python `setup.py test` to work """
 import os
 import sys
-from django.test.utils import get_runner
 from django.conf import settings
+from django.test.utils import get_runner
 from .load_env import load_env
 
 def runtests():

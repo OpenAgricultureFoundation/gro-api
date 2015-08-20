@@ -6,8 +6,8 @@ OA Data Manager
     :alt: Build Status
 
 .. image:: https://coveralls.io/repos/MIT-OpenAg/oa_data_manager/badge.svg?branch=master&service=github
-   :target: https://coveralls.io/github/MIT-OpenAg/oa_data_manager?branch=master
-   :alt: Code Coverage
+    :target: https://coveralls.io/github/MIT-OpenAg/oa_data_manager?branch=master
+    :alt: Code Coverage
 
 .. image:: https://requires.io/github/MIT-OpenAg/oa_data_manager/requirements.svg?branch=master
     :target: https://requires.io/github/MIT-OpenAg/oa_data_manager/requirements/?branch=master
