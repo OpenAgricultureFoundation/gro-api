@@ -1,6 +1,8 @@
 name: bay
-description: Single Bay
+short_description: A collection of bays
+long_description: A farm consisting of trays nested within bays
 entities:
     - name: Bay
+      description: A vertical stack of trays
       parent: Enclosure
 tray-parent: Bay

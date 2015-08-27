@@ -69,6 +69,7 @@ class PlantSiteLayoutSerializer(BaseSerializer):
     class Meta:
         model = PlantSiteLayout
 
+
 class ResourcesMixin:
     """
     :class:`cityfarm_api.serializers.BaseSerializer` doesn't know how to
@@ -89,7 +90,6 @@ class ResourcesMixin:
 class EnclosureSerializer(BaseSerializer, ResourcesMixin):
     class Meta:
         model = Enclosure
-        nest_if_recursive = ('model',)
 
     resources = serializers.SerializerMethodField()
 
@@ -112,37 +112,64 @@ class LayoutObjectSerializer(BaseSerializer, ResourcesMixin):
         return instance
 
     def validate(self, attrs):
-        # Check which values are in attrs
+        """ Ensure that this object fits inside it's parent """
+        total_length = attrs['x'] + attrs['length']
+        parent_length = attrs['parent'].length
+        if parent_length and not total_length <= parent_length:
+            raise serializers.ValidationError(
+                "Model is too long to fit in its parent"
+            )
+        total_width = attrs['y'] + attrs['width']
+        parent_width = attrs['parent'].width
+        if parent_width and not total_width <= parent_width:
+            raise serializers.ValidationError(
+                "Model is too wide to fit in its parent"
+            )
+        total_height = attrs['z'] + attrs['height']
+        parent_height = attrs['parent'].height
+        if parent_height and not total_height <= parent_height:
+            raise serializers.ValidationError(
+                "Model is too tall to fit in its parent"
+            )
         return attrs
 
+    def ranges_overlap(range1, range2):
+        return (range1[1] > range2[0]) and (range1[0] < range2[1])
 
-#     def validate(self, attrs):
-#         """ Ensure that this object fits inside it's parent """
-#         total_length = (attrs['x'] or 0) + (attrs['length'] or 0)
-#         parent_length = attrs['parent'].length
-#         if parent_length and not total_length <= parent_length:
-#             raise serializers.ValidationError(
-#                 "Model is too long to fit in its parent"
-#             )
-#         total_width = (attrs['y'] or 0) + (attrs['width'] or 0)
-#         parent_width = attrs['parent'].width
-#         if parent_width and not total_width <= parent_width:
-#             raise serializers.ValidationError(
-#                 "Model is too wide to fit in its parent"
-#             )
-#         total_height = (attrs['z'] or 0) + (attrs['height'] or 0)
-#         parent_height = attrs['parent'].height
-#         if parent_height and not total_height <= parent_height:
-#             raise serializers.ValidationError(
-#                 "Model is too tall to fit in its parent"
-#             )
-#         return attrs
+    def check_for_overlap(self, attrs, others):
+        this_x_range = (attrs['x'], attrs['x'] + attrs['length'])
+        this_y_range = (attrs['y'], attrs['y'] + attrs['width'])
+        this_z_range = (attrs['z'], attrs['z'] + attrs['height'])
+        for other in others:
+            other_x_range = (other.x, other.x + other.length)
+            other_y_range = (other.y, other.y + other.width)
+            other_z_range = (other.z, other.z + other.height)
+            if self.ranges_overlap(other_x_range, this_x_range) \
+                    and self.ranges_overlap(other_y_range, this_y_range) \
+                    and self.ranges_overlap(other_z_range, this_z_range):
+                raise ValidationError(
+                    'Entity cannot overlap with another entity of the same '
+                    'type'
+                )
+
+    def create(self, validated_data):
+        parent = validated_data['parent']
+        others = parent.children
+        self.check_for_overlap(validated_data, others)
+        return super().create(validated_data)
+
+    def update(self, instance, validated_data):
+        parent = validated_data['parent']
+        others = (
+            child for child in instance.children if child.pk != instance.pk
+        )
+        self.check_for_overlap(validated_data, others)
+        return super().update(instance, validated_data)
+
 
 class TraySerializer(LayoutObjectSerializer):
     class Meta:
         model = Tray
-        never_next = ('parent', )
-        nest_if_recursive = ('model',)
 
     layout = serializers.HyperlinkedRelatedField(
         view_name='traylayout-detail', queryset=TrayLayout.objects.all(),

@@ -6,22 +6,23 @@ module exports a single variable, "all_schemata", which is a dictionary that
 maps all valid schema names to their respective schema dictionaries.
 
 Schema files are written in YAML. Each file must define a ``name`` attribute,
-which is a short, preferably one word name of the schema, a ``description``
-attribute, which a one line description of the schema, a ``tray-parent``
-attribute, which is the name of the parent model for the tray (defaults to
-"enclosure"), and an ``entities`` attribute, which is a list of entities that
-define a system.
+which is a short, preferably one word name of the schema, a
+``short_description`` attribute, which a one line description of the schema,
+a ``long_description`` which is a full description of the layout, a
+``tray-parent`` attribute, which is the name of the parent model for the tray
+(defaults to "enclosure"), and an ``entities`` attribute, which is a list of
+entities that define a system.
 
 Each entity should have a ``name`` attribute, which is the name of the entity,
-and a ``parent`` attribute, which is the name of the parent entity. The
-``Tray`` and ``Enclosure`` entities are implied and sit at the bottom and top
-of the layout tree, respectively.
+a ``description`` attribute, which descriptes what the entity is, and a
+``parent`` attribute, which is the name of the parent entity. The ``Tray`` and
+``Enclosure`` entities are implied and sit at the bottom and top of the layout
+tree, respectively.
 
 For some examples of schema files, see the ``layout/schemata`` directory.
 """
 
 import os
-import copy
 import yaml
 import voluptuous
 from slugify import slugify
@@ -41,6 +42,7 @@ def to_slug(string):
 class Entity:
     schema = voluptuous.Schema({
         voluptuous.Required('name'): to_slug,
+        voluptuous.Required('description'): str,
         voluptuous.Required('parent'): to_slug,
     })
 
@@ -48,14 +50,14 @@ class Entity:
         all_attrs = dict(attrs) if attrs else {}
         all_attrs.update(kwargs)
         all_attrs = self.schema(all_attrs)
-        self.name = all_attrs['name']
-        self.parent = all_attrs['parent']
+        self.__dict__.update(all_attrs)
 
 
 class Schema:
     schema = voluptuous.Schema({
         voluptuous.Required('name'): str,
-        voluptuous.Required('description'): str,
+        voluptuous.Required('short_description'): str,
+        voluptuous.Required('long_description'): str,
         voluptuous.Required('entities', default=[]): [Entity.schema],
         voluptuous.Required('tray-parent', default='Enclosure'): to_slug,
     })
@@ -64,17 +66,21 @@ class Schema:
         all_attrs = attrs.copy()
         all_attrs.update(kwargs)
         all_attrs = self.schema(all_attrs)
-        self.name = all_attrs['name']
-        self.description = all_attrs['description']
+        entities = all_attrs.pop('entities')
+        tray_parent = all_attrs.pop('tray-parent')
+        self.__dict__.update(all_attrs)
         self.entities = {}
-        for entity_attrs in all_attrs['entities']:
+        for entity_attrs in entities:
             entity = Entity(entity_attrs)
             self.entities[entity.name] = entity
-        self.dynamic_entities = copy.deepcopy(self.entities)
+        self.dynamic_entities = dict(self.entities)
         self.entities['Tray'] = Entity(
-            name='Tray', parent=all_attrs['tray-parent']
+            name='Tray', parent=tray_parent,
+            description='A container in which plants are sown'
         )
-        self.entities['Enclosure'] = Entity(name='Enclosure', parent=None)
+        self.entities['Enclosure'] = Entity(
+            name='Enclosure', parent=None, description='The casing for a farm'
+        )
         for entity in self.entities.values():
             if hasattr(self, entity.name):
                 raise RuntimeError(

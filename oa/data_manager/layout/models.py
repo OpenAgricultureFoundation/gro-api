@@ -16,7 +16,7 @@ from .schemata import all_schemata
 
 class Model3D(models.Model):
     name = models.CharField(max_length=100)
-    file = models.FileField(upload_to="3D_models")
+    file = models.FileField(upload_to='3D_models')
     width = models.FloatField()
     length = models.FloatField()
     height = models.FloatField()
@@ -35,12 +35,12 @@ class TrayLayout(models.Model):
 
 
 class PlantSiteLayout(models.Model):
-    parent = models.ForeignKey(TrayLayout, related_name="plant_sites")
+    parent = models.ForeignKey(TrayLayout, related_name='plant_sites')
     row = models.IntegerField()
     col = models.IntegerField()
 
     def __str__(self):
-        return "(r={}, c={}) in {}".format(
+        return '(r={}, c={}) in {}'.format(
             self.row, self.col, self.parent.name
         )
 
@@ -63,7 +63,7 @@ class ParentField(LayoutForeignKey):
 
     def deconstruct(self):
         name = self.name
-        path = "%s.%s" % (self.__class__.__module__, self.__class__.__name__)
+        path = '%s.%s' % (self.__class__.__module__, self.__class__.__name__)
         args = []
         kwargs = {'model_name': self.model_name}
         return name, path, args, kwargs
@@ -89,7 +89,7 @@ class Enclosure(SingletonModel):
 @receiver(post_save, sender=Farm)
 def create_singleton_instance(sender, instance, **kwargs):
     if instance.name is not None:
-        default_name = "{} Enclosure".format(instance.name)
+        default_name = '{} Enclosure'.format(instance.name)
         try:
             enclosure, _ = Enclosure.objects.get_or_create(pk=1)
             enclosure.name = default_name
@@ -153,22 +153,23 @@ def generate_model_from_entity(entity):
     def to_string(self):
         return self.name
     model_attrs = {
-        "__module__": __name__,
-        "model_name": entity.name,
-        "name": models.CharField(max_length=100, blank=True),
-        "x": models.FloatField(default=0),
-        "y": models.FloatField(default=0),
-        "z": models.FloatField(default=0),
-        "length": models.FloatField(default=0),
-        "width": models.FloatField(default=0),
-        "height": models.FloatField(default=0),
-        "model": models.ForeignKey(Model3D, null=True, related_name='+'),
-        "parent": ParentField(entity.name),
-        "resources": GenericRelation(
+        '__module__': __name__,
+        'model_name': entity.name,
+        'name': models.CharField(max_length=100, blank=True),
+        'x': models.FloatField(default=0),
+        'y': models.FloatField(default=0),
+        'z': models.FloatField(default=0),
+        'length': models.FloatField(default=0),
+        'width': models.FloatField(default=0),
+        'height': models.FloatField(default=0),
+        'model': models.ForeignKey(Model3D, null=True, related_name='+'),
+        'parent': ParentField(entity.name),
+        'resources': GenericRelation(
             Resource, object_id_field='location_id',
             content_type_field='location_type'
         ),
-        "__str__": to_string,
+        '__str__': to_string,
+        '__doc__': entity.description
     }
     return type(entity.name, (models.Model,), model_attrs)
 

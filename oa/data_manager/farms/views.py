@@ -8,7 +8,7 @@ else:
 
 
 class FarmViewSet(FarmViewSetBase):
-    """ Each Farm represents a single controlled growing environment """
+    """ Represents a single Personal Food Computer """
     queryset = Farm.objects.all()
     serializer_class = FarmSerializer
     allow_on_unconfigured_farm = True

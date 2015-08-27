@@ -1,8 +1,11 @@
 name: aisle
-description: Single Aisle
+short_description: A collection of aisles
+long_description: A farm consisting of trays nested within bays nested within aisles
 entities:
     - name: Aisle
+      description: A row of bays
       parent: Enclosure
     - name: Bay
+      description: A vertical stack of trays
       parent: Aisle
 tray-parent: Bay

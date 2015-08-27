@@ -233,7 +233,7 @@ LOGGING = {
     },
     'handlers': {
         'console': {
-            'level': 'DEBUG' if SERVER_MODE == DEVELOPMENT else 'INFO',
+            'level': 'WARNING',
             'class': 'logging.StreamHandler',
             'formatter': 'simple',
         },
@@ -248,8 +248,18 @@ LOGGING = {
         'oa.data_manager': {
             'handlers': ['file'],
             'level': 'DEBUG',
-            'propagate': True,
+            'propagate': False,
         },
+        'django.request': {
+            'handlers': ['file'],
+            'level': 'DEBUG',
+            'propagate': False
+        },
+        'django.security': {
+            'handlers': ['file'],
+            'level': 'DEBUG',
+            'propagate': False
+        }
     }
 }
 
@@ -257,27 +267,11 @@ if SERVER_MODE == DEVELOPMENT:
     LOGGING['handlers']['file']['filename'] = \
         os.path.join(BASE_DIR, 'debug.log')
     LOGGING['loggers']['oa.data_manager']['handlers'].append('console')
+    LOGGING['loggers']['django.request']['handlers'].append('console')
+    LOGGING['loggers']['django.security']['handlers'].append('console')
 else:
     LOGGING['handlers']['file']['level'] = 'INFO'
     LOGGING['handlers']['file']['filename'] = '/var/log/oa_data_manager.log'
-if 'django.security' not in LOGGING['loggers']:
-    LOGGING['loggers']['django.security'] = {
-        'handlers': [],
-        'level': 'INFO',
-    }
-if 'handlers' not in LOGGING['loggers']['django.security']:
-    LOGGING['loggers']['django.security']['handlers'] = []
-LOGGING['loggers']['django.security']['handlers'].append('file')
-LOGGING['loggers']['django.security']['level'] = 'INFO'
-if 'django.request' not in LOGGING['loggers']:
-    LOGGING['loggers']['django.request'] = {
-        'handlers': [],
-        'level': 'INFO',
-    }
-if 'handlers' not in LOGGING['loggers']['django.request']:
-    LOGGING['loggers']['django.request']['handlers'] = []
-LOGGING['loggers']['django.request']['handlers'].append('file')
-LOGGING['loggers']['django.request']['level'] = 'INFO'
 
 # Testing
 

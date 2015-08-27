@@ -31,10 +31,14 @@ class Routine:
                 raise TypeError('Routine can only hold Command instances')
 
     def to_json(self):
+        logger.info('Running routine "%s"', self.title)
         return [command.to_json() for command in self.commands]
 
 
 class Restart(Routine):
+    """
+    Restart the server
+    """
     title = 'Restart'
     commands = (ReloadWorkers(),)
 

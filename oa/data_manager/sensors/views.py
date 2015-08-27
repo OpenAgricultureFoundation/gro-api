@@ -14,17 +14,24 @@ from .serializers import (
 
 
 class SensorTypeViewSet(ModelViewSet):
+    """ A type of sensor, such as "DHT22" """
     queryset = SensorType.objects.all()
     serializer_class = SensorTypeSerializer
     permission_classes = [EnforceReadOnly, ]
 
 
 class SensorViewSet(ModelViewSet):
+    """ A physical sensor instance """
     queryset = Sensor.objects.all()
     serializer_class = SensorSerializer
 
 
 class SensingPointViewSet(ModelViewSet):
+    """
+    Used to separate multi-output sensors into abstract single-output units.
+    For example, a sensor measuring both temperature and humidity would
+    generate 2 sensing points, one for temperature and one for humidity
+    """
     queryset = SensingPoint.objects.all()
     serializer_class = SensingPointSerializer
 
@@ -90,6 +97,7 @@ class SensingPointViewSet(ModelViewSet):
 
 
 class DataPointViewSet(ModelViewSet):
+    """ A data point recorded from a sensing point """
     queryset = DataPoint.objects.all()
     serializer_class = DataPointSerializer
 
@@ -105,7 +113,7 @@ class DataPointViewSet(ModelViewSet):
 
     def perform_create(self, serializer):
         if getattr(serializer, 'many', False):
-            self.model.objects.bulk_create([
+            DataPoint.objects.bulk_create([
                 self.model(**child_attrs) for child_attrs in
                 serializer.validated_data
             ])

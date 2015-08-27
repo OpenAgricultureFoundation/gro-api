@@ -15,23 +15,31 @@ from .serializers import (
 
 
 class ActuatorTypeViewSet(ModelViewSet):
+    """ A type of actuator, such as a relay-controlled heater """
     queryset = ActuatorType.objects.all()
     serializer_class = ActuatorTypeSerializer
     permission_classes = [EnforceReadOnly, ]
 
 
 class ControlProfileViewSet(ModelViewSet):
+    """ A profile that holds the control settings for an actuator """
     queryset = ControlProfile.objects.all()
     serializer_class = ControlProfileSerializer
     permission_classes = [EnforceReadOnly, ]
 
 
 class ActuatorEffectViewSet(ModelViewSet):
+    """
+    The through model from ControlProfile to ResourceProperty. Holds
+    information about how an actuator controlled with the given profile should
+    be operated in response to changes in the given resource property.
+    """
     queryset = ActuatorEffect.objects.all()
     serializer_class = ActuatorEffectSerializer
 
 
 class ActuatorViewSet(ModelViewSet):
+    """ A physical actuator instance """
     queryset = Actuator.objects.all()
     serializer_class = ActuatorSerializer
 
@@ -132,5 +140,6 @@ class ActuatorViewSet(ModelViewSet):
 
 
 class ActuatorStateViewSet(ModelViewSet):
+    """ The state of an actuator at a given time """
     queryset = ActuatorState.objects.all()
     serializer_class = ActuatorStateSerializer

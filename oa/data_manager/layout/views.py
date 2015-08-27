@@ -18,27 +18,32 @@ from .models import (
 
 
 class Model3DViewSet(ModelViewSet):
+    """ A 3D model of a farm component """
     queryset = Model3D.objects.all()
     serializer_class = Model3DSerializer
 
 
 class TrayLayoutViewSet(ModelViewSet):
+    """ The arrangement of plant sites in a tray """
     queryset = TrayLayout.objects.all()
     serializer_class = TrayLayoutSerializer
 
 
 class PlantSiteLayoutViewSet(ModelViewSet):
+    """ A site in a TrayLayout """
     queryset = PlantSiteLayout.objects.all()
     serializer_class = PlantSiteLayoutSerializer
 
 
 class EnclosureViewSet(SingletonModelViewSet):
+    """ The top-level object in the layout tree """
     model = Enclosure
     queryset = Enclosure.objects.all()
     serializer_class = EnclosureSerializer
 
 
 class TrayViewSet(ModelViewSet):
+    """ The lowest level in the layout tree; contains plant sites """
     model = Tray
     queryset = Tray.objects.all()
     serializer_class = TraySerializer
@@ -65,6 +70,10 @@ class TrayViewSet(ModelViewSet):
 
     @detail_route(methods=["get"])
     def set_points(self, request, pk=None):
+        """
+        Get a dictionary mapping resource property codes to current set point
+        values
+        """
         tray = self.get_object()
         set_points = {}
         for property in ResourceProperty.objects.all():
@@ -81,6 +90,7 @@ class TrayViewSet(ModelViewSet):
 
 
 class PlantSiteViewSet(ModelViewSet):
+    """ A growing site in which a plant can be planted """
     queryset = PlantSite.objects.all()
     serializer_class = PlantSiteSerializer
 
@@ -89,8 +99,12 @@ dynamic_viewsets = {}
 for model_name in dynamic_models.keys():
     Model = dynamic_models[model_name]
     Serializer = dynamic_serializers[model_name]
-    class ViewSet(ModelViewSet):
-        model = Model
-        queryset = Model.objects.all()
-        serializer_class = Serializer
+    viewset_attrs = {
+        'model': Model,
+        'queryset': Model.objects.all(),
+        'serializer_class': Serializer,
+        '__doc__': Model.__doc__,
+    }
+    viewset_name = '{}ViewSet'.format(Model.__name__)
+    ViewSet = type(viewset_name, (ModelViewSet,), viewset_attrs)
     dynamic_viewsets[model_name] = ViewSet

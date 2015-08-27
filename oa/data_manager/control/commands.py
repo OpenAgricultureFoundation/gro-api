@@ -88,6 +88,7 @@ class Command:
         """
         log = []
         error = []
+        logger.info('Running command "%s"', self.title)
         for item in self.run():
             if item.is_error:
                 logger.warning(item)
@@ -95,6 +96,11 @@ class Command:
             else:
                 logger.info(item)
             log.append(item)
+        log_level = logging.ERROR if self.returncode else logging.INFO
+        logger.log(
+            log_level, 'Command "%s" finished with returncode "%d"',
+            self.title, self.returncode
+        )
         response = {
             'title': self.title,
             'log': '\n'.join(log),
@@ -134,7 +140,7 @@ class Flush(ManagerCommand):
     clears all of the data in the database.
     """
     title = 'Flush Database'
-    command_args = ('flush', '--noinput')
+    command_args = ('flush', '--noinput', '-v 0')
 
 
 class Migrate(ManagerCommand):

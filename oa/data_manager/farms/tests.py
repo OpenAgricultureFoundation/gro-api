@@ -1,8 +1,11 @@
 from slugify import slugify
 from django.conf import settings
 from django.core.exceptions import ValidationError
-from ..data_manager.test import APITestCase, run_with_layouts
+from ..data_manager.test import (
+    APITestCase, run_with_layouts, run_with_any_layout
+)
 from .models import Farm, LayoutChangeAttempted, SlugChangeAttempted
+from .serializers import FarmSerializer
 from .cron import UpdateFarmIp
 
 class FarmCRUDTestCase(APITestCase):
@@ -15,6 +18,18 @@ class FarmCRUDTestCase(APITestCase):
     def setUp(self):
         super().setUp()
         self.farm_url = self.url_for_object('farm', 1)
+
+    @run_with_any_layout
+    def test_visible_fields(self):
+        fields = FarmSerializer().get_fields()
+        fields.pop('url')
+        fields.pop('root_id')
+        fields.pop('name')
+        fields.pop('slug')
+        fields.pop('root_server')
+        fields.pop('ip')
+        fields.pop('layout')
+        self.assertFalse(fields)
 
     @run_with_layouts(None)
     def test_farm_creation(self):

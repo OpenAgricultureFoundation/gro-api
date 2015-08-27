@@ -9,12 +9,9 @@ def graph_models():
     settings_module = 'oa.data_manager.data_manager.settings'
     os.environ['DJANGO_SETTINGS_MODULE'] = settings_module
     load_env()
-    app_labels = (
-        path.split('.')[-1] for path in settings.OA_DATA_MANAGER_APPS
-    )
     from django import setup
     setup()
-    call_command('graph_models', *app_labels)
+    call_command('graph_models', *sys.argv[1:])
 
 if __name__ == '__main__':
     graph_models()

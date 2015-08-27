@@ -16,7 +16,7 @@ from ..layout.schemata import all_schemata
 
 logger = logging.getLogger(__name__)
 
-LAYOUT_CHOICES = ((key, val.description) for key, val in all_schemata.items())
+LAYOUT_CHOICES = ((key, val.short_description) for key, val in all_schemata.items())
 LAYOUT_CHOICES = sorted(LAYOUT_CHOICES, key=lambda choice: choice[0])
 
 if settings.SERVER_TYPE == settings.LEAF:
