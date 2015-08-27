@@ -102,7 +102,7 @@ class DataPointViewSet(ModelViewSet):
     serializer_class = DataPointSerializer
 
     def create(self, request, *args, **kwargs):
-        many = request.QUERY_PARAMS.get('many', False)
+        many = request.query_params.get('many', False)
         serializer = self.get_serializer(data=request.data, many=many)
         serializer.is_valid(raise_exception=True)
         self.perform_create(serializer)
