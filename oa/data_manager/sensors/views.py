@@ -114,7 +114,7 @@ class DataPointViewSet(ModelViewSet):
     def perform_create(self, serializer):
         if getattr(serializer, 'many', False):
             DataPoint.objects.bulk_create([
-                self.model(**child_attrs) for child_attrs in
+                DataPoint(**child_attrs) for child_attrs in
                 serializer.validated_data
             ])
         else:
