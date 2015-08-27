@@ -5,7 +5,9 @@ from ..resources.models import ResourceProperty
 
 class Recipe(models.Model):
     name = models.CharField(max_length=100)
-    plant_types = models.ManyToManyField(PlantType, related_name='recipes')
+    plant_types = models.ManyToManyField(
+        PlantType, related_name='recipes', blank=True
+    )
     file = models.FileField(upload_to='recipes')
 
     def __str__(self):
