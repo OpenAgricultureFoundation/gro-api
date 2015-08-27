@@ -66,12 +66,12 @@ class ActuatorViewSet(ModelViewSet):
     @detail_route(methods=["post"])
     def override(self, request, pk=None):
         instance = self.get_object()
-        value = request.DATA.get('value', None)
+        value = request.data.get('value', None)
         if value is None:
             raise APIException(
                 'No value received for "value" in the posted dictionary'
             )
-        duration = request.DATA.get('duration', None)
+        duration = request.data.get('duration', None)
         if not duration:
             raise APIException(
                 'No value received for "duration" in the posted dictionary'
@@ -106,8 +106,8 @@ class ActuatorViewSet(ModelViewSet):
 
     def post_state(self, request, pk=None):
         instance = self.get_object()
-        timestamp = request.DATA.get('timestamp', time.time())
-        value = request.DATA.get('value', None)
+        timestamp = request.data.get('timestamp', time.time())
+        value = request.data.get('value', None)
         if value is None:
             raise APIException(
                 'No value received for "value" in the posted dictionary'
