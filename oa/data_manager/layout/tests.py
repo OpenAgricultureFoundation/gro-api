@@ -20,9 +20,9 @@ class UnconfiguredTestCase(APITestCase):
 
 
 generic_obj_info = {
-    'x': 1,
-    'y': 1,
-    'z': 1,
+    'x': 0,
+    'y': 0,
+    'z': 0,
     'length': 1,
     'width': 1,
     'height': 1,

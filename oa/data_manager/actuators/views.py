@@ -65,7 +65,6 @@ class ActuatorViewSet(ModelViewSet):
 
     @detail_route(methods=["post"])
     def override(self, request, pk=None):
-        import pdb; pdb.set_trace()
         instance = self.get_object()
         value = request.data.get('value', None)
         if value is None:
