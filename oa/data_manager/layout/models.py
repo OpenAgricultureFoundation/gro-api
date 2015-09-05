@@ -6,8 +6,8 @@ from django.core.exceptions import ObjectDoesNotExist
 from django.contrib.contenttypes.fields import GenericRelation
 from django.dispatch import receiver
 from ..data_manager.utils import system_layout
-from ..data_manager.models import SingletonModel
 from ..data_manager.fields import LayoutForeignKey
+from ..data_manager.models import SingletonModel
 from ..farms.models import Farm
 from ..resources.models import Resource
 from ..recipes.models import RecipeRun
@@ -77,7 +77,9 @@ class Enclosure(SingletonModel):
     length = models.FloatField(default=0)
     width = models.FloatField(default=0)
     height = models.FloatField(default=0)
-    model = models.ForeignKey(Model3D, null=True, related_name='+')
+    model = models.ForeignKey(
+        Model3D, null=True, on_delete=models.SET_NULL, related_name='+'
+    )
     resources = GenericRelation(
         Resource, object_id_field='location_id',
         content_type_field='location_type'

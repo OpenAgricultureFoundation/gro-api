@@ -4,6 +4,7 @@ import logging
 import unittest
 import itertools
 from slugify import slugify
+from unittest.suite import _DebugResult
 from collections import defaultdict
 from django.conf import settings
 from django.test.runner import DebugSQLTextTestResult, DiscoverRunner
@@ -76,26 +77,35 @@ class TestSuite(unittest.TestSuite):
         else:
             self.unconfigured_tests.append(test)
 
-    def run_unconfigured_tests(self, result):
+    def run_test(self, test, result, debug):
+        self._handleClassSetUp(test, result)
+        if not debug:
+            test(result)
+        else:
+            test.debug()
+        self._tearDownPreviousClass(test, result)
+        result._previousTestClass = test.__class__
+
+    def run_unconfigured_tests(self, result, debug):
         result.stream.writeln('\nRunning tests on unconfigured farm')
         for test in self.unconfigured_tests:
             if result.shouldStop:
                 break
             ClearCaches()()
-            test(result)
+            self.run_test(test, result, debug)
         return result
 
-    def run_configured_tests(self, layout, result):
+    def run_configured_tests(self, layout, result, debug):
         result.stream.writeln('\nRunning tests on {} farm'.format(layout))
         for test in self.configured_tests[layout]:
             if result.shouldStop:
                 break
             ClearCaches()()
-            test(result)
+            self.run_test(test, result, debug)
         return result
 
-    def run(self, result):
-        self.run_unconfigured_tests(result)
+    def run(self, result, debug=False):
+        self.run_unconfigured_tests(result, debug)
         if result.shouldStop:
             return result
         for layout in self.configured_tests.keys():
@@ -105,29 +115,14 @@ class TestSuite(unittest.TestSuite):
             farm.name = "{} farm".format(layout)
             farm.layout = layout
             farm.save()
-            self.run_configured_tests(layout, result)
+            self.run_configured_tests(layout, result, debug)
             if result.shouldStop:
                 break
         return result
 
-    def debug_unconfigured_tests(self):
-        for test in self.unconfigured_tests:
-            test.debug()
-
-    def debug_configured_tests(self, layout):
-        for test in self.configured_tests[layout]:
-            test.debug()
-
     def debug(self):
-        self.debug_unconfigured_tests()
-        for layout in self.configured_tests.keys():
-            Reset()()
-            farm = Farm.get_solo()
-            farm.root_id = None
-            farm.name = "{} farm".format(layout)
-            farm.layout = layout
-            farm.save()
-            self.debug_configured_tests(layout)
+        debug = _DebugResult()
+        self.run(debug, True)
 
 
 class TestLoader(unittest.TestLoader):

@@ -1,0 +1,26 @@
+[
+    {
+        "model": "auth.group",
+        "fields": {
+            "name": "GraphicDesigners",
+            "permissions": [
+                ["add_model3d", "layout", "model3d"],
+                ["change_model3d", "layout", "model3d"],
+                ["delete_model3d", "layout", "model3d"]
+            ]
+        }
+    },
+    {
+        "model": "auth.group",
+        "fields": {
+            "name": "LayoutEditors",
+            "permissions": [
+                ["add_traylayout", "layout", "traylayout"],
+                ["add_plantsitelayout", "layout", "plantsitelayout"],
+                ["change_enclosure", "layout", "enclosure"],
+                ["add_tray", "layout", "tray"],
+                ["change_tray", "layout", "tray"]
+            ]
+        }
+    }
+]

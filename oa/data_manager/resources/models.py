@@ -40,6 +40,7 @@ class ResourceProperty(models.Model):
 
     code = models.CharField(max_length=2)
     name = models.CharField(max_length=100)
+    units = models.CharField(max_length=100)
     resource_type = models.ForeignKey(ResourceType)
     min_operating_value = models.FloatField()
     max_operating_value = models.FloatField()
@@ -67,7 +68,7 @@ class ResourceEffectManager(models.Manager):
 class ResourceEffect(models.Model):
     class Meta:
         unique_together = (
-            ('code', 'resource_type', 'name', 'resource_type')
+            ('code', 'resource_type'), ('name', 'resource_type')
         )
         default_related_name = 'effects'
 

@@ -65,6 +65,6 @@ class DataPoint(models.Model):
         ordering = ['timestamp']
         get_latest_by = 'timestamp'
 
-    origin = models.ForeignKey(SensingPoint, related_name='data_points+')
+    sensing_point = models.ForeignKey(SensingPoint, related_name='data_points+')
     timestamp = models.IntegerField(blank=True, default=time.time)
     value = models.FloatField()

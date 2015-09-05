@@ -48,6 +48,18 @@ class ResourcePropertySerializer(BaseSerializer):
         return data
 
 
+class ResourceEffectSerializer(BaseSerializer):
+    class Meta:
+        model = ResourceEffect
+
+    def validate_code(self, val):
+        if not len(val) == 2:
+            raise ValidationError(
+                'ResourceEffect codes must be exactly 2 characters long'
+            )
+        return val
+
+
 class ResourceLocationRelatedField(HyperlinkedRelatedField):
     def __init__(self, **kwargs):
         super().__init__(DUMMY_VIEW_NAME)
@@ -114,11 +126,6 @@ class ResourceLocationRelatedField(HyperlinkedRelatedField):
         return self.get_url(value, view_name, request, format)
 
 
-class ResourceEffectSerializer(BaseSerializer):
-    class Meta:
-        model = ResourceEffect
-
-
 class ResourceSerializer(BaseSerializer):
     class Meta:
         model = Resource
@@ -126,6 +133,16 @@ class ResourceSerializer(BaseSerializer):
 
     index = ReadOnlyField()
     location = ResourceLocationRelatedField()
+
+    def validate(self, data):
+        location = data['location']
+        resource_type = data['resource_type']
+        if any(resource.resource_type == resource_type for resource in \
+                location.resources.all()):
+            raise ValidationError(
+                'A resource of this type already exists in this location'
+            )
+        return data
 
     def create(self, validated_data):
         resource_type = validated_data['resource_type']

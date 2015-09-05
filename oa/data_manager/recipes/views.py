@@ -1,7 +1,8 @@
 from rest_framework.viewsets import ModelViewSet
-from .models import Recipe, RecipeRun, SetPoint
+from .models import Recipe, RecipeRun, SetPoint, ActuatorOverride
 from .serializers import (
-    RecipeSerializer, RecipeRunSerializer, SetPointSerializer
+    RecipeSerializer, RecipeRunSerializer, SetPointSerializer,
+    ActuatorOverrideSerializer
 )
 
 class RecipeViewSet(ModelViewSet):
@@ -22,3 +23,9 @@ class SetPointViewSet(ModelViewSet):
     """
     queryset = SetPoint.objects.all()
     serializer_class = SetPointSerializer
+
+
+class ActuatorOverrideViewSet(ModelViewSet):
+    """ A state to which to set an actuator for a specific period in time """
+    queryset = ActuatorOverride.objects.all()
+    serializer_class = ActuatorOverrideSerializer

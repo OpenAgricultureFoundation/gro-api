@@ -1,10 +1,12 @@
 import time
+import django_filters
 from django.core.exceptions import ObjectDoesNotExist
 from rest_framework.response import Response
 from rest_framework.viewsets import ModelViewSet
 from rest_framework.decorators import detail_route
 from rest_framework.exceptions import APIException
 from ..data_manager.permissions import EnforceReadOnly
+from ..data_manager.filters import HistoryFilterMixin
 from .models import (
     ActuatorType, ControlProfile, ActuatorEffect, Actuator, ActuatorState
 )
@@ -63,35 +65,33 @@ class ActuatorViewSet(ModelViewSet):
         serializer = self.get_serializer(queryset, many=True)
         return Response(serializer.data)
 
+    # TODO: Remove this once frontend switches to new override endpoint
     @detail_route(methods=["post"])
     def override(self, request, pk=None):
+        """
+        DEPRECATED
+        ---
+        response_serializer: oa.data_manager.recipes.ActuatorOverrideSerializer
+        """
+        from recipes.serializers import ActuatorOverrideSerializer
         instance = self.get_object()
-        value = request.data.get('value', None)
-        if value is None:
-            raise APIException(
-                'No value received for "value" in the posted dictionary'
-            )
-        duration = request.data.get('duration', None)
-        if not duration:
-            raise APIException(
-                'No value received for "duration" in the posted dictionary'
-            )
-        instance.override_value = float(value)
-        instance.override_timeout = time.time() + int(duration)
-        instance.save()
-        serializer = self.get_serializer(instance)
+        data = dict(request.data)
+        data['start_timestamp'] = time.time()
+        data['end_timestamp'] = data['start_timestamp'] + data['duration']
+        data.pop('duration')
+        data['actuator'] = instance
+        serializer = ActuatorOverrideSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        serializer.save()
         return Response(serializer.data)
 
-    @detail_route(methods=["get", "post"])
+    @detail_route(methods=["get"])
     def state(self, request, pk=None):
-        if request.method == "GET":
-            return self.get_state(request, pk=pk)
-        elif request.method == "POST":
-            return self.post_state(request, pk=pk)
-        else:
-            raise ValueError()
-
-    def get_state(self, request, pk=None):
+        """
+        Get the current state of the actuator
+        ---
+        serializer: oa.data_manager.actuators.serializers.ActuatorStateSerializer
+        """
         instance = self.get_object()
         try:
             queryset = ActuatorState.objects.filter(origin=instance).latest()
@@ -104,42 +104,30 @@ class ActuatorViewSet(ModelViewSet):
         )
         return Response(serializer.data)
 
-    def post_state(self, request, pk=None):
-        instance = self.get_object()
-        timestamp = request.data.get('timestamp', time.time())
-        value = request.data.get('value', None)
-        if value is None:
-            raise APIException(
-                'No value received for "value" in the posted dictionary'
-            )
-        actuator_state = ActuatorState(
-            origin=instance, timestamp=timestamp, value=value
-        )
-        actuator_state.save()
-        serializer = ActuatorStateSerializer(
-            actuator_state, context={'request': request}
-        )
-        return Response(serializer.data)
 
-    @detail_route(methods=["get"])
-    def history(self, request, pk=None):
-        instance = self.get_object()
-        since = request.query_params.get('since', None)
-        if not since:
-            raise APIException(
-                "History requests must contain a 'since' GET parameter"
-            )
-        before = request.query_params.get('before', time.time())
-        queryset = ActuatorState.filter(
-            origin=instance, timestamp__gt=since, timestamp__lt=before
-        )
-        serializer = ActuatorStateSerializer(
-            queryset, context={'request': request}
-        )
-        return Response(serializer.data)
+class ActuatorStateFilter(HistoryFilterMixin):
+    class Meta:
+        model = ActuatorState
+        fields = ['actuator', 'min_time', 'max_time']
 
 
 class ActuatorStateViewSet(ModelViewSet):
     """ The state of an actuator at a given time """
     queryset = ActuatorState.objects.all()
     serializer_class = ActuatorStateSerializer
+    filter_class = ActuatorStateFilter
+
+    def create(self, request, *args, **kwargs):
+        many = request.query_params.get('many', False)
+        serializer = self.get_serializer(data=request.data, many=many)
+        serializer.is_value(raise_exception=True)
+        self.perform_create(serializer)
+
+    def perform_create(self, serializer):
+        if getattr(serializer, 'many', False):
+            ActuatorState.objects.bulk_create([
+                ActuatorState(**child_attrs) for child_attrs in
+                serializer.validated_data
+            ])
+        else:
+            serializer.save()

@@ -1,4 +1,6 @@
 from django.conf import settings
+from django.contrib.auth import get_user_model
+from django.contrib.auth.models import Group
 from django.utils.functional import cached_property
 from solo.models import SingletonModel
 from ..data_manager.utils import system_layout
@@ -7,16 +9,20 @@ from ..data_manager.test import (
 )
 from .schemata import all_schemata
 
-class UnconfiguredTestCase(APITestCase):
-    @run_with_layouts(None)
-    def test_tray(self):
-        tray_url = self.url_for_object('tray')
-        self.assertEqual(self.client.get(tray_url).status_code, 403)
+class LayoutAuthMixin():
+    @classmethod
+    def setUpTestData(cls):
+        cls.user = get_user_model().objects.create_user(
+            'layout', 'layout@test.com', 'layout'
+        )
+        layout_editors_group = Group.objects.get(name='LayoutEditors')
+        cls.user.groups.add(layout_editors_group)
 
-    @run_with_layouts(None)
-    def test_enclosure(self):
-        enclosure_url = self.url_for_object('enclosure')
-        self.assertEqual(self.client.get(enclosure_url).status_code, 403)
+    def setUp(self):
+        self.client.force_authenticate(user=self.user)
+
+    def tearDown(self):
+        self.client.force_authenticate()
 
 
 generic_obj_info = {
@@ -29,16 +35,16 @@ generic_obj_info = {
 }
 
 
-class EnclosureCRUDTestCase(APITestCase):
+class EnclosureCRUDTestCase(LayoutAuthMixin, APITestCase):
     @run_with_all_layouts
     def test_enclosure_creation(self):
         enclosure_list_url = self.url_for_object('enclosure')
         res = self.client.get(enclosure_list_url)
         self.assertEqual(res.status_code, 200)
         self.assertEqual(len(res.data['results']), 1)
-        self.assertEqual(self.client.post(enclosure_list_url).status_code, 405)
+        self.assertEqual(self.client.post(enclosure_list_url).status_code, 403)
 
-class AisleCRUDTestCase(APITestCase):
+class AisleCRUDTestCase(LayoutAuthMixin, APITestCase):
     @run_with_layouts('aisle')
     def test_aisle_creation(self):
         aisle_info = dict(generic_obj_info)
@@ -50,7 +56,7 @@ class AisleCRUDTestCase(APITestCase):
         self.assertEqual(len(res.data['results']), 1)
 
 
-class BayCRUDTestCase(APITestCase):
+class BayCRUDTestCase(LayoutAuthMixin, APITestCase):
     @run_with_layouts('aisle')
     def test_bay_creation_given_aisle(self):
         aisle_info = dict(generic_obj_info)
@@ -72,7 +78,7 @@ class BayCRUDTestCase(APITestCase):
         self.assertEqual(len(res.data['results']), 1)
 
 
-class TrayCRUDTestCase(APITestCase):
+class TrayCRUDTestCase(LayoutAuthMixin, APITestCase):
     @run_with_layouts('aisle')
     def test_tray_creation_given_aisle(self):
         aisle_info = dict(generic_obj_info)

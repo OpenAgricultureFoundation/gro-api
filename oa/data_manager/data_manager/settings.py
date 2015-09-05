@@ -23,6 +23,8 @@ BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 REST_FRAMEWORK = {
     'DEFAULT_FILTER_BACKENDS': ('rest_framework.filters.DjangoFilterBackend',),
     'DEFAULT_PAGINATION_CLASS': 'oa.data_manager.data_manager.pagination.Pagination',
+    'DEFAULT_PERMISSION_CLASSES': ('rest_framework.permissions.DjangoModelPermissions', ),
+    'EXCEPTION_HANDLER': 'oa.data_manager.data_manager.views.exception_handler',
     'PAGE_SIZE': 100,
 }
 
@@ -229,49 +231,88 @@ LOGGING = {
         },
         'simple': {
             'format': '%(levelname)s %(message)s',
-        }
+        },
+        'verbose_request': {
+            'format': '%(levelname)s %(asctime)s %(pathname)s %(lineno)d ' +
+                      '%(status_code)d %(message)s %(request)s'
+        },
+        'simple_request': {
+            'format': '%(levelname)s %(status_code)d %(message)s',
+        },
     },
     'handlers': {
         'console': {
-            'level': 'WARNING',
+            'level': 'INFO',
             'class': 'logging.StreamHandler',
             'formatter': 'simple',
         },
-        'file': {
+        'console_request': {
+            'level': 'WARNING',
+            'class': 'logging.StreamHandler',
+            'formatter': 'simple_request'
+        },
+        'log_file': {
             'level': 'DEBUG',
             'class': 'logging.FileHandler',
             'formatter': 'verbose',
             'filename': '',
         },
+        'log_file_request': {
+            'level': 'WARNING', # We only care about 4xx's and 5xx's
+            'class': 'logging.FileHandler',
+            'formatter': 'verbose_request',
+            'filename': '',
+        },
+        'error_file': {
+            'level': 'ERROR',
+            'class': 'logging.FileHandler',
+            'formatter': 'verbose',
+            'filename': '',
+        },
+        'error_file_request': {
+            'level': 'ERROR',
+            'class': 'logging.FileHandler',
+            'formatter': 'verbose_request',
+            'filename': '',
+        },
     },
     'loggers': {
         'oa.data_manager': {
-            'handlers': ['file'],
+            'handlers': ['log_file', 'error_file'],
             'level': 'DEBUG',
             'propagate': False,
         },
-        'django.request': {
-            'handlers': ['file'],
+        'django.security': {
+            'handlers': ['log_file', 'error_file'],
             'level': 'DEBUG',
             'propagate': False
         },
-        'django.security': {
-            'handlers': ['file'],
+        'django.request': {
+            'handlers': ['log_file_request', 'error_file_request'],
             'level': 'DEBUG',
             'propagate': False
-        }
+        },
     }
 }
 
 if SERVER_MODE == DEVELOPMENT:
-    LOGGING['handlers']['file']['filename'] = \
-        os.path.join(BASE_DIR, 'debug.log')
+    debug_filename = os.path.join(BASE_DIR, 'debug.log')
+    error_filename = os.path.join(BASE_DIR, 'error.log')
+    LOGGING['handlers']['log_file']['filename'] = debug_filename
+    LOGGING['handlers']['log_file_request']['filename'] = debug_filename
+    LOGGING['handlers']['error_file']['filename'] = error_filename
+    LOGGING['handlers']['error_file_request']['filename'] = error_filename
     LOGGING['loggers']['oa.data_manager']['handlers'].append('console')
-    LOGGING['loggers']['django.request']['handlers'].append('console')
     LOGGING['loggers']['django.security']['handlers'].append('console')
+    LOGGING['loggers']['django.request']['handlers'].append('console_request')
 else:
-    LOGGING['handlers']['file']['level'] = 'INFO'
-    LOGGING['handlers']['file']['filename'] = '/var/log/oa_data_manager.log'
+    debug_filename = '/var/log/oa_data_manager/debug.log'
+    error_filename = '/var/log/oa_data_manager/error.log'
+    LOGGING['handlers']['log_file']['level'] = 'INFO'
+    LOGGING['handlers']['log_file']['filename'] = debug_filename
+    LOGGING['handlers']['log_file_request']['filename'] = debug_filename
+    LOGGING['handlers']['error_file'] = error_filename
+    LOGGING['handlers']['error_file_request']['filename'] = error_filename
 
 # Testing
 

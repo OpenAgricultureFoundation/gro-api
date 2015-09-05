@@ -81,14 +81,27 @@ class Actuator(models.Model):
     actuator_type = models.ForeignKey(ActuatorType)
     control_profile = models.ForeignKey(ControlProfile)
     resource = models.ForeignKey(Resource, related_name='actuators')
-    override_value = models.FloatField(editable=False, null=True)
-    override_timeout = models.IntegerField(editable=False, null=True)
+    current_override = models.ForeignKey(
+        'recipes.ActuatorOverride', null=True, related_name='+',
+        on_delete=models.SET_NULL, editable=False
+    )
 
     def update_override(self):
-        if self.override_value and self.override_timeout <= time.time():
-            self.override_value = None
-            self.override_timeout = None
+        current_time = time.time()
+        if self.current_override and \
+                current_time > self.current_override.end_timestamp:
+            self.current_override = None
             self.save()
+        if not self.current_override:
+            try:
+                next_override = ActuatorOverride.objects.filter(
+                    actuator=self, end_timestamp__gte=time.time()
+                ).earliest()
+                if current_time >= next_override.start_timestamp:
+                    self.current_override = next_override
+                    self.save()
+            except ObjectDoesNotExist:
+                pass
 
     def __str__(self):
         return self.name
@@ -99,6 +112,6 @@ class ActuatorState(models.Model):
         ordering = ['timestamp']
         get_latest_by = 'timestamp'
 
-    origin = models.ForeignKey(Actuator, related_name='state+')
+    actuator = models.ForeignKey(Actuator, related_name='states+')
     timestamp = models.IntegerField(blank=True, default=time.time)
     value = models.FloatField()

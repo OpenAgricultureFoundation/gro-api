@@ -5,7 +5,7 @@ from rest_framework.exceptions import ValidationError
 from rest_framework.serializers import IntegerField
 from ..data_manager.serializers import BaseSerializer
 from ..resources.models import ResourceProperty
-from .models import Recipe, RecipeRun, SetPoint
+from .models import Recipe, RecipeRun, SetPoint, ActuatorOverride
 
 logger = logging.getLogger(__name__)
 
@@ -78,9 +78,14 @@ class RecipeRunSerializer(BaseSerializer):
         end_timestamp = None
         for line in recipe.file:
             line = line.strip()
-            if not line:
-                continue
             args = line.split(b' ')
+            try:
+                comment_start = args.index(b'#')
+                args = args[0:comment_start]
+            except ValueError:
+                pass
+            if not args:
+                continue
             time_string = args.pop(0)
             try:
                 timedelta = self.parse_time_string(time_string)
@@ -189,3 +194,8 @@ class RecipeRunSerializer(BaseSerializer):
 class SetPointSerializer(BaseSerializer):
     class Meta:
         model = SetPoint
+
+
+class ActuatorOverrideSerializer(BaseSerializer):
+    class Meta:
+        model = ActuatorOverride

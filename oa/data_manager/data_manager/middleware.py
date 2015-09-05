@@ -9,6 +9,7 @@ from django.core.exceptions import MiddlewareNotUsed
 from django.core.cache.backends.locmem import LocMemCache
 from rest_framework.views import APIView
 from rest_framework.exceptions import APIException
+from rest_framework.permissions import AllowAny
 from .utils import system_layout
 
 _request_cache = {}
@@ -67,6 +68,7 @@ class FarmIsConfiguredCheckMiddleware:
         if system_layout.current_value is not None:
             raise MiddlewareNotUsed()
         class FarmNotConfiguredView(APIView):
+            permission_classes = (AllowAny, )
             def get(self, request):
                 raise FarmNotConfiguredError()
             post = get

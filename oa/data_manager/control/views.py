@@ -29,8 +29,12 @@ class PermissionViewSet(ModelViewSet):
 all_views = {}
 
 for routine_class in Routine.__subclasses__():
-    @api_view()
     def view_func(request, routine=routine_class()):
         return Response(routine.to_json())
-    view_func.__doc__ == routine_class.__doc__
+    view_func.__name__ = routine_class.__name__
+    view_func.__doc__ = routine_class.__doc__
+    # We can't use `api_view` as a decorator because we can't call it until we
+    # have set the __name__ and __doc__ of `view_func`. Thus, we explicitly
+    # call `api_view` afterwards
+    view_func = api_view()(view_func)
     all_views[slugify(routine_class.title.lower())] = view_func

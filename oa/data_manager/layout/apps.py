@@ -39,3 +39,14 @@ class LayoutConfig(AppConfig):
                     ContentType.objects.filter(
                         app_label='layout', model=entity.name.lower()
                     ).delete()
+
+    def setup_initial_data(self):
+        from django.contrib.auth.models import Group
+        from django.contrib.contenttypes.models import ContentType
+        from .models import dynamic_models
+        layout_editors_group = Group.objects.get(name='LayoutEditors')
+        for model in dynamic_models.values():
+            content_type = ContentType.objects.get_for_model(model)
+            for permission in content_type.permission_set.all():
+                if not permission.codename.startswith('delete'):
+                    layout_editors_group.permissions.add(permission)

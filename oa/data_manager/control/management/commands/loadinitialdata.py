@@ -10,3 +10,6 @@ class Command(BaseCommand):
                     'loaddata', app_config.initial_fixture,
                     app=app_config.label
                 )
+        for app_config in apps.get_app_configs():
+            if hasattr(app_config, 'setup_initial_data'):
+                app_config.setup_initial_data()

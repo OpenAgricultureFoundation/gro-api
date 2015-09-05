@@ -36,14 +36,13 @@ class Routine:
 
 
 class Restart(Routine):
-    """
-    Restart the server
-    """
+    """ Restart the server """
     title = 'Restart'
     commands = (ReloadWorkers(),)
 
 
 class Reset(Routine):
+    """ Reset the server and clear all data """
     title = 'Reset'
     commands = (
         Migrate('layout', '0001'), Flush(), ClearCaches(), Migrate(),
