@@ -161,7 +161,7 @@ class LayoutObjectSerializer(BaseSerializer, ResourcesMixin):
     def update(self, instance, validated_data):
         parent = validated_data['parent']
         others = (
-            child for child in instance.children.all() if child.pk != instance.pk
+            child for child in parent.children.all() if child.pk != instance.pk
         )
         self.check_for_overlap(validated_data, others)
         return super().update(instance, validated_data)
