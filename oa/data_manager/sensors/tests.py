@@ -1,9 +1,28 @@
+from django.contrib.auth import get_user_model
+from django.contrib.auth.models import Group
 from ..data_manager.test import APITestCase, run_with_any_layout
 from ..resources.models import ResourceType, ResourceProperty
 from .models import SensorType, Sensor, SensingPoint, DataPoint
 from .serializers import SensorTypeSerializer, SensorSerializer
 
-class SensorTypeTestCase(APITestCase):
+class SensorAuthMixin:
+    @classmethod
+    def setUpTestData(cls):
+        cls.user = get_user_model().objects.create_user(
+            'sensors', 'sensors@test.com', 'sensors'
+        )
+        electricians_group = Group.objects.get(name='Electricians')
+        cls.user.groups.add(electricians_group)
+        layout_editors_group = Group.objects.get(name='LayoutEditors')
+        cls.user.groups.add(layout_editors_group)
+
+    def setUp(self):
+        self.client.force_authenticate(user=self.user)
+
+    def tearDown(self):
+        self.client.force_authenticate()
+
+class SensorTypeTestCase(SensorAuthMixin, APITestCase):
     @run_with_any_layout
     def test_visible_fields(self):
         fields = SensorTypeSerializer().get_fields()
@@ -67,7 +86,7 @@ class SensorTypeTestCase(APITestCase):
         self.assertEqual(res.status_code, 400)
 
 
-class SensorTestCase(APITestCase):
+class SensorTestCase(SensorAuthMixin, APITestCase):
     @run_with_any_layout
     def test_visible_fields(self):
         fields = SensorSerializer().get_fields()

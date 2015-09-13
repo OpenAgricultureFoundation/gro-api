@@ -9,7 +9,7 @@ from ..data_manager.test import (
 )
 from .schemata import all_schemata
 
-class LayoutAuthMixin():
+class LayoutAuthMixin:
     @classmethod
     def setUpTestData(cls):
         cls.user = get_user_model().objects.create_user(

@@ -113,7 +113,7 @@
         "model": "resources.resourceeffect",
         "fields": {
             "code": "HE",
-            "name": "Heater",
+            "name": "Heating",
             "resource_type": ["A"],
             "read_only": "True"
         }
@@ -122,7 +122,7 @@
         "model": "resources.resourceeffect",
         "fields": {
             "code": "HU",
-            "name": "Humidifier",
+            "name": "Humidification",
             "resource_type": ["A"],
             "read_only": "True"
         }

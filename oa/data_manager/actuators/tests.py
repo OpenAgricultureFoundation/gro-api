@@ -1,7 +1,26 @@
+from django.contrib.auth import get_user_model
+from django.contrib.auth.models import Group
 from ..data_manager.test import APITestCase, run_with_any_layout
 from ..resources.models import ResourceType, ResourceProperty, ResourceEffect
 from .models import ActuatorType, ControlProfile, Actuator
 from .serializers import ActuatorTypeSerializer, ActuatorSerializer
+
+class ActuatorAuthMixin:
+    @classmethod
+    def setUpTestData(cls):
+        cls.user = get_user_model().objects.create_user(
+            'actuators', 'actuators@test.com', 'actuators'
+        )
+        electricians_group = Group.objects.get(name='Electricians')
+        cls.user.groups.add(electricians_group)
+        layout_editors_group = Group.objects.get(name='LayoutEditors')
+        cls.user.groups.add(layout_editors_group)
+
+    def setUp(self):
+        self.client.force_authenticate(user=self.user)
+
+    def tearDown(self):
+        self.client.force_authenticate()
 
 class ActuatorTypeTestCase(APITestCase):
     @run_with_any_layout
@@ -78,7 +97,7 @@ class ActuatorTypeTestCase(APITestCase):
         self.assertEqual(res.status_code, 400)
 
 
-class ActuatorTestCase(APITestCase):
+class ActuatorTestCase(ActuatorAuthMixin, APITestCase):
     @run_with_any_layout
     def test_visible_fields(self):
         fields = ActuatorSerializer().get_fields()
@@ -88,8 +107,8 @@ class ActuatorTestCase(APITestCase):
         fields.pop('actuator_type')
         fields.pop('control_profile')
         fields.pop('resource')
+        fields.pop('current_override')
         fields.pop('override_value')
-        fields.pop('override_timeout')
         self.assertFalse(fields)
 
     @run_with_any_layout

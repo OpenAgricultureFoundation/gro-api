@@ -1,9 +1,26 @@
+from django.contrib.auth import get_user_model
+from django.contrib.auth.models import Group
 from ..data_manager.test import APITestCase, run_with_any_layout
 from .models import ResourceType, ResourceProperty, Resource
 from .serializers import (
     ResourceTypeSerializer, ResourcePropertySerializer,
     ResourceEffectSerializer, ResourceSerializer
 )
+
+class ResourceAuthMixin:
+    @classmethod
+    def setUpTestData(cls):
+        cls.user = get_user_model().objects.create_user(
+            'resources', 'resources@test.com', 'resources'
+        )
+        layout_editors_group = Group.objects.get(name='LayoutEditors')
+        cls.user.groups.add(layout_editors_group)
+
+    def setUp(self):
+        self.client.force_authenticate(user=self.user)
+
+    def tearDown(self):
+        self.client.force_authenticate()
 
 class ResourceTypeTestCase(APITestCase):
     @run_with_any_layout
@@ -29,26 +46,6 @@ class ResourceTypeTestCase(APITestCase):
         )
         self.assertEqual(res.status_code, 403)
 
-    @run_with_any_layout
-    def test_edit_custom_type(self):
-        data = {'code': 'T', 'name': 'test'}
-        res = self.client.post(self.url_for_object('resourceType'), data=data)
-        self.assertEqual(res.status_code, 201)
-        self.assertEqual(res.data['name'], 'test')
-        data['name'] = 'test2'
-        res = self.client.put(res.data['url'], data=data)
-        self.assertEqual(res.status_code, 200)
-        self.assertEqual(res.data['name'], 'test2')
-
-    @run_with_any_layout
-    def test_invalid_code(self):
-        data = {'code': '', 'name': 'test'}
-        res = self.client.post(self.url_for_object('resourceType'), data=data)
-        self.assertEqual(res.status_code, 400)
-        data['code'] = 'TS'
-        res = self.client.post(self.url_for_object('resourceType'), data=data)
-        self.assertEqual(res.status_code, 400)
-
 
 class ResourcePropertyTestCase(APITestCase):
     @run_with_any_layout
@@ -57,6 +54,7 @@ class ResourcePropertyTestCase(APITestCase):
         fields.pop('url')
         fields.pop('code')
         fields.pop('name')
+        fields.pop('units')
         fields.pop('resource_type')
         fields.pop('min_operating_value')
         fields.pop('max_operating_value')
@@ -85,45 +83,8 @@ class ResourcePropertyTestCase(APITestCase):
         )
         self.assertEqual(res.status_code, 403)
 
-    @run_with_any_layout
-    def test_edit_custom_property(self):
-        air_id = ResourceType.objects.get_by_natural_key('A').pk
-        data = {
-            'code': 'TS',
-            'name': 'Air Test',
-            'resource_type': self.url_for_object('resourceType', air_id),
-            'min_operating_value': 0,
-            'max_operating_value': 1,
-        }
-        res = self.client.post(
-            self.url_for_object('resourceProperty'), data=data
-        )
-        self.assertEqual(res.status_code, 201)
-        self.assertEqual(res.data['name'], 'Air Test')
-        data['name'] = 'Air Test2'
-        res = self.client.put(res.data['url'], data=data)
-        self.assertEqual(res.status_code, 200)
-        self.assertEqual(res.data['name'], 'Air Test2')
 
-    @run_with_any_layout
-    def test_invalid_code(self):
-        air_id = ResourceType.objects.get_by_natural_key('A').pk
-        data = {
-            'code': 'A', 'name': 'test', 'resource_type':
-            self.url_for_object('resourceType', air_id)
-        }
-        res = self.client.post(
-            self.url_for_object('resourceProperty'), data=data
-        )
-        self.assertEqual(res.status_code, 400)
-        data['code'] = 'ABC'
-        res = self.client.post(
-            self.url_for_object('resourceProperty'), data=data
-        )
-        self.assertEqual(res.status_code, 400)
-
-
-class ResourceTestCase(APITestCase):
+class ResourceTestCase(ResourceAuthMixin, APITestCase):
     @run_with_any_layout
     def test_visible_fields(self):
         fields = ResourceSerializer().get_fields()

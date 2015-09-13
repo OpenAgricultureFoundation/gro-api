@@ -82,7 +82,7 @@ class ActuatorSerializer(BaseSerializer):
         actuator_type = validated_data['actuator_type']
         actuator_type.actuator_count += 1
         validated_data['index'] = actuator_type.actuator_count
-        if not validated_data['name']:
+        if not validated_data.get('name', None):
             validated_data['name'] = "{} Instance {}".format(
                 actuator_type.name, validated_data['index']
             )

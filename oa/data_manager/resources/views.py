@@ -1,4 +1,5 @@
 from rest_framework.viewsets import ModelViewSet
+from rest_framework.permissions import DjangoModelPermissions
 from ..data_manager.permissions import EnforceReadOnly
 from .models import (
     ResourceType, ResourceProperty, ResourceEffect, Resource
@@ -13,7 +14,7 @@ class ResourceTypeViewSet(ModelViewSet):
     """ A type of resource, such as "air" or "water" """
     queryset = ResourceType.objects.all()
     serializer_class = ResourceTypeSerializer
-    permission_classes = [EnforceReadOnly, ]
+    permission_classes = [EnforceReadOnly, DjangoModelPermissions]
 
 
 class ResourcePropertyViewSet(ModelViewSet):
@@ -22,7 +23,7 @@ class ResourcePropertyViewSet(ModelViewSet):
     """
     queryset = ResourceProperty.objects.all()
     serializer_class = ResourcePropertySerializer
-    permission_classes = [EnforceReadOnly, ]
+    permission_classes = [EnforceReadOnly, DjangoModelPermissions]
 
 
 class ResourceEffectViewSet(ModelViewSet):
@@ -32,7 +33,7 @@ class ResourceEffectViewSet(ModelViewSet):
     """
     queryset = ResourceEffect.objects.all()
     serializer_class = ResourceEffectSerializer
-    permission_classes = [EnforceReadOnly, ]
+    permission_classes = [EnforceReadOnly, DjangoModelPermissions]
 
 
 class ResourceViewSet(ModelViewSet):

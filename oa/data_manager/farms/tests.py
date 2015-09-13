@@ -1,6 +1,7 @@
 from slugify import slugify
 from django.conf import settings
 from django.core.exceptions import ValidationError
+from django.contrib.auth import get_user_model
 from ..data_manager.test import (
     APITestCase, run_with_layouts, run_with_any_layout
 )
@@ -8,7 +9,23 @@ from .models import Farm, LayoutChangeAttempted, SlugChangeAttempted
 from .serializers import FarmSerializer
 from .cron import UpdateFarmIp
 
-class FarmCRUDTestCase(APITestCase):
+class FarmAuthMixin:
+    @classmethod
+    def setUpTestData(cls):
+        try:
+            cls.user = get_user_model().objects.get(username='farms')
+        except Exception:
+            cls.user = get_user_model().objects.create_user('farms', 'farms')
+            cls.user.is_staff = True
+            cls.user.save()
+
+    def setUp(self):
+        self.client.force_authenticate(user=self.user)
+
+    def tearDown(self):
+        self.client.force_authenticate()
+
+class FarmCRUDTestCase(FarmAuthMixin, APITestCase):
     farm_info = {
         'name': 'Test Farm',
         'layout': 'tray',
@@ -57,7 +74,7 @@ class FarmCRUDTestCase(APITestCase):
         self.assertEqual(res.data['name'], 'Different Farm')
         self.assertEqual(res.data['slug'], correct_slug)
 
-class FarmLayoutTestCase(APITestCase):
+class FarmLayoutTestCase(FarmAuthMixin, APITestCase):
     @run_with_layouts(None)
     def test_layout_locking(self):
         farm_url = self.url_for_object('farm', 1)
@@ -79,7 +96,7 @@ class FarmLayoutTestCase(APITestCase):
         )
 
 
-class FarmSlugLockingTestCase(APITestCase):
+class FarmSlugLockingTestCase(FarmAuthMixin, APITestCase):
     @run_with_layouts(None)
     def test_slug_locking(self):
         farm_url = self.url_for_object('farm', 1)
@@ -107,7 +124,7 @@ class FarmSlugLockingTestCase(APITestCase):
             res.data['detail'], SlugChangeAttempted.default_detail
         )
 
-class UpdateFarmIpTestCase(APITestCase):
+class UpdateFarmIpTestCase(FarmAuthMixin, APITestCase):
     @run_with_layouts(None)
     def test_cron_jon(self):
         farm = Farm.get_solo()

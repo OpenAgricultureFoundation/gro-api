@@ -134,17 +134,17 @@ class ResourceSerializer(BaseSerializer):
     index = ReadOnlyField()
     location = ResourceLocationRelatedField()
 
-    def validate(self, data):
-        location = data['location']
-        resource_type = data['resource_type']
+    def check_for_overlap(self, validated_data):
+        location = validated_data['location']
+        resource_type = validated_data['resource_type']
         if any(resource.resource_type == resource_type for resource in \
                 location.resources.all()):
             raise ValidationError(
                 'A resource of this type already exists in this location'
             )
-        return data
 
     def create(self, validated_data):
+        self.check_for_overlap(validated_data)
         resource_type = validated_data['resource_type']
         resource_type.resource_count += 1
         validated_data['index'] = resource_type.resource_count

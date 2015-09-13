@@ -100,7 +100,6 @@ for model_name in dynamic_models.keys():
     Model = dynamic_models[model_name]
     Serializer = dynamic_serializers[model_name]
     viewset_attrs = {
-        'model': Model,
         'queryset': Model.objects.all(),
         'serializer_class': Serializer,
         '__doc__': Model.__doc__,
