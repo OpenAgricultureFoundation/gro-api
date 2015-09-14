@@ -150,30 +150,33 @@ class Farm(FarmBase):
                 system_layout.clear_cache()
         if not self.root_id and self.slug and self.root_server and self.layout:
             # Register this farm with the root server
-            if settings.SERVER_MODE == settings.DEVELOPMENT:
-                logger.debug('Pretending to contact root server')
-                self.root_id = 1
-            else:
-                root_api = tortilla.wrap(self.root_server, debug=True)
-                data = {field.name: getattr(self, field.name) for field in
-                        self._meta.fields}
-                data.pop(self._meta.pk.name)
-                try:
-                    if not self.root_id:
-                        res = root_api.farms.post(data=data)
-                except ConnectionError:
-                    raise RootServerConnectionRefused()
-                if res.status_code == 200:
-                    for key, val in res.data:
-                        if getattr(self, key) != val:
-                            setattr(self, key, val)
-                else:
-                    # TODO: Make this message more readable
-                    raise RootServerMessageRejected(
-                        'Root server at "{}" responsed with status code {}, '
-                        'body "{}"'.format(self.root_server, res.status_code,
-                        res.data)
-                    )
+            logger.debug('Pretending to contact root server')
+            self.root_id = 1
+            # TODO: Put this back in when root servers actually exist
+            # if settings.SERVER_MODE == settings.DEVELOPMENT:
+            #     logger.debug('Pretending to contact root server')
+            #     self.root_id = 1
+            # else:
+            #     root_api = tortilla.wrap(self.root_server, debug=True)
+            #     data = {field.name: getattr(self, field.name) for field in
+            #             self._meta.fields}
+            #     data.pop(self._meta.pk.name)
+            #     try:
+            #         if not self.root_id:
+            #             res = root_api.farms.post(data=data)
+            #     except ConnectionError:
+            #         raise RootServerConnectionRefused()
+            #     if res.status_code == 200:
+            #         for key, val in res.data:
+            #             if getattr(self, key) != val:
+            #                 setattr(self, key, val)
+            #     else:
+            #         # TODO: Make this message more readable
+            #         raise RootServerMessageRejected(
+            #             'Root server at "{}" responsed with status code {}, '
+            #             'body "{}"'.format(self.root_server, res.status_code,
+            #             res.data)
+            #         )
         super().save(*args, **kwargs)
         self._old_slug = self.slug
         if self.layout != self._old_layout:
