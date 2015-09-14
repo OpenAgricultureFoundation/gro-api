@@ -1,4 +1,5 @@
 import os
+from django.core.management import call_command
 from django.conf import settings
 from .load_env import load_env
 
