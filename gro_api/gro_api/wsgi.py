@@ -11,7 +11,7 @@ from django.conf import settings
 from django.core.wsgi import get_wsgi_application
 from ..scripts.load_env import load_env
 
-if 'DJANGO_SETTINGS_MODULE' not in os.environ
+if 'DJANGO_SETTINGS_MODULE' not in os.environ:
     settings_module = 'gro_api.gro_api.settings'
     os.environ['DJANGO_SETTINGS_MODULE'] = settings_module
 load_env()
