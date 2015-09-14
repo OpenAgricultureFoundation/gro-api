@@ -16,7 +16,11 @@ setup(
     version = "0.1.0a0",
     packages = find_packages(),
     package_data = {
-        'gro_api.layout.schemata': ['*.yaml']
+        'gro_api.layout.schemata': ['*.yaml'],
+        'gro_api.resources.fixtures': ['*.json'],
+        'gro_api.sensors.fixtures': ['*.json'],
+        'gro_api.actuators.fixtures': ['*.json'],
+        'gro_api.control.fixtures': ['*.json'],
     },
     entry_points = {
         'console_scripts': [
