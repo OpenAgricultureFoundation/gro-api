@@ -10,7 +10,7 @@ from django.contrib.auth.models import Permission, Group
 from rest_framework.response import Response
 from rest_framework.viewsets import ModelViewSet
 from rest_framework.authtoken.models import Token
-from rest_framework.decorators import api_view
+from rest_framework.decorators import api_view, permission_classes
 from rest_framework.permissions import IsAdminUser
 from .routines import Routine
 from .serializers import (
@@ -56,5 +56,6 @@ for routine_class in Routine.__subclasses__():
     # We can't use `api_view` as a decorator because we can't call it until we
     # have set the __name__ and __doc__ of `view_func`. Thus, we explicitly
     # call `api_view` afterwards
+    view_fun = permission_classes((IsAdminUser, ))(view_func)
     view_func = api_view()(view_func)
     all_views[slugify(routine_class.title.lower())] = view_func
