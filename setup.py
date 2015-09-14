@@ -20,6 +20,7 @@ setup(
             'gro_api_configure = gro_api.scripts.configure:configure',
             'gro_api_load_env = gro_api.scripts.load_env:load_env',
             'gro_api_graph_models = gro_api.scripts.graph_models:graph_models',
+            'gro_api_runserver = gro_api.scripts.runserver:runserver',
         ],
     },
     install_requires = [
