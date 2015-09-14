@@ -24,14 +24,8 @@ def configure():
 
         if args.development:
             env_vars['GRO_API_SERVER_MODE'] = 'development'
-            env_vars['UWSGI_PROCESSES'] = '1'
-            env_vars['UWSGI_MASTER_FIFO'] = os.path.join(base_path, 'fifo')
-            env_vars['UWSGI_HTTP'] = '127.0.0.1:8000'
         else:
             env_vars['GRO_API_SERVER_MODE'] = 'production'
-            env_vars['UWSGI_PROCESSES'] = '4'
-            env_vars['UWSGI_MASTER_FIFO'] = '/etc/cityfarm_api_fifo'
-            env_vars['UWSGI_HTTP'] = '0.0.0.0:80'
 
         if args.root:
             env_vars['GRO_API_SERVER_TYPE'] = 'root'
