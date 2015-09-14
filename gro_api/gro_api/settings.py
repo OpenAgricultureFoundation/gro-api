@@ -168,7 +168,7 @@ MEDIA_URL = '/media/'
 if SERVER_MODE == DEVELOPMENT:
     MEDIA_ROOT = os.path.join(BASE_DIR, 'gro_api', 'media')
 else:
-    STATIC_ROOT = '/var/www/gro_api/media'
+    MEDIA_ROOT = '/var/www/gro_api/media'
 
 if SERVER_TYPE == LEAF:
     # TODO: We could dynamically generate this from the current ip address?
