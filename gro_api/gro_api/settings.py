@@ -159,10 +159,16 @@ if SERVER_TYPE == ROOT:
     DATABASE_ROUTERS = ['gro_api.middleware.FarmDbRouter']
 
 STATIC_URL = '/static/'
-STATIC_ROOT = os.path.join(BASE_DIR, 'gro_api', 'static')
+if SERVER_MODE == DEVELOPMENT:
+    STATIC_ROOT = os.path.join(BASE_DIR, 'gro_api', 'static')
+else:
+    STATIC_ROOT = '/var/www/gro_api/static'
 
 MEDIA_URL = '/media/'
-MEDIA_ROOT = os.path.join(BASE_DIR, 'gro_api', 'media')
+if SERVER_MODE == DEVELOPMENT:
+    MEDIA_ROOT = os.path.join(BASE_DIR, 'gro_api', 'media')
+else:
+    STATIC_ROOT = '/var/www/gro_api/media'
 
 if SERVER_TYPE == LEAF:
     # TODO: We could dynamically generate this from the current ip address?
