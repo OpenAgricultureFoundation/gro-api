@@ -298,10 +298,10 @@ class LayoutForeignKey(LayoutForeignObject, ForeignKey):
         :meth:`_check_consistent_to_field` that it doesn't need to perform
         it's check.
         """
-        self.generated_to_field = True
         for layout in system_layout.allowed_values:
             with system_layout.as_value(layout):
                 if self.to is not None:
+                    self.generated_to_field = True
                     return self.to._meta.pk.name
 
     def check(self, **kwargs):
@@ -319,7 +319,7 @@ class LayoutForeignKey(LayoutForeignObject, ForeignKey):
         """
         # Make sure the `to_field` has been generated if it is going to be
         getattr(self, 'to_field')
-        if self.to_field is None:
+        if self.to_field is None and self.to is not None:
             return [checks.Error(
                 'LayoutForeignKey could not figure out what field to point to '
                 'on the related model', hint=None, obj=self, id='fields.E312'
