@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 import os
 import sys
-from django.core.management import call_command
+from django.core.management import call_command as call_django_command
 from django.conf import settings
 from .load_env import load_env
 
@@ -14,7 +14,10 @@ def call_command():
     settings.INSTALLED_APPS
     from django import setup
     setup()
-    call_command(*sys.argv[1:])
+    for i in range(len(sys.argv)):
+        if sys.argv[i].endswith('call_command'):
+            break
+    call_django_command(*sys.argv[i+1:])
 
 if __name__ == '__main__':
     call_command()
