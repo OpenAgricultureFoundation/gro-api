@@ -17,7 +17,7 @@ setup(
     packages = find_packages(),
     package_data = {
         'gro_api.gro_api.layout.schemata': ['*.yaml']
-    }
+    },
     entry_points = {
         'console_scripts': [
             'gro_api_configure = gro_api.scripts.configure:configure',
