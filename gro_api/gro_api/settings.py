@@ -331,7 +331,7 @@ REST_FRAMEWORK['TEST_REQUEST_DEFAULT_FORMAT'] = 'json'
 # Cron
 
 CRON_CLASSES = (
-    'farms.cron.UpdateFarmIp',
+    'gro_api.farms.cron.UpdateFarmIp',
 )
 
 # Sites

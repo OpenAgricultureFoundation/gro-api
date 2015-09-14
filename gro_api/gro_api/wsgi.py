@@ -6,7 +6,14 @@ It exposes the WSGI callable as a module-level variable named ``application``.
 For more information on this file, see
 https://docs.djangoproject.com/en/1.8/howto/deployment/wsgi/
 """
+import os
+from django.conf import settings
 from django.core.wsgi import get_wsgi_application
+from ..scripts.load_env import load_env
+
+settings_module = 'gro_api.gro_api.settings'
+os.environ['DJANGO_SETTINGS_MODULE'] = settings_module
+load_env()
 
 application = get_wsgi_application()
 
