@@ -50,3 +50,5 @@ class LayoutConfig(AppConfig):
             for permission in content_type.permission_set.all():
                 if not permission.codename.startswith('delete'):
                     layout_editors_group.permissions.add(permission)
+
+    data_dependencies = ['control',]
