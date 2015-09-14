@@ -9,7 +9,7 @@ from django.core import checks
 from django.db.models import CASCADE
 from django.db.models.fields import Field
 from django.db.models.fields.related import (
-    RelatedField, ForeignObject, ForeignKey, ForeignObjectRel,
+    RelatedField, ForeignObject, ForeignKey, ForeignObjectRel, ManyToOneRel,
     add_lazy_relation, ForeignRelatedObjectsDescriptor,
     ReverseSingleRelatedObjectDescriptor
 )
@@ -135,7 +135,7 @@ class LayoutForeignObjectRel(ForeignObjectRel):
         """ We can't cache this because `to` is dynamic """
         return self.field.to
 
-class LayoutManyToOneRel(LayoutForeignObjectRel):
+class LayoutManyToOneRel(LayoutForeignObjectRel, ManyToOneRel):
     """
     Returns a version of :class:`~django.db.models.fields.related.ManyToOneRel`
     that uses the result of :class:`LayoutForeignObjectRel` as a base instead

@@ -2,7 +2,6 @@ import time
 from django.db import models
 from ..plants.models import PlantType
 from ..resources.models import ResourceProperty
-from ..actuators.models import Actuator
 
 
 class Recipe(models.Model):
@@ -46,6 +45,6 @@ class ActuatorOverride(models.Model):
 
     start_timestamp = models.IntegerField(blank=True, default=time.time)
     end_timestamp = models.IntegerField(blank=True)
-    actuator = models.ForeignKey(Actuator, related_name='overrides+')
+    actuator = models.ForeignKey('actuators.Actuator', related_name='overrides+')
     value = models.FloatField()
 

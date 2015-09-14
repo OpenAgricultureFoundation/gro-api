@@ -60,5 +60,23 @@
             "is_binary": "True",
             "read_only": "True"
         }
+    },
+    {
+        "model": "actuators.controlprofile",
+        "fields": {
+            "name": "Default Profile",
+            "actuator_type": ["Relay-Controlled Light Panel"],
+            "period": 5,
+            "pulse_width": 10
+        }
+    },
+    {
+        "model": "actuators.actuatoreffect",
+        "fields": {
+            "control_profile": ["Relay-Controlled Light Panel", "Default Profile"],
+            "property": ["L", "IN"],
+            "effect_on_active": 1,
+            "threshold": 1
+        }
     }
 ]

@@ -17,6 +17,7 @@ setup(
     packages = find_packages(),
     package_data = {
         'gro_api.layout.schemata': ['*.yaml'],
+        'gro_api.farms.fixtures': ['*.json'],
         'gro_api.resources.fixtures': ['*.json'],
         'gro_api.sensors.fixtures': ['*.json'],
         'gro_api.actuators.fixtures': ['*.json'],

@@ -61,5 +61,14 @@
             "properties": [["W", "PH"]],
             "read_only": "True"
         }
+    },
+    {
+        "model": "sensors.sensortype",
+        "fields": {
+            "name": "Contact Switch",
+            "resource_type": ["G"],
+            "properties": [["G", "SO"], ["G", "WO"]],
+            "read_only": "True"
+        }
     }
 ]

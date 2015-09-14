@@ -1,0 +1,254 @@
+[
+    {
+        "model": "layout.enclosure",
+        "pk": 1,
+        "fields": {
+            "name": "OA Food Computer Enclosure",
+            "x": 0,
+            "y": 0,
+            "z": 0,
+            "length": 3.3,
+            "width": 2.1,
+            "height": 3.3
+        }
+    },
+    {
+        "model": "layout.tray",
+        "pk": 1,
+        "fields": {
+            "name": "Plant Tray",
+            "x": 0.1,
+            "y": 0.1,
+            "z": 0.15,
+            "length": 2.4,
+            "width": 1.8,
+            "height": 0.5,
+            "num_rows": 4,
+            "num_cols": 5,
+            "parent": 1
+        }
+    },
+    {
+        "model": "resources.resource",
+        "pk": 1,
+        "fields": {
+            "index": 1,
+            "name": "Air Resource",
+            "resource_type": ["A"],
+            "location_type": ["layout", "tray"],
+            "location_id": 1
+        }
+    },
+    {
+        "model": "resources.resourcetype",
+        "fields": {
+            "code": "A",
+            "name": "Air",
+            "read_only": "True",
+            "resource_count": 1
+        }
+    },
+    {
+        "model": "resources.resource",
+        "pk": 2,
+        "fields": {
+            "index": 1,
+            "name": "Light Resource",
+            "resource_type": ["L"],
+            "location_type": ["layout", "tray"],
+            "location_id": 1
+        }
+    },
+    {
+        "model": "resources.resourcetype",
+        "fields": {
+            "code": "L",
+            "name": "Light",
+            "read_only": "True",
+            "resource_count": 1
+        }
+    },
+    {
+        "model": "resources.resource",
+        "pk": 3,
+        "fields": {
+            "index": 1,
+            "name": "Water Resource",
+            "resource_type": ["W"],
+            "location_type": ["layout", "tray"],
+            "location_id": 1
+        }
+    },
+    {
+        "model": "resources.resourcetype",
+        "fields": {
+            "code": "W",
+            "name": "Water",
+            "read_only": "True",
+            "resource_count": 1
+        }
+    },
+    {
+        "model": "resources.resource",
+        "pk": 4,
+        "fields": {
+            "index": 1,
+            "name": "General Resource",
+            "resource_type": ["G"],
+            "location_type": ["layout", "tray"],
+            "location_id": 1
+        }
+    },
+    {
+        "model": "resources.resourcetype",
+        "fields": {
+            "code": "G",
+            "name": "General",
+            "read_only": "True",
+            "resource_count": 1
+        }
+    },
+    {
+        "model": "sensors.sensor",
+        "pk": 1,
+        "fields": {
+            "index": 1,
+            "name": "DFR0161 Instance 1",
+            "sensor_type": ["DFR0161"],
+            "resource": 3
+        }
+    },
+    {
+        "model": "sensors.sensortype",
+        "fields": {
+            "name": "DFR0161",
+            "resource_type": ["W"],
+            "properties": [["W", "PH"]],
+            "read_only": "True",
+            "sensor_count": 1
+        }
+    },
+    {
+        "model": "sensors.sensor",
+        "pk": 2,
+        "fields": {
+            "index": 1,
+            "name": "TSL2561 Instance 1",
+            "sensor_type": ["TSL2561"],
+            "resource": 2
+        }
+    },
+    {
+        "model": "sensors.sensingpoint",
+        "pk": 1,
+        "fields": {
+            "index": 1,
+            "sensor": 2,
+            "property": ["L", "IN"],
+            "is_active": "True",
+            "is_pseudo": "False",
+            "auto_created": "True"
+        }
+    },
+    {
+        "model": "sensors.sensortype",
+        "fields": {
+            "name": "TSL2561",
+            "resource_type": ["L"],
+            "properties": [["L", "IN"]],
+            "read_only": "True",
+            "sensor_count": 1
+        }
+    },
+    {
+        "model": "sensors.sensor",
+        "pk": 3,
+        "fields": {
+            "index": 1,
+            "name": "DFR0300 Instance 1",
+            "sensor_type": ["DFR0300"],
+            "resource": 3
+        }
+    },
+    {
+        "model": "sensors.sensortype",
+        "fields": {
+            "name": "DFR0300",
+            "resource_type": ["W"],
+            "properties": [["W", "EC"], ["W", "TM"]],
+            "read_only": "True",
+            "sensor_count": 1
+        }
+    },
+    {
+        "model": "sensors.sensor",
+        "pk": 4,
+        "fields": {
+            "index": 1,
+            "name": "DHT22 Instance 1",
+            "sensor_type": ["DHT22"],
+            "resource": 1
+        }
+    },
+    {
+        "model": "sensors.sensortype",
+        "fields": {
+            "name": "DHT22",
+            "resource_type": ["A"],
+            "properties": [["A", "TM"], ["A", "HU"]],
+            "read_only": "True",
+            "sensor_count": 1
+        }
+    },
+    {
+        "model": "sensors.sensor",
+        "pk": 5,
+        "fields": {
+            "index": 1,
+            "name": "GC0011 Instance 1",
+            "sensor_type": ["GC0011"],
+            "resource": 1
+        }
+    },
+    {
+        "model": "sensors.sensortype",
+        "fields": {
+            "name": "GC0011",
+            "resource_type": ["A"],
+            "properties": [["A", "CO"], ["A", "TM"], ["A", "HU"]],
+            "read_only": "True",
+            "sensor_count": 1
+        }
+    },
+    {
+        "model": "sensors.sensor",
+        "pk": 6,
+        "fields": {
+            "index": 1,
+            "name": "Contact Switch Instance 1",
+            "sensor_type": ["Contact Switch"],
+            "resource": 1
+        }
+    },
+    {
+        "model": "sensors.sensortype",
+        "fields": {
+            "name": "Contact Switch",
+            "resource_type": ["G"],
+            "properties": [["G", "SO"], ["G", "WO"]],
+            "read_only": "True",
+            "sensor_count": 1
+        }
+    },
+    {
+        "model": "actuators.actuator",
+        "pk": 1,
+        "fields": {
+            "index": 1,
+            "name": "Light Panel",
+            "actuator_type": ["Relay-Controlled Light Panel"],
+            "control_profile": ["Relay-Controlled Light Panel", "Default Profile"],
+            "resource": 2
+        }
+    }
+]

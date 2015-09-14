@@ -5,6 +5,7 @@ from rest_framework.response import Response
 from rest_framework.viewsets import ModelViewSet
 from rest_framework.decorators import detail_route
 from rest_framework.exceptions import APIException
+from rest_framework.permissions import DjangoModelPermissionsOrAnonReadOnly
 from ..gro_api.permissions import EnforceReadOnly
 from ..gro_api.filters import HistoryFilterMixin
 from .models import (
@@ -20,14 +21,14 @@ class ActuatorTypeViewSet(ModelViewSet):
     """ A type of actuator, such as a relay-controlled heater """
     queryset = ActuatorType.objects.all()
     serializer_class = ActuatorTypeSerializer
-    permission_classes = [EnforceReadOnly, ]
+    permission_classes = [EnforceReadOnly, DjangoModelPermissionsOrAnonReadOnly]
 
 
 class ControlProfileViewSet(ModelViewSet):
     """ A profile that holds the control settings for an actuator """
     queryset = ControlProfile.objects.all()
     serializer_class = ControlProfileSerializer
-    permission_classes = [EnforceReadOnly, ]
+    permission_classes = [EnforceReadOnly, DjangoModelPermissionsOrAnonReadOnly]
 
 
 class ActuatorEffectViewSet(ModelViewSet):

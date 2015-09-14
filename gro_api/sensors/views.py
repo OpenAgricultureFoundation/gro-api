@@ -6,7 +6,7 @@ from rest_framework.response import Response
 from rest_framework.viewsets import ModelViewSet
 from rest_framework.decorators import detail_route
 from rest_framework.exceptions import APIException
-from rest_framework.permissions import DjangoModelPermissions
+from rest_framework.permissions import DjangoModelPermissionsOrAnonReadOnly
 from ..gro_api.filters import HistoryFilterMixin
 from ..gro_api.permissions import EnforceReadOnly
 from .models import SensorType, Sensor, SensingPoint, DataPoint
@@ -20,7 +20,7 @@ class SensorTypeViewSet(ModelViewSet):
     """ A type of sensor, such as "DHT22" """
     queryset = SensorType.objects.all()
     serializer_class = SensorTypeSerializer
-    permission_classes = [EnforceReadOnly, DjangoModelPermissions]
+    permission_classes = [EnforceReadOnly, DjangoModelPermissionsOrAnonReadOnly]
 
 
 class SensorViewSet(ModelViewSet):

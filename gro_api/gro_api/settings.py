@@ -179,6 +179,7 @@ else:
         ALLOWED_HOSTS = ['*']
     else:
         ALLOWED_HOSTS = [
+            "*",
             "localhost",
             ".media.mit.edu",
             ".media.mit.edu.",

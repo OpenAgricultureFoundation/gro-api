@@ -24,6 +24,14 @@
         }
     },
     {
+        "model": "resources.resourcetype",
+        "fields": {
+            "code": "G",
+            "name": "General",
+            "read_only": "True"
+        }
+    },
+    {
         "model": "resources.resourceproperty",
         "fields": {
             "code": "CO",
@@ -70,6 +78,17 @@
     {
         "model": "resources.resourceproperty",
         "fields": {
+            "code": "PA",
+            "name": "PAR",
+            "resource_type": ["L"],
+            "min_operating_value": 0,
+            "max_operating_value": 0,
+            "read_only": "True"
+        }
+    },
+    {
+        "model": "resources.resourceproperty",
+        "fields": {
             "code": "EC",
             "name": "Electrical Conductivity",
             "resource_type": ["W"],
@@ -95,6 +114,28 @@
             "code": "TM",
             "name": "Temperature",
             "resource_type": ["W"],
+            "min_operating_value": 0,
+            "max_operating_value": 0,
+            "read_only": "True"
+        }
+    },
+    {
+        "model": "resources.resourceproperty",
+        "fields": {
+            "code": "SO",
+            "name": "Shell open",
+            "resource_type": ["G"],
+            "min_operating_value": 0,
+            "max_operating_value": 0,
+            "read_only": "True"
+        }
+    },
+    {
+        "model": "resources.resourceproperty",
+        "fields": {
+            "code": "WO",
+            "name": "Window Open",
+            "resource_type": ["G"],
             "min_operating_value": 0,
             "max_operating_value": 0,
             "read_only": "True"
