@@ -320,10 +320,10 @@ class LayoutForeignKey(LayoutForeignObject, ForeignKey):
         # Make sure the `to_field` has been generated if it is going to be
         getattr(self, 'to_field')
         if self.to_field is None:
-            return checks.Error(
+            return [checks.Error(
                 'LayoutForeignKey could not figure out what field to point to '
                 'on the related model', hint=None, obj=self, id='fields.E312'
-            )
+            )]
         if 'generated_to_field' in self.__dict__ and self.generated_to_field:
             for state in system_layout.allowed_values:
                 with system_layout.as_value(state):
