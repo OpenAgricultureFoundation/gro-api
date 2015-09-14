@@ -2,21 +2,24 @@
 
 from setuptools import setup, find_packages
 
+readme = open('README.rst', 'r')
+README_TEXT = readme.read()
+readme.close()
+
 dev_reqs = [
     'django-debug-toolbar==1.3.2',
     'django-extensions==1.5.5',
 ]
 
 setup(
-    name = "OA Data Manager",
+    name = "gro_api",
     version = "0.1.0a0",
-    namespace_packages = ['oa'],
     packages = find_packages(),
     entry_points = {
         'console_scripts': [
-            'oa_data_manager_configure = oa.data_manager.scripts.configure:configure',
-            'oa_data_manager_load_env = oa.data_manager.scripts.load_env:load_env',
-            'oa_data_manager_graph_models = oa.data_manager.scripts.graph_models:graph_models',
+            'gro_api_configure = gro_api.scripts.configure:configure',
+            'gro_api_load_env = gro_api.scripts.load_env:load_env',
+            'gro_api_graph_models = gro_api.scripts.graph_models:graph_models',
         ],
     },
     install_requires = [
@@ -38,8 +41,9 @@ setup(
     extras_require = {
         'dev': dev_reqs
     },
-    test_suite = 'oa.data_manager.scripts.runtests.runtests',
+    test_suite = 'gro_api.scripts.runtests.runtests',
     # Metadata for PyPI
+    long_description = README_TEXT,
     author = "Douglas Chambers",
     author_email = "leonchambers@mit.edu",
     license = "GPL",
