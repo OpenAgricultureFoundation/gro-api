@@ -5,7 +5,7 @@ from django.core.management import call_command
 from django.conf import settings
 from .load_env import load_env
 
-def runserver():
+def call_command():
     settings_module = 'gro_api.gro_api.settings'
     os.environ['DJANGO_SETTINGS_MODULE'] = settings_module
     load_env()
@@ -17,4 +17,4 @@ def runserver():
     call_command(*sys.argv[1:])
 
 if __name__ == '__main__':
-    runserver()
+    call_command()
