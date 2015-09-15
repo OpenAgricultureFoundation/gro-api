@@ -47,7 +47,7 @@ class SensingPointViewSet(ModelViewSet):
         """
         instance = self.get_object()
         try:
-            queryset = DataPoint.objects.filter(origin=instance).latest()
+            queryset = DataPoint.objects.filter(sensing_point=instance).latest()
         except ObjectDoesNotExist:
             raise APIException(
                 'No data has been recorded for this sensor yet'
