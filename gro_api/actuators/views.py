@@ -81,7 +81,7 @@ class ActuatorViewSet(ModelViewSet):
         data['end_timestamp'] = data['start_timestamp'] + data['duration']
         data.pop('duration')
         data['actuator'] = instance
-        serializer = ActuatorOverrideSerializer(data=data)
+        serializer = ActuatorOverrideSerializer(**data)
         serializer.is_valid(raise_exception=True)
         serializer.save()
         return Response(serializer.data)
