@@ -15,8 +15,8 @@
         "fields": {
             "name": "Default Profile",
             "actuator_type": ["Relay-Controlled Air Heater"],
-            "period": 5,
-            "pulse_width": 10
+            "period": 0,
+            "pulse_width": 0
         }
     },
     {
@@ -40,6 +40,24 @@
         }
     },
     {
+        "model": "actuators.controlprofile",
+        "fields": {
+            "name": "Default Profile",
+            "actuator_type": ["Relay-Controlled Humidifier"],
+            "period": 0,
+            "pulse_width": 0
+        }
+    },
+    {
+        "model": "actuators.actuatoreffect",
+        "fields": {
+            "control_profile": ["Relay-Controlled Humidifier", "Default Profile"],
+            "property": ["A", "HU"],
+            "effect_on_active": 1,
+            "threshold": 1
+        }
+    },
+    {
         "model": "actuators.actuatortype",
         "fields": {
             "name": "Relay-Controlled Venting Fan",
@@ -48,6 +66,42 @@
             "order": 1,
             "is_binary": "True",
             "read_only": "True"
+        }
+    },
+    {
+        "model": "actuators.controlprofile",
+        "fields": {
+            "name": "Default Profile",
+            "actuator_type": ["Relay-Controlled Venting Fan"],
+            "period": 0,
+            "pulse_width": 0
+        }
+    },
+    {
+        "model": "actuators.actuatoreffect",
+        "fields": {
+            "control_profile": ["Relay-Controlled Venting Fan", "Default Profile"],
+            "property": ["A", "TM"],
+            "effect_on_active": -1,
+            "threshold": 3
+        }
+    },
+    {
+        "model": "actuators.actuatoreffect",
+        "fields": {
+            "control_profile": ["Relay-Controlled Venting Fan", "Default Profile"],
+            "property": ["A", "HU"],
+            "effect_on_active": -1,
+            "threshold": 3
+        }
+    },
+    {
+        "model": "actuators.actuatoreffect",
+        "fields": {
+            "control_profile": ["Relay-Controlled Venting Fan", "Default Profile"],
+            "property": ["A", "CO"],
+            "effect_on_active": -1,
+            "threshold": 3
         }
     },
     {
@@ -66,8 +120,8 @@
         "fields": {
             "name": "Default Profile",
             "actuator_type": ["Relay-Controlled Light Panel"],
-            "period": 5,
-            "pulse_width": 10
+            "period": 0,
+            "pulse_width": 0
         }
     },
     {

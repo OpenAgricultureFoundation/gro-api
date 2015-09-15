@@ -129,6 +129,30 @@
         }
     },
     {
+        "model": "sensors.sensingpoint",
+        "pk": 1,
+        "fields": {
+            "index": 1,
+            "sensor": 1,
+            "property": ["W", "PH"],
+            "is_active": "True",
+            "is_pseudo": "False",
+            "auto_created": "True"
+        }
+    },
+    {
+        "model": "resources.resourceproperty",
+        "fields": {
+            "code": "PH",
+            "name": "pH",
+            "resource_type": ["W"],
+            "min_operating_value": 0,
+            "max_operating_value": 0,
+            "read_only": "True",
+            "sensing_point_count": 1
+        }
+    },
+    {
         "model": "sensors.sensor",
         "pk": 2,
         "fields": {
@@ -139,8 +163,42 @@
         }
     },
     {
+        "model": "sensors.sensortype",
+        "fields": {
+            "name": "TSL2561",
+            "resource_type": ["L"],
+            "properties": [["L", "IN"]],
+            "read_only": "True",
+            "sensor_count": 1
+        }
+    },
+    {
         "model": "sensors.sensingpoint",
-        "pk": 1,
+        "pk": 2,
+        "fields": {
+            "index": 1,
+            "sensor": 2,
+            "property": ["L", "PA"],
+            "is_active": "True",
+            "is_pseudo": "False",
+            "auto_created": "True"
+        }
+    },
+    {
+        "model": "resources.resourceproperty",
+        "fields": {
+            "code": "PA",
+            "name": "PAR",
+            "resource_type": ["L"],
+            "min_operating_value": 0,
+            "max_operating_value": 0,
+            "read_only": "True",
+            "sensing_point_count": 1
+        }
+    },
+    {
+        "model": "sensors.sensingpoint",
+        "pk": 3,
         "fields": {
             "index": 1,
             "sensor": 2,
@@ -151,13 +209,15 @@
         }
     },
     {
-        "model": "sensors.sensortype",
+        "model": "resources.resourceproperty",
         "fields": {
-            "name": "TSL2561",
+            "code": "IN",
+            "name": "Intensity",
             "resource_type": ["L"],
-            "properties": [["L", "IN"]],
+            "min_operating_value": 0,
+            "max_operating_value": 0,
             "read_only": "True",
-            "sensor_count": 1
+            "sensing_point_count": 1
         }
     },
     {
@@ -181,6 +241,54 @@
         }
     },
     {
+        "model": "sensors.sensingpoint",
+        "pk": 4,
+        "fields": {
+            "index": 1,
+            "sensor": 3,
+            "property": ["W", "EC"],
+            "is_active": "True",
+            "is_pseudo": "False",
+            "auto_created": "True"
+        }
+    },
+    {
+        "model": "resources.resourceproperty",
+        "fields": {
+            "code": "EC",
+            "name": "Electrical Conductivity",
+            "resource_type": ["W"],
+            "min_operating_value": 0,
+            "max_operating_value": 0,
+            "read_only": "True",
+            "sensing_point_count": 1
+        }
+    },
+    {
+        "model": "sensors.sensingpoint",
+        "pk": 5,
+        "fields": {
+            "index": 1,
+            "sensor": 3,
+            "property": ["W", "TM"],
+            "is_active": "True",
+            "is_pseudo": "False",
+            "auto_created": "True"
+        }
+    },
+    {
+        "model": "resources.resourceproperty",
+        "fields": {
+            "code": "TM",
+            "name": "Temperature",
+            "resource_type": ["W"],
+            "min_operating_value": 0,
+            "max_operating_value": 0,
+            "read_only": "True",
+            "sensing_point_count": 1
+        }
+    },
+    {
         "model": "sensors.sensor",
         "pk": 4,
         "fields": {
@@ -198,6 +306,54 @@
             "properties": [["A", "TM"], ["A", "HU"]],
             "read_only": "True",
             "sensor_count": 1
+        }
+    },
+    {
+        "model": "sensors.sensingpoint",
+        "pk": 6,
+        "fields": {
+            "index": 1,
+            "sensor": 4,
+            "property": ["A", "TM"],
+            "is_active": "True",
+            "is_pseudo": "False",
+            "auto_created": "True"
+        }
+    },
+    {
+        "model": "resources.resourceproperty",
+        "fields": {
+            "code": "TM",
+            "name": "Temperature",
+            "resource_type": ["A"],
+            "min_operating_value": 0,
+            "max_operating_value": 0,
+            "read_only": "True",
+            "sensing_point_count": 1
+        }
+    },
+    {
+        "model": "sensors.sensingpoint",
+        "pk": 7,
+        "fields": {
+            "index": 1,
+            "sensor": 4,
+            "property": ["A", "HU"],
+            "is_active": "True",
+            "is_pseudo": "False",
+            "auto_created": "True"
+        }
+    },
+    {
+        "model": "resources.resourceproperty",
+        "fields": {
+            "code": "HU",
+            "name": "Humidity",
+            "resource_type": ["A"],
+            "min_operating_value": 0,
+            "max_operating_value": 0,
+            "read_only": "True",
+            "sensing_point_count": 1
         }
     },
     {
@@ -221,6 +377,78 @@
         }
     },
     {
+        "model": "sensors.sensingpoint",
+        "pk": 8,
+        "fields": {
+            "index": 1,
+            "sensor": 5,
+            "property": ["A", "CO"],
+            "is_active": "True",
+            "is_pseudo": "False",
+            "auto_created": "True"
+        }
+    },
+    {
+        "model": "resources.resourceproperty",
+        "fields": {
+            "code": "CO",
+            "name": "CO2",
+            "resource_type": ["A"],
+            "min_operating_value": 0,
+            "max_operating_value": 0,
+            "read_only": "True",
+            "sensing_point_count": 1
+        }
+    },
+    {
+        "model": "sensors.sensingpoint",
+        "pk": 9,
+        "fields": {
+            "index": 2,
+            "sensor": 5,
+            "property": ["A", "TM"],
+            "is_active": "True",
+            "is_pseudo": "False",
+            "auto_created": "True"
+        }
+    },
+    {
+        "model": "resources.resourceproperty",
+        "fields": {
+            "code": "TM",
+            "name": "Temperature",
+            "resource_type": ["A"],
+            "min_operating_value": 0,
+            "max_operating_value": 0,
+            "read_only": "True",
+            "sensing_point_count": 2
+        }
+    },
+    {
+        "model": "sensors.sensingpoint",
+        "pk": 10,
+        "fields": {
+            "index": 2,
+            "sensor": 5,
+            "property": ["A", "HU"],
+            "is_active": "True",
+            "is_pseudo": "False",
+            "auto_created": "True"
+        }
+    },
+    {
+        "model": "resources.resourceproperty",
+        "fields": {
+            "code": "HU",
+            "name": "Humidity",
+            "resource_type": ["A"],
+            "min_operating_value": 0,
+            "max_operating_value": 0,
+            "read_only": "True",
+            "sensing_point_count": 2
+        }
+    },
+    {
         "model": "sensors.sensor",
         "pk": 6,
         "fields": {
@@ -241,6 +469,54 @@
         }
     },
     {
+        "model": "sensors.sensingpoint",
+        "pk": 11,
+        "fields": {
+            "index": 1,
+            "sensor": 6,
+            "property": ["G", "SO"],
+            "is_active": "True",
+            "is_pseudo": "False",
+            "auto_created": "True"
+        }
+    },
+    {
+        "model": "resources.resourceproperty",
+        "fields": {
+            "code": "SO",
+            "name": "Shell open",
+            "resource_type": ["G"],
+            "min_operating_value": 0,
+            "max_operating_value": 0,
+            "read_only": "True",
+            "sensing_point_count": 1
+        }
+    },
+    {
+        "model": "sensors.sensingpoint",
+        "pk": 11,
+        "fields": {
+            "index": 1,
+            "sensor": 6,
+            "property": ["G", "WO"],
+            "is_active": "True",
+            "is_pseudo": "False",
+            "auto_created": "True"
+        }
+    },
+    {
+        "model": "resources.resourceproperty",
+        "fields": {
+            "code": "WO",
+            "name": "Window Open",
+            "resource_type": ["G"],
+            "min_operating_value": 0,
+            "max_operating_value": 0,
+            "read_only": "True",
+            "sensing_point_count": 1
+        }
+    },
+    {
         "model": "actuators.actuator",
         "pk": 1,
         "fields": {
@@ -249,6 +525,98 @@
             "actuator_type": ["Relay-Controlled Light Panel"],
             "control_profile": ["Relay-Controlled Light Panel", "Default Profile"],
             "resource": 2
+        }
+    },
+    {
+        "model": "actuators.actuator",
+        "pk": 2,
+        "fields": {
+            "index": 2,
+            "name": "White LED Strip",
+            "actuator_type": ["Relay-Controlled Light Panel"],
+            "control_profile": ["Relay-Controlled Light Panel", "Default Profile"],
+            "resource": 2
+        }
+    },
+    {
+        "model": "actuators.actuatortype",
+        "fields": {
+            "name": "Relay-Controlled Light Panel",
+            "resource_effect": ["L", "PN"],
+            "properties": [["L", "IN"]],
+            "order": 1,
+            "is_binary": "True",
+            "read_only": "True",
+            "actuator_count": 2
+        }
+    },
+    {
+        "model": "actuators.actuator",
+        "pk": 3,
+        "fields": {
+            "index": 1,
+            "name": "Humidifier",
+            "actuator_type": ["Relay-Controlled Humidifier"],
+            "control_profile": ["Relay-Controlled Humidifier", "Default Profile"],
+            "resource": 1
+        }
+    },
+    {
+        "model": "actuators.actuatortype",
+        "fields": {
+            "name": "Relay-Controlled Humidifier",
+            "resource_effect": ["A", "HU"],
+            "properties": [["A", "HU"]],
+            "order": 1,
+            "is_binary": "True",
+            "read_only": "True",
+            "actuator_count": 1
+        }
+    },
+    {
+        "model": "actuators.actuator",
+        "pk": 4,
+        "fields": {
+            "index": 1,
+            "name": "Heater",
+            "actuator_type": ["Relay-Controlled Air Heater"],
+            "control_profile": ["Relay-Controlled Air Heater", "Default Profile"],
+            "resource": 1
+        }
+    },
+    {
+        "model": "actuators.actuatortype",
+        "fields": {
+            "name": "Relay-Controlled Air Heater",
+            "resource_effect": ["A", "HE"],
+            "properties": [["A", "TM"]],
+            "order": 1,
+            "is_binary": "True",
+            "read_only": "True",
+            "actuator_count": 1
+        }
+    },
+    {
+        "model": "actuators.actuator",
+        "pk": 5,
+        "fields": {
+            "index": 1,
+            "name": "Air Vent",
+            "actuator_type": ["Relay-Controlled Venting Fan"],
+            "control_profile": ["Relay-Controlled Venting Fan", "Default Profile"],
+            "resource": 1
+        }
+    },
+    {
+        "model": "actuators.actuatortype",
+        "fields": {
+            "name": "Relay-Controlled Venting Fan",
+            "resource_effect": ["A", "VE"],
+            "properties": [["A", "TM"], ["A", "HU"], ["A", "CO"]],
+            "order": 1,
+            "is_binary": "True",
+            "read_only": "True",
+            "actuator_count": 1
         }
     }
 ]
