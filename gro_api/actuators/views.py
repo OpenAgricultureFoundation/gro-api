@@ -74,7 +74,7 @@ class ActuatorViewSet(ModelViewSet):
         ---
         response_serializer: gro_api.recipes.serializers.ActuatorOverrideSerializer
         """
-        from recipes.serializers import ActuatorOverrideSerializer
+        from ..recipes.serializers import ActuatorOverrideSerializer
         instance = self.get_object()
         data = dict(request.data)
         data['start_timestamp'] = time.time()
