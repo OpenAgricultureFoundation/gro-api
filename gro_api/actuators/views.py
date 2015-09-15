@@ -74,6 +74,7 @@ class ActuatorViewSet(ModelViewSet):
         ---
         response_serializer: gro_api.recipes.serializers.ActuatorOverrideSerializer
         """
+        from ..recipes.models import ActuatorOverride
         from ..recipes.serializers import ActuatorOverrideSerializer
         instance = self.get_object()
         data = dict(request.data)
@@ -81,9 +82,9 @@ class ActuatorViewSet(ModelViewSet):
         data['end_timestamp'] = data['start_timestamp'] + data['duration']
         data.pop('duration')
         data['actuator'] = instance
-        serializer = ActuatorOverrideSerializer(**data)
-        serializer.is_valid(raise_exception=True)
-        serializer.save()
+        override = ActuatorOverride(**data)
+        override.save()
+        serializer = ActuatorOverrideSerializer(override, context={'request': request})
         return Response(serializer.data)
 
     @detail_route(methods=["get"])
