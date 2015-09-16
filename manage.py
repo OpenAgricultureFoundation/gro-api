@@ -1,7 +1,6 @@
 #!/usr/bin/env python
 import os
 import sys
-import shelve
 from gro_api.scripts.load_env import load_env
 
 if __name__ == "__main__":

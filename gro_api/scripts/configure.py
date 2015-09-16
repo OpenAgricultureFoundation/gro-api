@@ -24,8 +24,10 @@ def configure():
 
         if args.development:
             env_vars['GRO_API_SERVER_MODE'] = 'development'
+            env_vars['UWSGI_MASTER_FIFO'] = os.path.join(base_path, 'fifo')
         else:
             env_vars['GRO_API_SERVER_MODE'] = 'production'
+            env_vars['UWSGI_MASTER_FIFO'] = '/etc/openag_fifo'
 
         if args.root:
             env_vars['GRO_API_SERVER_TYPE'] = 'root'
