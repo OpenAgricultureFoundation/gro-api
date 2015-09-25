@@ -7,7 +7,8 @@ from django.db.models.options import Options
 from django.conf import settings
 from solo import models as solo_models
 from solo import settings as solo_settings
-from .utils import (
+from .utils.enum import ServerType
+from .utils.layout import (
     system_layout, LayoutDependentAttribute, LayoutDependentCachedProperty
 )
 
@@ -88,7 +89,7 @@ class DynamicOptions(Options):
         return self._dynamic_relation_tree + self.__dict__['_relation_tree']
 
 
-if settings.SERVER_TYPE == settings.LEAF:
+if settings.SERVER_TYPE == ServerType.LEAF:
     SingletonModel = solo_models.SingletonModel
 else:
     from .middleware import get_request_cache

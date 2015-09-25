@@ -9,13 +9,13 @@ https://docs.djangoproject.com/en/1.8/howto/deployment/wsgi/
 import os
 from django.conf import settings
 from django.core.wsgi import get_wsgi_application
-from ..scripts.load_env import load_env
 
 if 'DJANGO_SETTINGS_MODULE' not in os.environ:
     settings_module = 'gro_api.gro_api.settings'
     os.environ['DJANGO_SETTINGS_MODULE'] = settings_module
-load_env()
 
+# Make sure the settings file is loaded so django.setup is patched before we
+# load the application
 settings.INSTALLED_APPS
 
 application = get_wsgi_application()

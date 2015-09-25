@@ -5,8 +5,12 @@ import os
 import sys
 import django
 import string
+import logging
+import configparser
+from .utils.enum import ServerType
 from django.core.exceptions import ImproperlyConfigured
 
+# Patch django.setup to call our monkey-patching scripts
 old_setup = django.setup
 if not getattr(old_setup, 'is_patched', False):
     def new_setup():
@@ -18,7 +22,11 @@ if not getattr(old_setup, 'is_patched', False):
     new_setup.is_patched = True
     django.setup = new_setup
 
+### General globals
+
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+
+SYSTEM_CONF_FILENAME = '/etc/gro_api.conf'
 
 REST_FRAMEWORK = {
     'DEFAULT_AUTHENTICATION_CLASSES': ('rest_framework.authentication.TokenAuthentication',),
@@ -29,46 +37,45 @@ REST_FRAMEWORK = {
     'PAGE_SIZE': 100,
 }
 
-# Local Configuration
+### Local Configuration
 
-LEAF = "leaf"
-ROOT = "root"
+# Default values for SERVER_TYPE and DEBUG
+SERVER_TYPE = ServerType.LEAF
+DEBUG = False
 
-DEVELOPMENT = "development"
-PRODUCTION = "production"
-
+# Read server settings from SYSTEM_CONF_FILENAME
+config = configparser.ConfigParser()
+config.read(SYSTEM_CONF_FILENAME)
+server_type = config.get(
+    configparser.DEFAULTSECT, 'SERVER_TYPE', fallback=ServerType.LEAF.name
+)
 try:
-    SERVER_TYPE = os.environ['GRO_API_SERVER_TYPE']
-    SERVER_MODE = os.environ['GRO_API_SERVER_MODE']
-except KeyError:
-    raise ImproperlyConfigured(
-        'Run gro_api_configure before attempting to run anything.'
+    SERVER_TYPE = next(
+        val for name, val in ServerType.__members__.items() if name ==
+        server_type
     )
+except StopIteration:
+    raise ImproperlyConfigured(
+        'Configuration file contained an invalid value "{}" for '
+        'SERVER_TYPE'.format(server_type)
+    )
+DEBUG = config.getboolean(
+    configparser.DEFAULTSECT, 'DEBUG', fallback=DEBUG
+)
 
-if SERVER_TYPE not in [LEAF, ROOT]:
-    raise ValueError('Invalid server type read from environment')
-
-if SERVER_MODE not in [DEVELOPMENT, PRODUCTION]:
-    raise ValueError('Invalid server mode read from environment')
-
-if SERVER_MODE == DEVELOPMENT:
-    DEBUG = True
-else:
-    DEBUG = False
-
-# Installed Apps
+### Installed Apps
 
 GRO_API_APPS = (
     'gro_api.farms',
-    'gro_api.layout',
-    'gro_api.plants',
-    'gro_api.resources',
-    'gro_api.sensors',
-    'gro_api.actuators',
-    'gro_api.recipes',
+    # 'gro_api.layout',
+    # 'gro_api.plants',
+    # 'gro_api.resources',
+    # 'gro_api.sensors',
+    # 'gro_api.actuators',
+    # 'gro_api.recipes',
 )
 
-if SERVER_TYPE == LEAF:
+if SERVER_TYPE == ServerType.LEAF:
     GRO_API_APPS = GRO_API_APPS + ('gro_api.control',)
 
 FRAMEWORK_APPS = (
@@ -92,7 +99,7 @@ FRAMEWORK_APPS = (
     'rest_framework_swagger',
 )
 
-if SERVER_MODE == DEVELOPMENT:
+if DEBUG:
     FRAMEWORK_APPS += (
         'debug_toolbar',
         'django_extensions',
@@ -102,7 +109,7 @@ if SERVER_MODE == DEVELOPMENT:
 
 INSTALLED_APPS = GRO_API_APPS + FRAMEWORK_APPS
 
-# Request Handling
+### Request Handling
 
 WSGI_APPLICATION = 'gro_api.gro_api.wsgi.application'
 
@@ -118,7 +125,7 @@ MIDDLEWARE_CLASSES = (
     'django.middleware.security.SecurityMiddleware',
 )
 
-if SERVER_TYPE == ROOT:
+if SERVER_TYPE == ServerType.ROOT:
     MIDDLEWARE_CLASSES += (
         'gro_api.gro_api.middleware.RequestCacheMiddleware',
         'gro_api.gro_api.middleware.FarmRoutingMiddleware',
@@ -128,7 +135,7 @@ else:
         'gro_api.gro_api.middleware.FarmIsConfiguredCheckMiddleware',
     )
 
-if SERVER_MODE == DEVELOPMENT:
+if DEBUG:
     MIDDLEWARE_CLASSES += (
         'debug_toolbar.middleware.DebugToolbarMiddleware',
     )
@@ -155,51 +162,56 @@ TEMPLATES = [
     },
 ]
 
-if SERVER_TYPE == ROOT:
+if SERVER_TYPE == ServerType.ROOT:
     DATABASE_ROUTERS = ['gro_api.middleware.FarmDbRouter']
 
 STATIC_URL = '/static/'
-if SERVER_MODE == DEVELOPMENT:
+if DEBUG:
     STATIC_ROOT = os.path.join(BASE_DIR, 'gro_api', 'static')
 else:
     STATIC_ROOT = '/var/www/gro_api/static'
 
 MEDIA_URL = '/media/'
-if SERVER_MODE == DEVELOPMENT:
+if DEBUG:
     MEDIA_ROOT = os.path.join(BASE_DIR, 'gro_api', 'media')
 else:
     MEDIA_ROOT = '/var/www/gro_api/media'
 
-if SERVER_TYPE == LEAF:
-    # TODO: We could dynamically generate this from the current ip address?
+if SERVER_TYPE == ServerType.LEAF:
     # There is no guarantee about what host leaf servers will run behind
     ALLOWED_HOSTS = ['*']
 else:
-    if SERVER_MODE == DEVELOPMENT:
+    if DEBUG:
         ALLOWED_HOSTS = ['*']
     else:
-        ALLOWED_HOSTS = [
-            "*",
-            "localhost",
-            ".media.mit.edu",
-            ".media.mit.edu.",
-        ]
+        # TODO: Set this once we have a stable domain name for root servers
+        ALLOWED_HOSTS = ['*']
 
 CSRF_COOKIE_SECURE = True
 SESSION_COOKIE_SECURE = True
 
 # Databases
 
-if SERVER_TYPE == LEAF:
-    DATABASES = {
-        'default': {
-            'ENGINE': 'django.db.backends.sqlite3',
-            'NAME': os.path.join(BASE_DIR, 'db.sqlite3'),
-            'TEST': {
-                'SERIALIZE': False,
+if SERVER_TYPE == ServerType.LEAF:
+    if DEBUG:
+        DATABASES = {
+            'default': {
+                'ENGINE': 'django.db.backends.sqlite3',
+                'NAME': os.path.join(BASE_DIR, 'db.sqlite3'),
+                'TEST': {
+                    'SERIALIZE': False,
+                }
             }
         }
-    }
+    else:
+        DATABASES = {
+            'default': {
+                'ENGINE': 'django.db.backends.mysql',
+                'OPTIONS': {
+                    'read_default_file': SYSTEM_CONF_FILENAME
+                },
+            }
+        }
 else:
     if 'test' in sys.argv:
         # TODO: Setup a database for every possible layout
@@ -213,11 +225,12 @@ else:
             },
         }
         raise NotImplementedError()
+
 CONN_MAX_AGE = None
 
 # Caching
 
-if SERVER_TYPE == LEAF:
+if SERVER_TYPE == ServerType.LEAF:
     CACHES = {
         'default': {
             'BACKEND': 'django.core.cache.backends.locmem.LocMemCache',
@@ -256,90 +269,69 @@ LOGGING = {
             'formatter': 'simple',
         },
         'console_request': {
-            'level': 'WARNING',
+            'level': 'INFO',
             'class': 'logging.StreamHandler',
             'formatter': 'simple_request'
-        },
-        'log_file': {
-            'level': 'DEBUG',
-            'class': 'logging.FileHandler',
-            'formatter': 'verbose',
-            'filename': '',
-        },
-        'log_file_request': {
-            'level': 'WARNING', # We only care about 4xx's and 5xx's
-            'class': 'logging.FileHandler',
-            'formatter': 'verbose_request',
-            'filename': '',
-        },
-        'error_file': {
-            'level': 'ERROR',
-            'class': 'logging.FileHandler',
-            'formatter': 'verbose',
-            'filename': '',
-        },
-        'error_file_request': {
-            'level': 'ERROR',
-            'class': 'logging.FileHandler',
-            'formatter': 'verbose_request',
-            'filename': '',
         },
     },
     'loggers': {
         'gro_api': {
-            'handlers': ['log_file', 'error_file'],
+            'handlers': [],
             'level': 'DEBUG',
             'propagate': False,
         },
         'django.security': {
-            'handlers': ['log_file', 'error_file'],
+            'handlers': [],
             'level': 'DEBUG',
             'propagate': False
         },
         'django.request': {
-            'handlers': ['log_file_request', 'error_file_request'],
+            'handlers': [],
             'level': 'DEBUG',
             'propagate': False
         },
     }
 }
 
-if SERVER_MODE == DEVELOPMENT:
-    debug_filename = os.path.join(BASE_DIR, 'debug.log')
-    error_filename = os.path.join(BASE_DIR, 'error.log')
-    LOGGING['handlers']['log_file']['filename'] = debug_filename
-    LOGGING['handlers']['log_file_request']['filename'] = debug_filename
-    LOGGING['handlers']['error_file']['filename'] = error_filename
-    LOGGING['handlers']['error_file_request']['filename'] = error_filename
+if DEBUG:
     LOGGING['loggers']['gro_api']['handlers'].append('console')
     LOGGING['loggers']['django.security']['handlers'].append('console')
     LOGGING['loggers']['django.request']['handlers'].append('console_request')
 else:
-    debug_filename = '/var/log/gro_api/debug.log'
     error_filename = '/var/log/gro_api/error.log'
-    LOGGING['handlers']['log_file']['level'] = 'INFO'
-    LOGGING['handlers']['log_file']['filename'] = debug_filename
-    LOGGING['handlers']['log_file_request']['filename'] = debug_filename
-    LOGGING['handlers']['error_file']['filename'] = error_filename
-    LOGGING['handlers']['error_file_request']['filename'] = error_filename
+    LOGGING['handlers']['error_file'] = {
+        'level': 'WARNING',
+        'class': 'logging.FileHandler',
+        'formatter': 'verbose',
+        'filename': error_filename
+    }
+    LOGGING['handlers']['error_file_request'] = {
+        'level': 'WARNING',
+        'class': 'logging.FileHandler',
+        'formatter': 'verbose_request',
+        'filename': error_filename
+    }
+    LOGGING['loggers']['gro_api']['handlers'].append('error_file')
+    LOGGING['loggers']['django.security']['handlers'].append('error_file')
+    LOGGING['loggers']['django.request']['handlers'].append('error_file_request')
 
-# Testing
+### Testing
 
 TEST_RUNNER = 'gro_api.gro_api.test.TestRunner'
 
 REST_FRAMEWORK['TEST_REQUEST_DEFAULT_FORMAT'] = 'json'
 
-# Cron
+### Cron
 
 CRON_CLASSES = (
     'gro_api.farms.cron.UpdateFarmIp',
 )
 
-# Sites
+### Sites
 
 SITE_ID = 1
 
-# Internationalization
+### Internationalization
 
 LANGUAGE_CODE = 'en-us'
 
@@ -351,7 +343,7 @@ USE_L10N = False
 
 USE_TZ = True
 
-# Secret Key
+### Secret Key
 
 SECRET_FILE = os.path.join(BASE_DIR, 'secret.txt')
 try:

@@ -12,7 +12,10 @@ from django.http.multipartparser import MultiPartParserError
 from django.utils import lru_cache
 from django.utils.encoding import force_text
 from django.views import debug
-from ..gro_api.utils import system_layout
+# django.setup should be able to run even if the settings file was not
+# successfully imported so that management commands that don't require settings
+# parameters can run. Thus, we have to be lazy about all project-specific
+# imports in this file
 
 PATCH_SWAGGER = 'rest_framework_swagger' in settings.INSTALLED_APPS
 if PATCH_SWAGGER:
@@ -26,8 +29,6 @@ class FakeURLConfModule:
 
 @lru_cache.lru_cache(maxsize=None)
 def inner_get_resolver(urlconf, layout):
-    # Loading this upon module import causes problems, so we're going to be
-    # lazy about it
     from ..gro_api.urls import get_current_urls
 
     return urlresolvers.RegexURLResolver(
@@ -35,6 +36,7 @@ def inner_get_resolver(urlconf, layout):
     )
 
 def outer_get_resolver(urlconf):
+    from ..gro_api.utils import system_layout
     return inner_get_resolver(urlconf, system_layout.current_value)
 
 # Monkey patching `django.core.urlresolvers.get_resolver` doesn't completely

@@ -2,9 +2,10 @@ from contextlib import contextmanager
 from django.db.utils import OperationalError
 from django.conf import settings
 from django.utils.functional import cached_property
-from ..layout.schemata import all_schemata
+from gro_api.gro_api.utils.enum import ServerType
+from gro_api.layout.schemata import all_schemata
 
-if settings.SERVER_TYPE == settings.LEAF:
+if settings.SERVER_TYPE == ServerType.LEAF:
     from django.core.cache import caches
     get_layout_cache = lambda: caches['default']
 else:
@@ -12,18 +13,7 @@ else:
     get_layout_cache = get_request_cache
 
 
-class Singleton(type):
-    def __init__(cls, name, bases, attrs):
-        super().__init__(name, bases, attrs)
-        cls.instance = None
-
-    def __call__(cls, *args, **kwargs):
-        if cls.instance is None:
-            cls.instance = super().__call__(*args, **kwargs)
-        return cls.instance
-
-
-class SystemLayout(metaclass=Singleton):
+class SystemLayout():
     """
     This is a state variable the represents the layout of the current farm. The
     current value is read from the singleton farm instance

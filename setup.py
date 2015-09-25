@@ -25,9 +25,7 @@ setup(
     },
     entry_points = {
         'console_scripts': [
-            'gro_api_configure = gro_api.scripts.configure:configure',
-            'gro_api_load_env = gro_api.scripts.load_env:load_env',
-            'gro_api_call_command = gro_api.scripts.call_command:call_command',
+            'gro_api = gro_api.gro_api.scripts.call_command:call_command',
         ],
     },
     install_requires = [

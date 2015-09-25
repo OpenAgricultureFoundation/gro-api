@@ -1,6 +1,6 @@
 from django.apps import AppConfig
 from ..gro_api.models import DynamicOptions
-from ..gro_api.utils import system_layout
+from ..gro_api.utils.layout import system_layout
 from .schemata import all_schemata
 
 class LayoutConfig(AppConfig):
