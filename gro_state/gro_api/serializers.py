@@ -13,76 +13,11 @@ from .utils import LayoutDependentAttribute
 
 logger = logging.getLogger(__name__)
 
-# HyperlinkedRelatedField.__init__ requires view_name != None, so we pass this
-# constant in and ignore it in the setter for view_name
-DUMMY_VIEW_NAME = 'dummy_view_name'
-
-class DynamicHyperlinkedRelatedField(HyperlinkedRelatedField):
-    """
-    :class:`~rest_framework.HyperlinkedRelatedField` subclass that works for
-    dynamic ForeignKey fields. The :attr:`queryset` and :attr:`view_name`
-    attributes are dynamically read from the related field and have dummy
-    setters so as not to break :meth:`HyperlinkedRelatedField.__init__`
-    """
-    def __init__(self, model_field, **kwargs):
-        # Store the field so that we can dynamically get the queryset and
-        # view_name from it
-        self.model_field = model_field
-        self.read_only = kwargs.get('read_only', False)
-        kwargs['queryset'] = None
-        kwargs['view_name'] = DUMMY_VIEW_NAME
-        super().__init__(**kwargs)
-
-    @property
-    def view_name(self):
-        return get_detail_view_name(self.model_field.related_model)
-
-    @view_name.setter
-    def view_name(self, val):
-        # We should never be assigning an actual value to this property
-        assert val == DUMMY_VIEW_NAME
-
-    @property
-    def queryset(self):
-        if self.read_only:
-            return None # So RelatedField.__init__ doesn't complain
-        return self.model_field.related_model._default_manager.all()
-
-    @queryset.setter
-    def queryset(self, val):
-        # We should never be assigning an actual value to this property
-        assert val is None
-
-
-class SmartHyperlinkedRelatedField:
-    """
-    A class that encapsulates a :class:`DynamicHyperlinkedRelatedField` if it's
-    related field is dynamic and encapsulates a
-    :class:`~rest_framework.relations.HyperlinkedRelatedField` otherwise.
-    """
-    def __init__(self, model_field, **kwargs):
-        if getattr(model_field, 'is_dynamic', False):
-            self.field = DynamicHyperlinkedRelatedField(model_field, **kwargs)
-        else:
-            self.field = HyperlinkedRelatedField(**kwargs)
-    def __getattribute__(self, name):
-        if name == 'field':
-            return object.__getattribute__(self, 'field')
-        else:
-            return getattr(object.__getattribute__(self, 'field'), name)
-    def __setattribute__(self, name, val):
-        if name == 'field':
-            object.__getattribute__(self, '__dict__')['field'] = val
-        else:
-            return setattr(object.__getattribute__(self, 'field'), name, val)
-
-
 class BaseSerializer(HyperlinkedModelSerializer):
     """
     Base class used for all serializers in this project.
     """
     _fields = LayoutDependentAttribute('fields')
-    serializer_related_field = SmartHyperlinkedRelatedField
 
     def get_default_field_names(self, declared_fields, model_info):
         return (

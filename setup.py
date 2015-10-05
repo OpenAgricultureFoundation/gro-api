@@ -12,20 +12,20 @@ dev_reqs = [
 ]
 
 setup(
-    name = "gro_api",
-    version = "0.1.0a0",
+    name = "gro_state",
+    version = "0.2.0a0",
     packages = find_packages(),
     package_data = {
-        'gro_api.layout.schemata': ['*.yaml'],
-        'gro_api.farms.fixtures': ['*.json'],
-        'gro_api.resources.fixtures': ['*.json'],
-        'gro_api.sensors.fixtures': ['*.json'],
-        'gro_api.actuators.fixtures': ['*.json'],
-        'gro_api.control.fixtures': ['*.json'],
+        'gro_state.layout.schemata': ['*.yaml'],
+        'gro_state.farms.fixtures': ['*.json'],
+        'gro_state.resources.fixtures': ['*.json'],
+        'gro_state.sensors.fixtures': ['*.json'],
+        'gro_state.actuators.fixtures': ['*.json'],
+        'gro_state.control.fixtures': ['*.json'],
     },
     entry_points = {
         'console_scripts': [
-            'gro_api = gro_api.gro_api.scripts.call_command:call_command',
+            'gro_state = gro_state.gro_state.scripts.call_command:call_command',
         ],
     },
     install_requires = [
@@ -39,6 +39,7 @@ setup(
         'django-rest-swagger==0.3.4',
         'django-solo==1.1.0',
         'djangorestframework==3.2.2',
+        'mysqlclient==1.3.6',
         'PyYAML==3.11',
         'tortilla==0.4.1',
         'voluptuous==0.8.7',
@@ -47,7 +48,7 @@ setup(
     extras_require = {
         'dev': dev_reqs
     },
-    test_suite = 'gro_api.scripts.runtests.runtests',
+    test_suite = 'gro_state.gro_state.scripts.runtests.runtests',
     # Metadata for PyPI
     long_description = README_TEXT,
     author = "Douglas Chambers",

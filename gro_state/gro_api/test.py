@@ -7,14 +7,13 @@ from slugify import slugify
 from unittest.suite import _DebugResult
 from collections import defaultdict
 from django.conf import settings
+from django.core.management import call_command
 from django.test.runner import DebugSQLTextTestResult, DiscoverRunner
 from django.utils.functional import cached_property
 from rest_framework.test import APITestCase
-from .utils import system_layout
+from .utils.layout import system_layout
 from ..farms.models import Farm
 from ..layout.schemata import all_schemata
-from ..control.commands import ClearCaches
-from ..control.routines import Reset
 
 class APITestCase(APITestCase):
     def __init__(self, methodName='runTest'):
@@ -91,7 +90,7 @@ class TestSuite(unittest.TestSuite):
         for test in self.unconfigured_tests:
             if result.shouldStop:
                 break
-            ClearCaches()()
+            call_command('clear_caches')
             self.run_test(test, result, debug)
         return result
 
@@ -100,7 +99,7 @@ class TestSuite(unittest.TestSuite):
         for test in self.configured_tests[layout]:
             if result.shouldStop:
                 break
-            ClearCaches()()
+            call_command('clear_caches')
             self.run_test(test, result, debug)
         return result
 
@@ -109,9 +108,9 @@ class TestSuite(unittest.TestSuite):
         if result.shouldStop:
             return result
         for layout in self.configured_tests.keys():
-            Reset()()
+            call_command('flush', interactive=False)
+            call_command('migrate', interactive=False)
             farm = Farm.get_solo()
-            farm.root_id = None
             farm.name = "{} farm".format(layout)
             farm.layout = layout
             farm.save()

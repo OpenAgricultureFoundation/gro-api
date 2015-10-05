@@ -1,5 +1,5 @@
 """
-Django settings for the gro-api project
+Django settings for the gro-state project
 """
 import os
 import sys
@@ -26,7 +26,7 @@ if not getattr(old_setup, 'is_patched', False):
 
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
-SYSTEM_CONF_FILENAME = '/etc/gro_api.conf'
+SYSTEM_CONF_FILENAME = '/etc/gro.conf'
 
 REST_FRAMEWORK = {
     'DEFAULT_AUTHENTICATION_CLASSES': ('rest_framework.authentication.TokenAuthentication',),
@@ -39,15 +39,16 @@ REST_FRAMEWORK = {
 
 ### Local Configuration
 
-# Default values for SERVER_TYPE and DEBUG
+# Default values for variables
 SERVER_TYPE = ServerType.LEAF
+PARENT_SERVER = None
 DEBUG = False
 
 # Read server settings from SYSTEM_CONF_FILENAME
 config = configparser.ConfigParser()
 config.read(SYSTEM_CONF_FILENAME)
 server_type = config.get(
-    configparser.DEFAULTSECT, 'SERVER_TYPE', fallback=ServerType.LEAF.name
+    'gro', 'SERVER_TYPE', fallback=ServerType.LEAF.name
 )
 try:
     SERVER_TYPE = next(
@@ -59,8 +60,11 @@ except StopIteration:
         'Configuration file contained an invalid value "{}" for '
         'SERVER_TYPE'.format(server_type)
     )
+PARENT_SERVER = config.get(
+    'gro', 'PARENT_SERVER', fallback=PARENT_SERVER
+)
 DEBUG = config.getboolean(
-    configparser.DEFAULTSECT, 'DEBUG', fallback=DEBUG
+    'state', 'DEBUG', fallback=DEBUG
 )
 
 ### Installed Apps

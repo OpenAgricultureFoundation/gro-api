@@ -34,7 +34,7 @@ class SystemLayout():
         cache = get_layout_cache()
         if self.cache_key in cache:
             return cache.get(self.cache_key)
-        from ..farms.models import Farm
+        from gro_api.farms.models import Farm
         try:
             val = Farm.get_solo().layout
             cache.set(self.cache_key, val)
@@ -43,7 +43,7 @@ class SystemLayout():
             return None
 
     def clear_cache(self):
-        assert settings.SERVER_TYPE == settings.LEAF, (
+        assert settings.SERVER_TYPE == ServerType.LEAF, (
             'The layout cache only ever needs to be cached on leaf servers '
             'when the server is reconfigured with a new layout'
         )

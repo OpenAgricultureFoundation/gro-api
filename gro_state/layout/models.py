@@ -5,8 +5,7 @@ from django.db.models.signals import post_save
 from django.core.exceptions import ObjectDoesNotExist
 from django.contrib.contenttypes.fields import GenericRelation
 from django.dispatch import receiver
-from ..gro_api.utils import system_layout
-from ..gro_api.fields import LayoutForeignKey
+from ..gro_api.utils.layout import system_layout
 from ..gro_api.models import SingletonModel
 from ..farms.models import Farm
 from ..resources.models import Resource

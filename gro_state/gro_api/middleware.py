@@ -10,43 +10,8 @@ from django.core.cache.backends.locmem import LocMemCache
 from rest_framework.views import APIView
 from rest_framework.exceptions import APIException
 from rest_framework.permissions import AllowAny
-from .utils import system_layout
-
-_request_cache = {}
-
-def get_request_cache():
-    """ Returns the cache for the current thread """
-    if not currentThread() in _request_cache:
-        _request_cache[currentThread()] = RequestCache()
-    return _request_cache[currentThread()]
-
-
-class RequestCache(LocMemCache):
-    """ A local memory cache specific to the current thread """
-    def __init__(self):
-        name = 'locmemcache@%i' % hash(currentThread())
-        params = dict()
-        super().__init__(name, params)
-
-
-class RequestCacheMiddleware:
-    """
-    Clears the current per-request thread once a response has been generated
-    """
-    def process_response(self, request, response):
-        if currentThread() in _request_cache:
-            _request_cache[currentThread()].clear()
-
-
-class FarmRoutingMiddleware:
-    """
-    Saves the name of the farm being accessed in the per-request cache during
-    the request so that the database router can read form it.
-    """
-    def process_view(self, request, view_func, view_args, view_kwargs):
-        if 'farm' in view_kwargs:
-            get_request_cache().set('farm', view_kwargs['farm'])
-
+from .utils.layout import system_layout
+from ..farms.models import Farm
 
 class FarmNotConfiguredError(APIException):
     """
@@ -57,7 +22,6 @@ class FarmNotConfiguredError(APIException):
     default_detail = (
         "Please configure your farm before attempting to save data in this API"
     )
-
 
 class FarmIsConfiguredCheckMiddleware:
     """
@@ -78,9 +42,8 @@ class FarmIsConfiguredCheckMiddleware:
         self.view = FarmNotConfiguredView.as_view()
 
     def process_view(self, request, view_func, view_args, view_kwargs):
-        if not getattr(view_func.cls, 'allow_on_unconfigured_farm', False):
+        if not Farm.get_solo().slug:
             return self.view(request)
-
 
 class FarmDbRouter:
     """
@@ -88,10 +51,10 @@ class FarmDbRouter:
     read from.
     """
     def db_for_read(self, model, **hints):
-        return get_request_cache().get('farm')
+        return os.environ['CURRENT_FARM']
 
     def allow_migrate(db, app_label, model_name=None, **hints):
-        if settings.SERVER_TYPE == settings.ROOT:
+        if settings.SERVER_TYPE == ServerType.ROOT:
             # TODO: Rework this. The will be some tables in the root server
             # that will need to be migrated at some point.
             return False
