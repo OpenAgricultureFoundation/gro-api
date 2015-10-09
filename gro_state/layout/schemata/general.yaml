@@ -1,0 +1,8 @@
+name: general
+short_description: Artitrary tree of nodes
+long_description: There is a single node type whose parent can be either another node or an enclosure, allowing for arbitrary farm layouts
+entities:
+    - name: Node
+      description: A node in the layout tree
+      parents: [Node, Enclosure]
+tray_parents: [Node, Enclosure]

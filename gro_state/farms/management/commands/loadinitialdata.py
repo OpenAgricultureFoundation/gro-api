@@ -14,10 +14,11 @@ class Command(BaseCommand):
         if hasattr(app_config, 'data_dependencies'):
             for dependency in app_config.data_dependencies:
                 self.load_app_data(apps.get_app_config(dependency))
-        if hasattr(app_config, 'initial_fixture'):
-            call_command(
-                'loaddata', app_config.initial_fixture, app=app_config.label
-            )
+        if hasattr(app_config, 'initial_fixtures'):
+            for fixture in app_config.initial_fixtures:
+                call_command(
+                    'loaddata', fixture, app=app_config.label
+                )
         if hasattr(app_config, 'setup_initial_data'):
             app_config.setup_initial_data()
         self.apps_loaded[app_config.label] = True

@@ -1,20 +1,19 @@
 import time
 from django.db import models
-from django.db.utils import OperationalError
-from django.db.models.signals import post_save
+from django.db.models.signals import post_migrate
 from django.core.exceptions import ObjectDoesNotExist
 from django.contrib.contenttypes.fields import GenericRelation
 from django.dispatch import receiver
-from ..gro_api.utils.layout import system_layout
-from ..gro_api.models import SingletonModel
+from ..gro_state.models import SingletonModel
 from ..farms.models import Farm
 from ..resources.models import Resource
 from ..recipes.models import RecipeRun
 from .schemata import all_schemata
 
 
-class Model3D(models.Model):
+class LayoutModel3D(models.Model):
     name = models.CharField(max_length=100)
+    type = models.CharField(max_length=100)
     file = models.FileField(upload_to='3D_models')
     width = models.FloatField()
     length = models.FloatField()
@@ -39,37 +38,11 @@ class PlantSiteLayout(models.Model):
     col = models.IntegerField()
 
     def __str__(self):
-        return '(r={}, c={}) in {}'.format(
-            self.row, self.col, self.parent.name
-        )
+        return '(r={}, c={})'.format(self.row, self.col)
 
-
-class ParentField(LayoutForeignKey):
-    def __init__(self, model_name):
-        self.model_name = model_name
-        kwargs = {'related_name': 'children'}
-        super().__init__(**kwargs)
-
-    def get_other_model(self):
-        current_layout = system_layout.current_value
-        if current_layout is None:
-            return None
-        schema = all_schemata[current_layout]
-        if self.model_name in schema.entities:
-            return schema.entities[self.model_name].parent
-        else:
-            return None
-
-    def deconstruct(self):
-        name = self.name
-        path = '%s.%s' % (self.__class__.__module__, self.__class__.__name__)
-        args = []
-        kwargs = {'model_name': self.model_name}
-        return name, path, args, kwargs
-
-
-class Enclosure(SingletonModel):
+class LayoutObject(models.Model):
     name = models.CharField(max_length=100, blank=True)
+    type = models.CharField(max_length=100)
     x = models.FloatField(default=0)
     y = models.FloatField(default=0)
     z = models.FloatField(default=0)
@@ -77,110 +50,71 @@ class Enclosure(SingletonModel):
     width = models.FloatField(default=0)
     height = models.FloatField(default=0)
     model = models.ForeignKey(
-        Model3D, null=True, on_delete=models.SET_NULL, related_name='+'
+        LayoutModel3D, null=True, on_delete=models.SET_NULL, related_name='+'
     )
-    resources = GenericRelation(
-        Resource, object_id_field='location_id',
-        content_type_field='location_type'
-    )
+    parent = models.ForeignKey('self', null=True, related_name='children')
 
     def __str__(self):
         return self.name
 
-@receiver(post_save, sender=Farm)
-def create_singleton_instance(sender, instance, **kwargs):
-    if instance.name is not None:
-        default_name = '{} Enclosure'.format(instance.name)
-        try:
-            enclosure, _ = Enclosure.objects.get_or_create(pk=1)
-            enclosure.name = default_name
-            enclosure.save()
-        except OperationalError:
-            pass
+@receiver(post_migrate)
+def create_enclosure(sender, **kwargs):
+    try:
+        LayoutObject.objects.get_or_create(
+            pk=1, name='Enclosure', type='Enclosure'
+        )
+    except OperationalError:
+        pass
 
+class EnclosureManager(models.Manager):
+    def get_queryset(self):
+        return super().get_queryset().filter(type='Enclosure')
 
-class Tray(models.Model):
-    name = models.CharField(max_length=100, blank=True)
-    x = models.FloatField(default=0)
-    y = models.FloatField(default=0)
-    z = models.FloatField(default=0)
-    length = models.FloatField(default=0)
-    width = models.FloatField(default=0)
-    height = models.FloatField(default=0)
-    model = models.ForeignKey(Model3D, null=True, related_name='+')
-    num_rows = models.IntegerField(default=0, editable=False)
-    num_cols = models.IntegerField(default=0, editable=False)
-    parent = ParentField(model_name='Tray')
-    resources = GenericRelation(
-        Resource, object_id_field='location_id',
-        content_type_field='location_type'
+class Enclosure(LayoutObject):
+    objects = EnclosureManager()
+    class Meta:
+        proxy = True
+
+class TrayManager(models.Manager):
+    def get_queryset(self):
+        return super().get_queryset.filter(type='Tray')
+
+class Tray(LayoutObject):
+    objects = TrayManager()
+    class Meta:
+        proxy = True
+
+def generate_manager_from_type(obj_type):
+    manager_name = '{}Manager'.format(obj_type)
+    def get_queryset(self, obj_type=obj_type):
+        return super().get_queryset.filter(type=obj_type)
+    return type(
+        manager_name, (models.Manager,), {'get_queryset': get_queryset}
     )
-    current_recipe_run = models.ForeignKey(
-        RecipeRun, null=True, related_name='+', on_delete=models.SET_NULL,
-        editable=False
-    )
-
-    def update_current_recipe_run(self):
-        current_time = time.time()
-        if self.current_recipe_run and \
-                current_time > self.current_recipe_run.end_timestamp:
-            self.current_recipe_run = None
-            self.save()
-        if not self.current_recipe_run:
-            try:
-                next_recipe_run = RecipeRun.objects.filter(
-                    tray=self, end_timestamp__gte=time.time()
-                ).earliest()
-                if current_time >= next_recipe_run.start_timestamp:
-                    self.current_recipe_run = next_recipe_run
-                    self.save()
-            except ObjectDoesNotExist:
-                pass
-
-    def __str__(self):
-        return self.name
-
-
-class PlantSite(models.Model):
-    parent = models.ForeignKey(Tray, related_name='plant_sites')
-    row = models.IntegerField()
-    col = models.IntegerField()
-
-    def __str__(self):
-        return '{} (r={}, c={})'.format(str(self.parent), self.row, self.col)
-
 
 def generate_model_from_entity(entity):
-    def to_string(self):
-        return self.name
-    model_attrs = {
+    class Meta:
+        proxy = True
+    attrs = {
         '__module__': __name__,
-        'model_name': entity.name,
-        'name': models.CharField(max_length=100, blank=True),
-        'x': models.FloatField(default=0),
-        'y': models.FloatField(default=0),
-        'z': models.FloatField(default=0),
-        'length': models.FloatField(default=0),
-        'width': models.FloatField(default=0),
-        'height': models.FloatField(default=0),
-        'model': models.ForeignKey(Model3D, null=True, related_name='+'),
-        'parent': ParentField(entity.name),
-        'resources': GenericRelation(
-            Resource, object_id_field='location_id',
-            content_type_field='location_type'
-        ),
-        '__str__': to_string,
-        '__doc__': entity.description
+        'objects': generate_manager_from_type(entity.name)(),
+        'Meta': Meta,
     }
-    return type(entity.name, (models.Model,), model_attrs)
-
-# A dictionary of all of the classes in the layout tree that have been created
-# so we can be sure not to create a class that has already been created
-dynamic_models = {}
+    return type(entity.name, (LayoutObject,), attrs)
 
 # Generate models for all of the entities that we could encounter
-for layout in system_layout.allowed_values:
-    for entity in all_schemata[layout].dynamic_entities.values():
-        if entity.name not in dynamic_models:
+generated_models = {}
+for schema in all_schemata.values():
+    for entity in schema.generated_entities.values():
+        if entity.name not in generated_models:
             model = generate_model_from_entity(entity)
-            dynamic_models[entity.name] = model
+            generated_models[entity.name] = model
+
+class PlantSite(models.Model):
+    parent = models.ForeignKey(LayoutObject, related_name='plant_sites')
+    row = models.IntegerField()
+    col = models.IntegerField()
+    is_active = models.BooleanField(default=False)
+
+    def __str__(self):
+        return '(r={}, c={})'.format(self.row, self.col)

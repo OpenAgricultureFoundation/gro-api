@@ -9,6 +9,7 @@ readme.close()
 dev_reqs = [
     'django-debug-toolbar==1.3.2',
     'django-extensions==1.5.5',
+    'prospector==0.10.2'
 ]
 
 setup(
@@ -25,7 +26,7 @@ setup(
     },
     entry_points = {
         'console_scripts': [
-            'gro_state = gro_state.gro_state.scripts.call_command:call_command',
+            'gro_state = gro_state.core.scripts.call_command:call_command',
         ],
     },
     install_requires = [
@@ -38,6 +39,7 @@ setup(
         'django-rest-auth==0.5.0',
         'django-rest-swagger==0.3.4',
         'django-solo==1.1.0',
+        'django-uwsgi-cache==1.0.1',
         'djangorestframework==3.2.2',
         'mysqlclient==1.3.6',
         'PyYAML==3.11',
@@ -48,7 +50,7 @@ setup(
     extras_require = {
         'dev': dev_reqs
     },
-    test_suite = 'gro_state.gro_state.scripts.runtests.runtests',
+    test_suite = 'gro_state.core.scripts.runtests.runtests',
     # Metadata for PyPI
     long_description = README_TEXT,
     author = "Douglas Chambers",

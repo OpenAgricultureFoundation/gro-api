@@ -6,8 +6,8 @@ from django.dispatch import receiver
 from rest_framework import status
 from rest_framework.exceptions import APIException
 from ..layout.schemata import all_schemata
-from ..gro_api.models import SingletonModel
-from ..gro_api.utils.enum import ServerType
+from ..gro_state.models import SingletonModel
+from ..gro_state.utils import ServerType
 
 LAYOUT_CHOICES = ((key, val.short_description) for key, val in all_schemata.items())
 LAYOUT_CHOICES = sorted(LAYOUT_CHOICES, key=lambda choice: choice[0])
@@ -67,3 +67,4 @@ def generate_and_verify_slug(sender, instance, **kwargs):
 def update_old_values(sender, instance, **kwargs):
     instance._old_layout = instance.layout
     instance._old_slug = instance.slug
+    instance.set_to_cache()

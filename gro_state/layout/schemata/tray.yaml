@@ -1,3 +1,4 @@
 name: tray
 short_description: A collections of trays
 long_description: A farm consisting of a set of trays
+tray_parents: [Enclosure]

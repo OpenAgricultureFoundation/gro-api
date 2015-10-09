@@ -1,1 +1,1 @@
-default_app_config = 'gro_api.layout.apps.LayoutConfig'
+default_app_config = 'gro_state.layout.apps.LayoutConfig'

@@ -2,13 +2,14 @@
 This module defines a base model class form which all models in this project
 should inherit.
 """
+from django.db import OperationalError
 from django.db.models.base import ModelBase
 from django.db.models.signals import post_migrate
 from django.conf import settings
 from django.dispatch import receiver
 from solo import models as solo_models
 from solo import settings as solo_settings
-from .utils.enum import ServerType
+from .utils import ServerType
 
 class SingletonMetaClass(ModelBase):
     """
@@ -35,6 +36,8 @@ class SingletonModel(solo_models.SingletonModel, metaclass=SingletonMetaClass):
         abstract = True
 
 if settings.SERVER_TYPE == ServerType.ROOT:
+    # TODO: Use environ instead of request cache because request cache doesn't
+    # exist anymore
     from .middleware import get_request_cache
     @classmethod
     def get_singleton_cache_key(cls):

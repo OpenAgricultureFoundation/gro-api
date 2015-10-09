@@ -21,7 +21,7 @@ PATCH_SWAGGER = 'rest_framework_swagger' in settings.INSTALLED_APPS
 if PATCH_SWAGGER:
     from rest_framework_swagger.urlparser import UrlParser
 
-django_handlers_logger = logging.getLogger('django.request')
+request_logger = logging.getLogger('django.request')
 
 class FakeURLConfModule:
     def __init__(self, urls):
@@ -29,15 +29,15 @@ class FakeURLConfModule:
 
 @lru_cache.lru_cache(maxsize=None)
 def inner_get_resolver(urlconf, layout):
-    from ..gro_api.urls import get_current_urls
+    from .urls import get_current_urls
 
     return urlresolvers.RegexURLResolver(
         r'^/', FakeURLConfModule(get_current_urls())
     )
 
 def outer_get_resolver(urlconf):
-    from ..gro_api.utils import system_layout
-    return inner_get_resolver(urlconf, system_layout.current_value)
+    from gro_state.farms.models import Farm
+    return inner_get_resolver(urlconf, Farm.get_solo().layout)
 
 # Monkey patching `django.core.urlresolvers.get_resolver` doesn't completely
 # solve the problem in Django 1.8.3 because
@@ -118,7 +118,7 @@ def new_get_response(self, request):
             response = response.render()
 
     except http.Http404 as e:
-        django_handlers_logger.warning('Not Found: %s', request.path,
+        request_logger.warning('Not Found: %s', request.path,
                     extra={
                         'status_code': 404,
                         'request': request
@@ -129,7 +129,7 @@ def new_get_response(self, request):
             response = self.get_exception_response(request, resolver, 404)
 
     except PermissionDenied:
-        django_handlers_logger.warning(
+        request_logger.warning(
             'Forbidden (Permission denied): %s', request.path,
             extra={
                 'status_code': 403,
@@ -138,7 +138,7 @@ def new_get_response(self, request):
         response = self.get_exception_response(request, resolver, 403)
 
     except MultiPartParserError:
-        django_handlers_logger.warning(
+        request_logger.warning(
             'Bad request (Unable to parse request body): %s', request.path,
             extra={
                 'status_code': 400,
@@ -194,7 +194,7 @@ if PATCH_SWAGGER:
     def new_get_apis(self, patterns=None, urlconf=None, filter_path=None, exclude_namespaces=[]):
         # Loading this upon module import causes problems, so we're going to be
         # lazy about it
-        from ..gro_api.urls import get_current_urls
+        from .urls import get_current_urls
 
         real_urlconf = FakeURLConfModule(get_current_urls())
         return self.old_get_apis(

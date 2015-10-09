@@ -11,7 +11,6 @@ from rest_framework.views import APIView
 from rest_framework.reverse import reverse
 from rest_framework.routers import DefaultRouter
 from rest_framework.response import Response
-from .utils import system_layout
 
 logger = logging.getLogger(__name__)
 
@@ -25,34 +24,31 @@ class BaseRouter(DefaultRouter):
     def get_instance(cls, *args, **kwargs):
         """
         Gets an instance of this class populated with urls for the current farm
-        layout. Instances are cached by layout.
+        layout
         """
-        internal_name = '_{}_router'.format(system_layout.current_value)
-        if not hasattr(cls, internal_name):
-            router = cls(*args, **kwargs)
-            for app_name in settings.GRO_API_APPS:
-                try:
-                    # Try to use the `contribute_to_router` function in the
-                    # `urls` submodule for app
-                    app_urls = importlib.import_module('.urls', app_name)
-                except ImportError as err:
-                    module_name = "{}.{}".format(app_name, 'urls')
-                    if err.name == module_name:
-                        # The app has no `urls` submodule
-                        logger.info(err)
-                        continue
-                    else:
-                        raise
-                if hasattr(app_urls, 'contribute_to_router'):
-                    app_urls.contribute_to_router(router)
+        router = cls(*args, **kwargs)
+        for app_name in settings.GRO_STATE_APPS:
+            try:
+                # Try to use the `contribute_to_router` function in the
+                # `urls` submodule for app
+                app_urls = importlib.import_module('.urls', app_name)
+            except ImportError as err:
+                module_name = "{}.{}".format(app_name, 'urls')
+                if err.name == module_name:
+                    # The app has no `urls` submodule
+                    logger.info(err)
+                    continue
                 else:
-                    raise Exception(
-                        'Failed to load urls for app "{}". `urls` submodule '
-                        'should define a function '
-                        '`contribute_to_router`.'.format(app_name)
-                    )
-            setattr(cls, internal_name, router)
-        return getattr(cls, internal_name)
+                    raise
+            if hasattr(app_urls, 'contribute_to_router'):
+                app_urls.contribute_to_router(router)
+            else:
+                raise Exception(
+                    'Failed to load urls for app "{}". `urls` submodule '
+                    'should define a function '
+                    '`contribute_to_router`.'.format(app_name)
+                )
+        return router
 
     def add_api_view(self, name, url):
         """

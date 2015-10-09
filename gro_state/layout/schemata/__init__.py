@@ -9,7 +9,7 @@ Schema files are written in YAML. Each file must define a ``name`` attribute,
 which is a short, preferably one word name of the schema, a
 ``short_description`` attribute, which a one line description of the schema,
 a ``long_description`` which is a full description of the layout, a
-``tray-parent`` attribute, which is the name of the parent model for the tray
+``tray_parent`` attribute, which is the name of the parent model for the tray
 (defaults to "enclosure"), and an ``entities`` attribute, which is a list of
 entities that define a system.
 
@@ -32,25 +32,15 @@ __all__ = [
 ]
 
 
-def to_slug(string):
-    """
-    Clean the name of a layout object by making it lowercase and slugifying it.
-    """
-    return slugify(str(string))
-
-
 class Entity:
     schema = voluptuous.Schema({
-        voluptuous.Required('name'): to_slug,
+        voluptuous.Required('name'): str,
         voluptuous.Required('description'): str,
-        voluptuous.Required('parent'): to_slug,
+        voluptuous.Required('parents'): [str],
     })
 
-    def __init__(self, attrs=None, **kwargs):
-        all_attrs = dict(attrs) if attrs else {}
-        all_attrs.update(kwargs)
-        all_attrs = self.schema(all_attrs)
-        self.__dict__.update(all_attrs)
+    def __init__(self, **kwargs):
+        self.__dict__.update(self.schema(kwargs))
 
 
 class Schema:
@@ -59,70 +49,54 @@ class Schema:
         voluptuous.Required('short_description'): str,
         voluptuous.Required('long_description'): str,
         voluptuous.Required('entities', default=[]): [Entity.schema],
-        voluptuous.Required('tray-parent', default='Enclosure'): to_slug,
+        voluptuous.Required('tray_parents', default=['Enclosure']): [str],
     })
 
-    def __init__(self, attrs=None, **kwargs):
-        all_attrs = attrs.copy()
-        all_attrs.update(kwargs)
-        all_attrs = self.schema(all_attrs)
-        entities = all_attrs.pop('entities')
-        tray_parent = all_attrs.pop('tray-parent')
-        self.__dict__.update(all_attrs)
+    def __init__(self, **kwargs):
+        # Process keyword arguments
+        attrs = self.schema(kwargs)
+        entities = attrs.pop('entities')
+        tray_parent = attrs.pop('tray_parents')
+        self.__dict__.update(attrs)
+
+        # Process supplied entities
         self.entities = {}
         for entity_attrs in entities:
-            entity = Entity(entity_attrs)
+            entity = Entity(**entity_attrs)
             self.entities[entity.name] = entity
-        self.dynamic_entities = dict(self.entities)
+        self.generated_entities = dict(self.entities)
+
+        # Create default entities
         self.entities['Tray'] = Entity(
-            name='Tray', parent=tray_parent,
+            name='Tray', parents=tray_parent,
             description='A container in which plants are sown'
         )
         self.entities['Enclosure'] = Entity(
-            name='Enclosure', parent=None, description='The casing for a farm'
+            name='Enclosure', parents=[], description='The casing for a farm'
         )
-        for entity in self.entities.values():
-            if hasattr(self, entity.name):
-                raise RuntimeError(
-                    'Schema {} contained entity with invalid name {}'.format(
-                        self.name, entity.name
-                    )
-                )
-            setattr(self, entity.name, entity)
+
+        # Make sure the schema was well-formed
         self.check()
 
     def check(self):
-        # A dictionary of all of the entities without children. It is
-        # initialized to the full set of entities and should be emptied by the
-        # end of this function
+        # Make sure every entity has at least 1 child and that each entity's
+        # parent exists
         entities_without_children = self.entities.copy()
         entities_without_children.pop('Tray')  # Trays shouldn't have children
-
-        # Maps the name of an entity to the name of that entity's child
-        entity_children = {}
         for entity in self.entities.values():
             if entity.name == 'Enclosure':
                 continue
-            if entity.parent == 'Tray':
-                raise voluptuous.SchemaError(
-                    'Trays aren\'t allowed to have children'
-                )
-            elif entity.parent in entities_without_children:
-                entities_without_children.pop(entity.parent)
-                entity_children[entity.parent] = entity.name
-            else:
-                if entity.parent in entity_children:
-                    msg = 'Entity "{}" has multiple children: "{}" and "{}"'
-                    msg = msg.format(
-                        entity.parent, entity_children[entity.parent],
-                        entity.name
+            for parent in entity.parents:
+                if parent == 'Tray':
+                    raise voluptuous.SchemaError(
+                        'Trays aren\'t allowed to have children'
                     )
-                    raise voluptuous.SchemaError(msg)
-                else:
+                if parent in entities_without_children:
+                    entities_without_children.pop(parent)
+                if not parent in self.entities:
                     msg = 'Entity "{}" references nonexistant parent "{}"'
-                    msg = msg.format(entity.name, entity.parent)
+                    msg = msg.format(entity.name, parent)
                     raise voluptuous.SchemaError(msg)
-        # In practice, this can never happen, but we check it anyway to be safe
         if len(entities_without_children) != 0:
             tmp = ', '.join('"{}"'.format(entity_name) for entity_name in
                             entities_without_children.keys())
@@ -130,7 +104,6 @@ class Schema:
             raise voluptuous.SchemaError(msg)
 
 all_schemata = {}  # Global registry for loaded schemata
-
 
 def register_schema(schema):
     if schema.name in all_schemata:
@@ -149,4 +122,4 @@ for filename in os.listdir(os.path.dirname(__file__)):
     file_path = os.path.join(os.path.dirname(__file__), filename)
     with open(file_path, 'r') as schema_file:
         schema = yaml.load(schema_file)
-    register_schema(Schema(schema))
+    register_schema(Schema(**schema))

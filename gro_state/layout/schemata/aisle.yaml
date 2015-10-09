@@ -4,8 +4,8 @@ long_description: A farm consisting of trays nested within bays nested within ai
 entities:
     - name: Aisle
       description: A row of bays
-      parent: Enclosure
+      parents: [Enclosure]
     - name: Bay
       description: A vertical stack of trays
-      parent: Aisle
-tray-parent: Bay
+      parents: [Aisle]
+tray_parents: [Bay]
