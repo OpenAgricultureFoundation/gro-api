@@ -220,7 +220,7 @@ CONN_MAX_AGE = None
 if SERVER_TYPE == LEAF:
     CACHES = {
         'default': {
-            'BACKEND': 'django.core.cache.backends.locmem.LocMemCache',
+            'BACKEND': 'uwsgicache.UWSGICache',
         }
     }
     SOLO_CACHE = 'default'

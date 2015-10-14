@@ -25,7 +25,6 @@ setup(
     },
     entry_points = {
         'console_scripts': [
-            'gro_api_configure = gro_api.scripts.configure:configure',
             'gro_api_load_env = gro_api.scripts.load_env:load_env',
             'gro_api_call_command = gro_api.scripts.call_command:call_command',
         ],
@@ -41,6 +40,7 @@ setup(
         'django-rest-swagger==0.3.4',
         'django-solo==1.1.0',
         'djangorestframework==3.2.2',
+        'django-uwsgi-cache==1.0.1',
         'PyYAML==3.11',
         'tortilla==0.4.1',
         'voluptuous==0.8.7',

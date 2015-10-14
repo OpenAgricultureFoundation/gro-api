@@ -1,5 +1,7 @@
 import time
+import json
 import django_filters
+from django.core.cache import caches
 from django.core.exceptions import ObjectDoesNotExist
 from rest_framework import status
 from rest_framework.response import Response
@@ -46,16 +48,10 @@ class SensingPointViewSet(ModelViewSet):
         serializer: gro_api.sensors.serializers.DataPointSerializer
         """
         instance = self.get_object()
-        try:
-            queryset = DataPoint.objects.filter(sensing_point=instance).latest()
-        except ObjectDoesNotExist:
-            raise APIException(
-                'No data has been recorded for this sensor yet'
-            )
-        serializer = DataPointSerializer(
-            queryset, context={'request': request}
-        )
-        return Response(serializer.data)
+        cache_key = 'sp_{}_value'.format(instance.pk)
+        cache = caches['default']
+        data = cache.get(cache_key)
+        return Response(json.loads(data))
 
 
 class DataPointFilter(HistoryFilterMixin):
@@ -76,6 +72,11 @@ class DataPointViewSet(ModelViewSet):
         serializer.is_valid(raise_exception=True)
         self.perform_create(serializer)
         headers = self.get_success_headers(serializer.data)
+        cache = caches['default']
+        for point in serializer.data:
+            sp_pk = point['sensing_point'].split('/')[-2]
+            cache_key = 'sp_{}_value'.format(sp_pk)
+            cache.set(cache_key, json.dumps(point))
         return Response(
             serializer.data, status=status.HTTP_201_CREATED, headers=headers
         )
