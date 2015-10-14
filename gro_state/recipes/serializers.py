@@ -114,7 +114,7 @@ class RecipeRunSerializer(BaseSerializer):
                 )
                 set_points.append(set_point)
             elif command_type == b'G':
-                if command == b'GTFO':
+                if command == b'GHAR':
                     end_timestamp = command_timestamp
                     set_points.extend([
                         SetPoint(
