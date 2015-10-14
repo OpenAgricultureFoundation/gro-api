@@ -36,6 +36,7 @@
         "fields": {
             "code": "CO",
             "name": "CO2",
+            "units": "ppm",
             "resource_type": ["A"],
             "min_operating_value": 0,
             "max_operating_value": 0,
@@ -47,6 +48,7 @@
         "fields": {
             "code": "HU",
             "name": "Humidity",
+	    "units": "percent",
             "resource_type": ["A"],
             "min_operating_value": 0,
             "max_operating_value": 0,
@@ -58,6 +60,7 @@
         "fields": {
             "code": "TM",
             "name": "Temperature",
+	    "units": "degrees C",
             "resource_type": ["A"],
             "min_operating_value": 0,
             "max_operating_value": 0,
@@ -69,6 +72,7 @@
         "fields": {
             "code": "IN",
             "name": "Intensity",
+	    "units": "lux",
             "resource_type": ["L"],
             "min_operating_value": 0,
             "max_operating_value": 0,
@@ -80,6 +84,7 @@
         "fields": {
             "code": "PA",
             "name": "PAR",
+	    "units": "umol/(s*m^2)",
             "resource_type": ["L"],
             "min_operating_value": 0,
             "max_operating_value": 0,
@@ -91,6 +96,7 @@
         "fields": {
             "code": "EC",
             "name": "Electrical Conductivity",
+	    "units": "mS/cm",
             "resource_type": ["W"],
             "min_operating_value": 0,
             "max_operating_value": 0,
@@ -102,6 +108,7 @@
         "fields": {
             "code": "PH",
             "name": "pH",
+	    "units": "",
             "resource_type": ["W"],
             "min_operating_value": 0,
             "max_operating_value": 0,
@@ -113,6 +120,7 @@
         "fields": {
             "code": "TM",
             "name": "Temperature",
+	    "units": "degrees C",
             "resource_type": ["W"],
             "min_operating_value": 0,
             "max_operating_value": 0,
@@ -124,6 +132,7 @@
         "fields": {
             "code": "SO",
             "name": "Shell open",
+	    "units": "",
             "resource_type": ["G"],
             "min_operating_value": 0,
             "max_operating_value": 0,
@@ -135,6 +144,7 @@
         "fields": {
             "code": "WO",
             "name": "Window Open",
+	    "units": "",
             "resource_type": ["G"],
             "min_operating_value": 0,
             "max_operating_value": 0,

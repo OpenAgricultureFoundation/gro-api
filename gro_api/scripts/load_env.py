@@ -13,8 +13,9 @@ def load_env():
     try:
         for key, val in env_vars.items():
             os.environ[key] = val
-    finally:
         env_vars.close()
+    except Exception as e:
+        pass
     load_env.loaded = True
 
 if __name__ == '__main__':

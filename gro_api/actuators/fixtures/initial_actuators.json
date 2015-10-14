@@ -54,7 +54,7 @@
             "control_profile": ["Relay-Controlled Humidifier", "Default Profile"],
             "property": ["A", "HU"],
             "effect_on_active": 1,
-            "threshold": 1
+            "threshold": 2
         }
     },
     {
@@ -83,7 +83,7 @@
             "control_profile": ["Relay-Controlled Venting Fan", "Default Profile"],
             "property": ["A", "TM"],
             "effect_on_active": -1,
-            "threshold": 3
+            "threshold": 1
         }
     },
     {
@@ -92,7 +92,7 @@
             "control_profile": ["Relay-Controlled Venting Fan", "Default Profile"],
             "property": ["A", "HU"],
             "effect_on_active": -1,
-            "threshold": 3
+            "threshold": 2
         }
     },
     {
@@ -101,7 +101,7 @@
             "control_profile": ["Relay-Controlled Venting Fan", "Default Profile"],
             "property": ["A", "CO"],
             "effect_on_active": -1,
-            "threshold": 3
+            "threshold": 50 
         }
     },
     {

@@ -407,7 +407,7 @@
             "index": 2,
             "sensor": 5,
             "property": ["A", "TM"],
-            "is_active": "True",
+            "is_active": "False",
             "is_pseudo": "False",
             "auto_created": "True"
         }
@@ -431,7 +431,7 @@
             "index": 2,
             "sensor": 5,
             "property": ["A", "HU"],
-            "is_active": "True",
+            "is_active": "False",
             "is_pseudo": "False",
             "auto_created": "True"
         }

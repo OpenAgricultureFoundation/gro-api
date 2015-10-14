@@ -25,7 +25,7 @@ class ActuatorEffectSerializer(BaseSerializer):
         model = ActuatorEffect
 
     def validate(self, data):
-        correct_type = data['control_profile'].actuator_type.resource_type
+        correct_type = data['control_profile'].actuator_type.resource_effect.resource_type
         if data['property'].resource_type != correct_type:
             raise serializers.ValidationError(
                 'An actuator cannot affect a property on a resource type '
