@@ -8,8 +8,8 @@ import django
 old_setup = django.setup
 if not getattr(old_setup, 'is_patched', False):
     def new_setup():
-        from gro_state.gro_state.patch_resolvers import patch_resolvers
-        from gro_state.gro_state.disable_patch import disable_patch
+        from gro_state.core.patch_resolvers import patch_resolvers
+        from gro_state.core.disable_patch import disable_patch
         patch_resolvers()
         disable_patch()
         old_setup()
@@ -21,9 +21,9 @@ if not getattr(old_setup, 'is_patched', False):
 REST_FRAMEWORK = {
     'DEFAULT_AUTHENTICATION_CLASSES': ('rest_framework.authentication.TokenAuthentication',),
     'DEFAULT_FILTER_BACKENDS': ('rest_framework.filters.DjangoFilterBackend',),
-    'DEFAULT_PAGINATION_CLASS': 'gro_state.gro_state.pagination.Pagination',
+    'DEFAULT_PAGINATION_CLASS': 'gro_state.core.pagination.Pagination',
     'DEFAULT_PERMISSION_CLASSES': ('rest_framework.permissions.DjangoModelPermissionsOrAnonReadOnly', ),
-    'EXCEPTION_HANDLER': 'gro_state.gro_state.views.exception_handler',
+    'EXCEPTION_HANDLER': 'gro_state.core.views.exception_handler',
     'PAGE_SIZE': 100,
 }
 
@@ -31,7 +31,7 @@ REST_FRAMEWORK = {
 
 GRO_STATE_APPS = (
     'gro_state.farms',
-    'gro_state.layout',
+    # 'gro_state.layout',
     # 'gro_state.plants',
     # 'gro_state.resources',
     # 'gro_state.sensors',
@@ -62,7 +62,7 @@ FRAMEWORK_APPS = (
 
 ### Request Handling
 
-WSGI_APPLICATION = 'gro_state.gro_state.wsgi.application'
+WSGI_APPLICATION = 'gro_state.core.wsgi.application'
 
 MIDDLEWARE_CLASSES = (
     'django.contrib.sessions.middleware.SessionMiddleware',
@@ -74,7 +74,7 @@ MIDDLEWARE_CLASSES = (
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
     'django.middleware.security.SecurityMiddleware',
-    'gro_state.gro_state.middleware.FarmIsConfiguredCheckMiddleware',
+    'gro_state.core.middleware.FarmIsConfiguredCheckMiddleware',
 )
 
 CORS_ORIGIN_ALLOW_ALL = True

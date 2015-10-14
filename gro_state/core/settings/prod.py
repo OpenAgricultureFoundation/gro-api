@@ -1,7 +1,7 @@
 import configparser
 from django.core.exceptions import ImproperlyConfigured
 from .base import *
-from gro_state.gro_state.utils import ServerType
+from gro_state.core.const import ServerType
 
 # Globals
 
@@ -29,7 +29,12 @@ except StopIteration:
         'Configuration file contained an invalid value "{}" for '
         'SERVER_TYPE'.format(server_type)
     )
-SECRET_KEY = config.get('state', 'SECRET_KEY')
+try:
+    SECRET_KEY = config.get('state', 'SECRET_KEY')
+except configparser.NoSectionError:
+    raise ImproperlyConfigured(
+        'Configuration file did not contain a value for SECRET_KEY'
+    )
 
 ### Installed apps
 
@@ -41,7 +46,7 @@ STATIC_ROOT = '/var/www/gro/static'
 MEDIA_ROOT = '/var/www/gro/media'
 
 if SERVER_TYPE == ServerType.ROOT:
-    DATABASE_ROUTERS = ['gro_state.middleware.FarmDbRouter']
+    DATABASE_ROUTERS = ['gro_state.core.middleware.FarmDbRouter']
 
 CSRF_COOKIE_SECURE = True
 SESSION_COOKIE_SECURE = True

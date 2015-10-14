@@ -11,14 +11,3 @@ class IsAdminOrReadOnly(BasePermission):
             request.method in SAFE_METHODS or request.user and
             request.user.is_staff
         )
-
-class EnforceReadOnly(BasePermission):
-    """
-    If the read-only field on the object being called is set to true, make the
-    request read-only
-    """
-    def has_object_permission(self, request, view, obj):
-        if request.method in SAFE_METHODS:
-            return True
-        else:
-            return not obj.read_only

@@ -9,7 +9,7 @@ from django.conf import settings
 from django.dispatch import receiver
 from solo import models as solo_models
 from solo import settings as solo_settings
-from .utils import ServerType
+from .const import ServerType
 
 class SingletonMetaClass(ModelBase):
     """

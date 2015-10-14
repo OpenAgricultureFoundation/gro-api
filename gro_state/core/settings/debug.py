@@ -1,6 +1,6 @@
 import os
 from .base import *
-from gro_state.gro_state.utils import ServerType
+from gro_state.core.const import ServerType
 
 # Globals
 

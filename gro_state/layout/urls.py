@@ -1,6 +1,5 @@
 import logging
 from django.conf import settings
-from ..gro_api.utils import system_layout
 from .views import (
     Model3DViewSet, TrayLayoutViewSet, PlantSiteLayoutViewSet,
     EnclosureViewSet, TrayViewSet, PlantSiteViewSet, dynamic_viewsets

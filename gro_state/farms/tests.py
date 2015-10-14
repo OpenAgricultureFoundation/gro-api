@@ -14,7 +14,7 @@ class FarmSlugGenerationTestCase(TestCase):
 
 class FarmLayoutLockingTestCase(TestCase):
     def test(self):
-        call_command('configure_farm', layout='tray')
+        call_command('configure_farm', '-l tray')
         farm = Farm.get_solo()
         farm.layout = 'bay'
         self.assertRaises(LayoutChangeAttempted, farm.save)
@@ -22,14 +22,14 @@ class FarmLayoutLockingTestCase(TestCase):
 class FarmSlugLockingTestCaseWithParent(TestCase):
     @override_settings(PARENT_SERVER='openag.mit.edu')
     def test(self):
-        call_command('configure_farm', slug='my-farm', layout='tray')
+        call_command('configure_farm', '-s farm', '-l tray')
         farm = Farm.get_solo()
         farm.slug = 'test-farm2'
         self.assertRaises(SlugChangeAttempted, farm.save)
 
 class FarmSlugLockingTestCaseWithoutParent(TestCase):
     def test_without_parent_server(self):
-        call_command('configure_farm', layout='tray')
+        call_command('configure_farm', '-l tray')
         farm = Farm.get_solo()
         farm.slug = 'new-slug'
         farm.save()

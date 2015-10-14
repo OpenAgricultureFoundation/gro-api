@@ -6,8 +6,8 @@ from django.dispatch import receiver
 from rest_framework import status
 from rest_framework.exceptions import APIException
 from ..layout.schemata import all_schemata
-from ..gro_state.models import SingletonModel
-from ..gro_state.utils import ServerType
+from ..core.models import SingletonModel
+from ..core.const import ServerType
 
 LAYOUT_CHOICES = ((key, val.short_description) for key, val in all_schemata.items())
 LAYOUT_CHOICES = sorted(LAYOUT_CHOICES, key=lambda choice: choice[0])
@@ -18,8 +18,7 @@ class Farm(SingletonModel):
     A container for project globals that affect the behavior of the server
     """
     name = models.CharField(
-        max_length=100, null=(settings.SERVER_TYPE == ServerType.LEAF),
-        help_text='Human readable farm name'
+        max_length=100, null=True, help_text='Human readable farm name'
     )
     slug = models.SlugField(
         max_length=100, null=(settings.SERVER_TYPE == ServerType.LEAF),
@@ -27,6 +26,7 @@ class Farm(SingletonModel):
     )
     layout = models.SlugField(
         choices=LAYOUT_CHOICES, null=(settings.SERVER_TYPE == ServerType.LEAF),
+        help_text='Layout schema to use'
     )
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)

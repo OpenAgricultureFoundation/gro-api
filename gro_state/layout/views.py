@@ -1,26 +1,28 @@
 import time
 from django.core.exceptions import ObjectDoesNotExist
 from rest_framework.response import Response
-from rest_framework.viewsets import ModelViewSet
 from rest_framework.decorators import detail_route
-from ..gro_api.viewsets import SingletonModelViewSet
+from rest_framework.viewsets import ModelViewSet
+from ..core.viewsets import SingletonModelViewSet, BulkModelViewSet
+from ..core.permissions import IsAdminOrReadOnly
 from ..recipes.models import SetPoint
 from ..resources.models import ResourceProperty
 from .serializers import (
-    Model3DSerializer, TrayLayoutSerializer, PlantSiteLayoutSerializer,
+    LayoutModel3DSerializer, TrayLayoutSerializer, PlantSiteLayoutSerializer,
     EnclosureSerializer, TraySerializer, PlantSiteSerializer,
     dynamic_serializers
 )
 from .models import (
-    Model3D, TrayLayout, PlantSiteLayout, Enclosure, Tray, PlantSite,
+    LayoutModel3D, TrayLayout, PlantSiteLayout, Enclosure, Tray, PlantSite,
     dynamic_models
 )
 
 
-class Model3DViewSet(ModelViewSet):
+class LayoutModel3DViewSet(ModelViewSet):
     """ A 3D model of a farm component """
-    queryset = Model3D.objects.all()
-    serializer_class = Model3DSerializer
+    queryset = LayoutModel3D.objects.all()
+    serializer_class = LayoutModel3DSerializer
+    permission_classes = [IsAdminOrReadOnly,]
 
 
 class TrayLayoutViewSet(ModelViewSet):
@@ -29,7 +31,7 @@ class TrayLayoutViewSet(ModelViewSet):
     serializer_class = TrayLayoutSerializer
 
 
-class PlantSiteLayoutViewSet(ModelViewSet):
+class PlantSiteLayoutViewSet(BulkModelViewSet):
     """ A site in a TrayLayout """
     queryset = PlantSiteLayout.objects.all()
     serializer_class = PlantSiteLayoutSerializer
@@ -47,26 +49,6 @@ class TrayViewSet(ModelViewSet):
     model = Tray
     queryset = Tray.objects.all()
     serializer_class = TraySerializer
-
-    def retrieve(self, request, *args, **kwargs):
-        instance = self.get_object()
-        instance.update_current_recipe_run()
-        serializer = self.get_serializer(instance)
-        return Response(serializer.data)
-
-    def list(self, request, *args, **kwargs):
-        queryset = self.filter_queryset(self.get_queryset())
-
-        for instance in queryset:
-            instance.update_current_recipe_run()
-
-        page = self.paginate_queryset(queryset)
-        if page is not None:
-            serializer = self.get_serializer(page, many=True)
-            return self.get_paginated_response(serializer.data)
-
-        serializer = self.get_serializer(queryset, many=True)
-        return Response(serializer.data)
 
     @detail_route(methods=["get"])
     def set_points(self, request, pk=None):

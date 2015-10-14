@@ -1,4 +1,4 @@
-from ..gro_state.serializers import BaseSerializer
+from ..core.serializers import BaseSerializer
 from .models import Farm
 
 class FarmSerializer(BaseSerializer):

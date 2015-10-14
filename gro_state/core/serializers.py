@@ -5,7 +5,6 @@ to be serialized correctly.
 import logging
 from rest_framework.settings import api_settings
 from rest_framework.serializers import HyperlinkedModelSerializer
-from rest_framework.utils.field_mapping import get_nested_relation_kwargs
 
 logger = logging.getLogger(__name__)
 
@@ -13,7 +12,25 @@ class BaseSerializer(HyperlinkedModelSerializer):
     """
     Base class used for all serializers in this project.
     """
+    def create(self, validated_data):
+        if self.many:
+            return self.many_create(validated_data)
+        else:
+            return super().create(validated_data)
+
+    def many_create(self, validated_data):
+        """
+        A modified version of `ModelSerializer.create` that performs a bulk
+        create instead of a normal create.
+        """
+        ModelClass = self.Meta.model
+        return ModelClass.objects.bulk_create([
+            ModelClass(**child_attrs) for child_attrs in validated_data
+        ])
+
+
     def get_default_field_names(self, declared_fields, model_info):
+        """ Include all reverse relations by default """
         return (
             [api_settings.URL_FIELD_NAME] +
             list(declared_fields.keys()) +
@@ -36,6 +53,7 @@ class BaseSerializer(HyperlinkedModelSerializer):
                 field_class, field_kwargs = self.build_nested_field(
                     field_name, relation_info, nested_depth
                 )
+            # TODO: Make sure this actually does something
             # Don't allow writes to relations resulting from foreign keys
             # pointing to this class
             if relation_info.model_field is None:
@@ -48,14 +66,3 @@ class BaseSerializer(HyperlinkedModelSerializer):
         elif field_name == api_settings.URL_FIELD_NAME:
             return self.build_url_field(field_name, model_class)
         return self.build_unknown_field(field_name, model_class)
-
-    def build_nested_field(self, field_name, relation_info, nested_depth):
-        class NestedSerializer(BaseSerializer):
-            class Meta:
-                model = relation_info.related_model
-                depth = nested_depth - 1
-
-        field_class = NestedSerializer
-        field_kwargs = get_nested_relation_kwargs(relation_info)
-
-        return field_class, field_kwargs

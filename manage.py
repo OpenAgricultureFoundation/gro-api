@@ -10,9 +10,9 @@ if __name__ == "__main__":
     args = parser.parse_args()
 
     if args.debug:
-        settings_module = 'gro_state.gro_state.settings.debug'
+        settings_module = 'gro_state.core.settings.debug'
     else:
-        settings_module = 'gro_state.gro_state.settings.deploy'
+        settings_module = 'gro_state.core.settings.prod'
     os.environ['DJANGO_SETTINGS_MODULE'] = settings_module
 
     from django.core.management import execute_from_command_line

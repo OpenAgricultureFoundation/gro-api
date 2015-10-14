@@ -1,10 +1,10 @@
 import logging
-from rest_framework.views import exception_handler as default_exception_handler
+from rest_framework.views import exception_handler
 from rest_framework.status import is_client_error
 
 logger = logging.getLogger('django.request')
 
-def exception_handler(exc, context):
+def my_exception_handler(exc, context):
     """
     Django REST handles 4xx exceptions itself, so they don't get logged to the
     'django.request' logger by default. This exception handler logs them as if

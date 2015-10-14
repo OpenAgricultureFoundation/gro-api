@@ -1,6 +1,6 @@
 from ..farms.models import Farm
 from ..farms.serializers import FarmSerializer
-from ..gro_state.viewsets import SingletonModelViewSet
+from ..core.viewsets import SingletonModelViewSet
 
 
 class FarmViewSet(SingletonModelViewSet):

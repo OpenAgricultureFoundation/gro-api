@@ -26,6 +26,7 @@ import os
 import yaml
 import voluptuous
 from slugify import slugify
+from gro_state.core.const import TRAY, ENCLOSURE
 
 __all__ = [
     'all_schemata', 'Entity', 'Schema', 'register_schema'
@@ -49,14 +50,14 @@ class Schema:
         voluptuous.Required('short_description'): str,
         voluptuous.Required('long_description'): str,
         voluptuous.Required('entities', default=[]): [Entity.schema],
-        voluptuous.Required('tray_parents', default=['Enclosure']): [str],
+        voluptuous.Required('tray_parents', default=[ENCLOSURE,]): [str],
     })
 
     def __init__(self, **kwargs):
         # Process keyword arguments
         attrs = self.schema(kwargs)
         entities = attrs.pop('entities')
-        tray_parent = attrs.pop('tray_parents')
+        tray_parents = attrs.pop('tray_parents')
         self.__dict__.update(attrs)
 
         # Process supplied entities
@@ -67,12 +68,12 @@ class Schema:
         self.generated_entities = dict(self.entities)
 
         # Create default entities
-        self.entities['Tray'] = Entity(
-            name='Tray', parents=tray_parent,
+        self.entities[TRAY] = Entity(
+            name=TRAY, parents=tray_parents,
             description='A container in which plants are sown'
         )
-        self.entities['Enclosure'] = Entity(
-            name='Enclosure', parents=[], description='The casing for a farm'
+        self.entities[ENCLOSURE] = Entity(
+            name=ENCLOSURE, parents=[], description='The casing for a farm'
         )
 
         # Make sure the schema was well-formed
@@ -82,12 +83,12 @@ class Schema:
         # Make sure every entity has at least 1 child and that each entity's
         # parent exists
         entities_without_children = self.entities.copy()
-        entities_without_children.pop('Tray')  # Trays shouldn't have children
+        entities_without_children.pop(TRAY)  # Trays shouldn't have children
         for entity in self.entities.values():
-            if entity.name == 'Enclosure':
+            if entity.name == ENCLOSURE:
                 continue
             for parent in entity.parents:
-                if parent == 'Tray':
+                if parent == TRAY:
                     raise voluptuous.SchemaError(
                         'Trays aren\'t allowed to have children'
                     )

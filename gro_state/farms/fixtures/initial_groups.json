@@ -2,35 +2,6 @@
     {
         "model": "auth.group",
         "fields": {
-            "name": "GraphicDesigners",
-            "permissions": [
-                ["add_model3d", "layout", "model3d"],
-                ["change_model3d", "layout", "model3d"],
-                ["delete_model3d", "layout", "model3d"],
-                ["add_plantmodel", "plants", "plantmodel"],
-                ["change_plantmodel", "plants", "plantmodel"],
-                ["delete_plantmodel", "plants", "plantmodel"]
-            ]
-        }
-    },
-    {
-        "model": "auth.group",
-        "fields": {
-            "name": "LayoutEditors",
-            "permissions": [
-                ["add_traylayout", "layout", "traylayout"],
-                ["add_plantsitelayout", "layout", "plantsitelayout"],
-                ["change_enclosure", "layout", "enclosure"],
-                ["add_tray", "layout", "tray"],
-                ["change_tray", "layout", "tray"],
-                ["add_resource", "resources", "resource"],
-                ["change_resource", "resources", "resource"]
-            ]
-        }
-    },
-    {
-        "model": "auth.group",
-        "fields": {
             "name": "Electricians",
             "permissions": [
                 ["add_sensortype", "sensors", "sensortype"],
@@ -55,6 +26,12 @@
         "fields": {
             "name": "Gardeners",
             "permissions": [
+                ["add_traylayout", "layout", "traylayout"],
+                ["change_traylayout", "layout", "traylayout"],
+                ["delete_traylayout", "layout", "traylayout"],
+                ["add_plantsitelayout", "layout", "plantsitelayout"],
+                ["change_plantsitelayout", "layout", "plantsitelayout"],
+                ["delete_plantsitelayout", "layout", "plantsitelayout"],
                 ["add_planttype", "plants", "planttype"],
                 ["change_planttype", "plants", "planttype"],
                 ["add_plant", "plants", "plant"],
