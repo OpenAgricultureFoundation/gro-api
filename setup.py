@@ -13,7 +13,7 @@ dev_reqs = [
 
 setup(
     name = "gro_api",
-    version = "0.1.1a0",
+    version = "0.1.1a",
     packages = find_packages(),
     package_data = {
         'gro_api.layout.schemata': ['*.yaml'],
