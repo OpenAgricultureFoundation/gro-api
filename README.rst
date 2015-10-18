@@ -9,8 +9,8 @@ gro-API
     :target: https://coveralls.io/github/OpenAgInitiative/gro-api?branch=master
     :alt: Code Coverage
 
-.. image:: https://requires.io/github/MIT-OpenAg/gro-api/requirements.svg?branch=master
-    :target: https://requires.io/github/MIT-OpenAg/gro-api/requirements/?branch=master
+.. image:: https://requires.io/github/OpenAgInitiative/gro-api/requirements.svg?branch=master
+    :target: https://requires.io/github/OpenAgInitiative/gro-api/requirements/?branch=master
     :alt: Requirements Status
 
 The gro-API is a REST server that manages an instance of a controlled growing
