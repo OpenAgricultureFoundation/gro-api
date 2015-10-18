@@ -38,6 +38,6 @@ class FarmIsConfiguredCheckTest(APITestCase):
     def test(self):
         res = self.client.get('/farm/')
         self.assertEqual(res.status_code, 403)
-        call_command('configure_farm', layout='tray')
+        call_command('configure_farm', '-l tray')
         res = self.client.get('/farm/')
         self.assertEqual(res.status_code, 200)

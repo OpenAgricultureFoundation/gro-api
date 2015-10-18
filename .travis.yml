@@ -4,6 +4,5 @@ install:
     - pip install -e .
     - pip install coverage
     - pip install coveralls
-    - gro_api_configure -d
-script: coverage run --source=gro_api --omit=*test*,*migrations* setup.py test
+script: coverage run --source=gro_api --omit=*test*,*migrations* manage.py test gro_state.farms
 after_success: coveralls

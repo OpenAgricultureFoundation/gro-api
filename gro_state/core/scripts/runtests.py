@@ -4,7 +4,7 @@ from django.conf import settings
 from django.test.utils import get_runner
 
 def runtests():
-    settings_module = 'gro_state.gro_state.settings.debug'
+    settings_module = 'gro_state.core.settings.debug'
     os.environ['DJANGO_SETTINGS_MODULE'] = settings_module
 
     # Force the settings file to be loaded before django.setup is called

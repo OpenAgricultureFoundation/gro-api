@@ -7,8 +7,8 @@ README_TEXT = readme.read()
 readme.close()
 
 dev_reqs = [
-    'django-debug-toolbar==1.3.2',
-    'django-extensions==1.5.5',
+    'django-debug-toolbar==1.4',
+    'django-extensions==1.5.7',
     'prospector==0.10.2'
 ]
 
@@ -31,7 +31,7 @@ setup(
     },
     install_requires = [
         'awesome-slugify==1.6.5',
-        'Django==1.8.4',
+        'Django==1.8.5',
         'django-allauth==0.23.0',
         'django-cors-headers==1.1.0',
         'django-cron==0.4.3',
@@ -40,7 +40,7 @@ setup(
         'django-rest-swagger==0.3.4',
         'django-solo==1.1.0',
         'django-uwsgi-cache==1.0.1',
-        'djangorestframework==3.2.2',
+        'djangorestframework==3.2.4',
         'mysqlclient==1.3.6',
         'PyYAML==3.11',
         'tortilla==0.4.1',
