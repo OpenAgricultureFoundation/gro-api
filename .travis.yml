@@ -4,6 +4,6 @@ install:
     - pip install -e .
     - pip install coverage
     - pip install coveralls
-    - gro_api_configure
+    - gro_api_configure -d
 script: coverage run --source=oa/data_manager --omit=*test*,*migrations* setup.py test
 after_success: coveralls
