@@ -22,7 +22,7 @@ class ResourceAuthMixin:
     def tearDown(self):
         self.client.force_authenticate()
 
-class ResourceTypeTestCase(APITestCase):
+class ResourceTypeTestCase(ResourceAuthMixin, APITestCase):
     @run_with_any_layout
     def test_visible_fields(self):
         fields = ResourceTypeSerializer().get_fields()
@@ -47,7 +47,7 @@ class ResourceTypeTestCase(APITestCase):
         self.assertEqual(res.status_code, 403)
 
 
-class ResourcePropertyTestCase(APITestCase):
+class ResourcePropertyTestCase(ResourceAuthMixin, APITestCase):
     @run_with_any_layout
     def test_visible_fields(self):
         fields = ResourcePropertySerializer().get_fields()
