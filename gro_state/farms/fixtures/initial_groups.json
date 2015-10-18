@@ -11,7 +11,7 @@
                 ["add_sensingpoint", "sensors", "sensingpoint"],
                 ["change_sensingpoint", "sensors", "sensingpoint"],
                 ["add_actuatortype", "actuators", "actuatortype"],
-                ["add_actuatortype", "actuators", "actuatortype"],
+                ["change_actuatortype", "actuators", "actuatortype"],
                 ["add_actuator", "actuators", "actuator"],
                 ["change_actuator", "actuators", "actuator"],
                 ["add_controlprofile", "actuators", "controlprofile"],

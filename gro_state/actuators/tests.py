@@ -22,7 +22,7 @@ class ActuatorAuthMixin:
     def tearDown(self):
         self.client.force_authenticate()
 
-class ActuatorTypeTestCase(APITestCase):
+class ActuatorTypeTestCase(ActuatorAuthMixin, APITestCase):
     @run_with_any_layout
     def test_visible_fields(self):
         fields = ActuatorTypeSerializer().get_fields()
