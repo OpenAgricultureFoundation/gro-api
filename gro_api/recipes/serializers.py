@@ -107,7 +107,14 @@ class RecipeRunSerializer(BaseSerializer):
                 property = ResourceProperty.objects.get_by_natural_key(
                         command[1:2], command[2:4]
                 )
-                value = float(args.pop(0))
+                try:
+                   value = args.pop(0)
+                   value = float(value)
+                except ValueError:
+                    if value == b'NULL':
+                        value = None
+                    else:
+                        raise
                 set_point = SetPoint(
                     tray=tray, property=property, timestamp=command_timestamp,
                     value=value

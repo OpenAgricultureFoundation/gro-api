@@ -76,7 +76,7 @@ class DataPointViewSet(ModelViewSet):
         for point in serializer.data:
             sp_pk = point['sensing_point'].split('/')[-2]
             cache_key = 'sp_{}_value'.format(sp_pk)
-            cache.set(cache_key, json.dumps(point))
+            cache.set(cache_key, json.dumps(point), timeout=None)
         return Response(
             serializer.data, status=status.HTTP_201_CREATED, headers=headers
         )
