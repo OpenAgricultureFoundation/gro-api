@@ -12,14 +12,9 @@ from django.http.multipartparser import MultiPartParserError
 from django.utils import lru_cache
 from django.utils.encoding import force_text
 from django.views import debug
-# django.setup should be able to run even if the settings file was not
-# successfully imported so that management commands that don't require settings
-# parameters can run. Thus, we have to be lazy about all project-specific
-# imports in this file
-
-PATCH_SWAGGER = 'rest_framework_swagger' in settings.INSTALLED_APPS
-if PATCH_SWAGGER:
-    from rest_framework_swagger.urlparser import UrlParser
+from rest_framework_swagger.urlparser import UrlParser
+from .urls import get_current_urls
+from ..farms.models import Farm
 
 request_logger = logging.getLogger('django.request')
 
@@ -29,14 +24,11 @@ class FakeURLConfModule:
 
 @lru_cache.lru_cache(maxsize=None)
 def inner_get_resolver(urlconf, layout):
-    from .urls import get_current_urls
-
     return urlresolvers.RegexURLResolver(
         r'^/', FakeURLConfModule(get_current_urls())
     )
 
 def outer_get_resolver(urlconf):
-    from gro_state.farms.models import Farm
     return inner_get_resolver(urlconf, Farm.get_solo().layout)
 
 # Monkey patching `django.core.urlresolvers.get_resolver` doesn't completely
@@ -45,8 +37,8 @@ def outer_get_resolver(urlconf):
 # `django.core.urlresolvers.RegexURLResolver` on every request. This is
 # addressed by ticket #14200 (https://code.djangoproject.com/ticket/14200).
 # A patch for this problem has been written and accepted, and should appear in
-# the next Django release. Until then, we essentially apply the accepted patch
-# ourselves by monkey patching `BaseHandler.get_response`.
+# the next Django release (1.9). Until then, we essentially apply the accepted
+# patch ourselves by monkey patching `BaseHandler.get_response`.
 def new_get_response(self, request):
     # Setup default url resolver for this thread, this code is outside
     # the try/except so we don't get a spurious "unbound local

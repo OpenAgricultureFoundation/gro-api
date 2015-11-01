@@ -62,7 +62,6 @@ db.*
 
 env
 .env
-fifo
 *.swp
 *.swo
 secret.txt

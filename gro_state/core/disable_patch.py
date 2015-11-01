@@ -4,11 +4,7 @@ from rest_framework.generics import (
 )
 
 def disable_patch():
-    if disable_patch.has_run:
-        return
     del UpdateModelMixin.partial_update
     del UpdateAPIView.patch
     del RetrieveUpdateAPIView.patch
     del RetrieveUpdateDestroyAPIView.patch
-    disable_patch.has_run = True
-disable_patch.has_run = False
