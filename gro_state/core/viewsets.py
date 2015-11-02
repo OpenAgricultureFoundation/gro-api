@@ -1,14 +1,8 @@
 from rest_framework.mixins import (
     RetrieveModelMixin, UpdateModelMixin, ListModelMixin
 )
-from rest_framework.viewsets import ModelViewSet, GenericViewSet
+from rest_framework.viewsets import ModelViewSet
 from rest_framework.status import HTTP_201_CREATED
-
-class SingletonModelViewSet(RetrieveModelMixin,
-                            UpdateModelMixin,
-                            ListModelMixin,
-                            GenericViewSet):
-    pass
 
 class BulkModelViewSet(ModelViewSet):
     def create(self, request, *args, **kwargs):

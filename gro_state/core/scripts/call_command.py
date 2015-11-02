@@ -1,5 +1,7 @@
 import os
 import argparse
+from django.conf import settings
+from django.core.management import execute_from_command_line
 
 def call_command():
     parser = argparse.ArgumentParser()
@@ -13,7 +15,11 @@ def call_command():
         settings_module = 'gro_state.core.settings.prod'
     os.environ['DJANGO_SETTINGS_MODULE'] = settings_module
 
-    from django.core.management import execute_from_command_line
+    settings.INSTALLED_APPS
+
+    from django import setup
+    setup()
+
     execute_from_command_line([__file__] + args.args)
 
 if __name__ == '__main__':

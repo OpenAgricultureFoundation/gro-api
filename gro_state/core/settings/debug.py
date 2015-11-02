@@ -1,16 +1,10 @@
 import os
 from .base import *
-from gro_state.core.const import ServerType
 
 # Globals
 
 DEBUG = True
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath( __file__))))
-
-# Assign defaults for all system configuration parameters
-
-PARENT_SERVER = None
-SERVER_TYPE = ServerType.LEAF
 
 ### Installed apps
 
@@ -26,7 +20,7 @@ INSTALLED_APPS = GRO_STATE_APPS + FRAMEWORK_APPS
 ### Request handling
 
 MIDDLEWARE_CLASSES += (
-    'debug_toolbar.middleware.DebugToolbarMiddleware',
+    #'debug_toolbar.middleware.DebugToolbarMiddleware',
 )
 STATIC_ROOT = os.path.join(BASE_DIR, 'gro_state', 'static')
 MEDIA_ROOT = os.path.join(BASE_DIR, 'gro_state', 'media')

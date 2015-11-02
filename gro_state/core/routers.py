@@ -21,12 +21,12 @@ class BaseRouter(DefaultRouter):
         self._api_view_urls = {}
 
     @classmethod
-    def get_instance(cls, *args, **kwargs):
+    def get_instance(cls, layout, *args, **kwargs):
         """
         Gets an instance of this class populated with urls for the current farm
         layout
         """
-        router = cls(*args, **kwargs)
+        instance = cls(*args, **kwargs)
         for app_name in settings.GRO_STATE_APPS:
             try:
                 # Try to use the `contribute_to_router` function in the
@@ -41,14 +41,14 @@ class BaseRouter(DefaultRouter):
                 else:
                     raise
             if hasattr(app_urls, 'contribute_to_router'):
-                app_urls.contribute_to_router(router)
+                app_urls.contribute_to_router(instance, layout)
             else:
                 raise Exception(
                     'Failed to load urls for app "{}". `urls` submodule '
                     'should define a function '
                     '`contribute_to_router`.'.format(app_name)
                 )
-        return router
+        return instance
 
     def add_api_view(self, name, url):
         """

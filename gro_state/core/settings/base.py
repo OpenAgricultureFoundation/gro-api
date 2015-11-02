@@ -7,14 +7,16 @@ import django
 # Patch django.setup to call our monkey-patching scripts
 old_setup = django.setup
 if not getattr(old_setup, 'is_patched', False):
-    def new_setup():
-        from gro_state.core.patch_resolvers import patch_resolvers
-        from gro_state.core.disable_patch import disable_patch
-        patch_resolvers()
-        disable_patch()
+    def my_setup():
+        if not getattr(my_setup, 'has_run', False):
+            from gro_state.core.handler import patch_handler
+            from gro_state.core.disable_patch import disable_patch
+            patch_handler()
+            disable_patch()
+        my_setup.has_run = True
         old_setup()
-    new_setup.is_patched = True
-    django.setup = new_setup
+    my_setup.is_patched = True
+    django.setup = my_setup
 
 ### General globals
 
@@ -74,7 +76,6 @@ MIDDLEWARE_CLASSES = (
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
     'django.middleware.security.SecurityMiddleware',
-    'gro_state.core.middleware.FarmIsConfiguredCheckMiddleware',
 )
 
 CORS_ORIGIN_ALLOW_ALL = True

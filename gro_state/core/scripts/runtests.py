@@ -7,7 +7,6 @@ def runtests():
     settings_module = 'gro_state.core.settings.debug'
     os.environ['DJANGO_SETTINGS_MODULE'] = settings_module
 
-    # Force the settings file to be loaded before django.setup is called
     settings.INSTALLED_APPS
     from django import setup
     setup()

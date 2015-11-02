@@ -1,6 +1,7 @@
 import sys
 import types
 import logging
+from threading import local
 from django import http
 from django.conf import settings
 from django.core import signals, urlresolvers
@@ -14,7 +15,10 @@ from django.utils.encoding import force_text
 from django.views import debug
 from rest_framework_swagger.urlparser import UrlParser
 from .urls import get_current_urls
+from .utils import get_farm_from_request, get_layout_from_farm
 from ..farms.models import Farm
+
+_layout = local()
 
 request_logger = logging.getLogger('django.request')
 
@@ -23,31 +27,28 @@ class FakeURLConfModule:
         self.urlpatterns = urls
 
 @lru_cache.lru_cache(maxsize=None)
-def inner_get_resolver(urlconf, layout):
+def get_resolver_by_layout(layout):
     return urlresolvers.RegexURLResolver(
-        r'^/', FakeURLConfModule(get_current_urls())
+        r'^/', FakeURLConfModule(get_current_urls(layout))
     )
 
-def outer_get_resolver(urlconf):
-    return inner_get_resolver(urlconf, Farm.get_solo().layout)
+def get_resolver_by_urlconf(urlconf):
+    # the urlconf should never actually change, but we need this to replace the
+    # old get_resolver function
+    return get_resolver_by_layout(_layout.value)
 
-# Monkey patching `django.core.urlresolvers.get_resolver` doesn't completely
-# solve the problem in Django 1.8.3 because
-# `django.core.handlers.base.BaseHandler` creates a new
-# `django.core.urlresolvers.RegexURLResolver` on every request. This is
-# addressed by ticket #14200 (https://code.djangoproject.com/ticket/14200).
-# A patch for this problem has been written and accepted, and should appear in
-# the next Django release (1.9). Until then, we essentially apply the accepted
-# patch ourselves by monkey patching `BaseHandler.get_response`.
-def new_get_response(self, request):
-    # Setup default url resolver for this thread, this code is outside
-    # the try/except so we don't get a spurious "unbound local
-    # variable" exception in the event an exception is raised before
-    # resolver is set
-    urlconf = settings.ROOT_URLCONF
-    urlresolvers.set_urlconf(urlconf)
-    resolver = urlresolvers.get_resolver(urlconf)
+def my_get_response(self, request):
+    # There must be a default resolver in case there is an error before _layout
+    # is computed
+    resolver = get_resolver_by_layout(None)
+
     try:
+        # Set the value of _layout for the current thread
+        slug = get_farm_from_request(request)
+        _layout.value = slug and get_layout_from_farm(slug)
+
+        resolver = get_resolver_by_layout(_layout.value)
+
         response = None
         # Apply request middleware
         for middleware_method in self._request_middleware:
@@ -56,12 +57,6 @@ def new_get_response(self, request):
                 break
 
         if response is None:
-            if hasattr(request, 'urlconf'):
-                # Reset url resolver with a custom urlconf.
-                urlconf = request.urlconf
-                urlresolvers.set_urlconf(urlconf)
-                resolver = urlresolvers.get_resolver(urlconf)
-
             resolver_match = resolver.resolve(request.path_info)
             callback, callback_args, callback_kwargs = resolver_match
             request.resolver_match = resolver_match
@@ -180,22 +175,19 @@ def new_get_response(self, request):
 
     response._closable_objects.append(request)
 
+    if hasattr(_layout, 'value'):
+        del _layout.value
+
     return response
 
-if PATCH_SWAGGER:
-    def new_get_apis(self, patterns=None, urlconf=None, filter_path=None, exclude_namespaces=[]):
-        # Loading this upon module import causes problems, so we're going to be
-        # lazy about it
-        from .urls import get_current_urls
+def my_get_apis(self, patterns=None, urlconf=None, filter_path=None, exclude_namespaces=[]):
+    real_urlconf = FakeURLConfModule(get_current_urls())
+    return self.old_get_apis(
+        patterns, real_urlconf, filter_path, exclude_namespaces
+    )
 
-        real_urlconf = FakeURLConfModule(get_current_urls())
-        return self.old_get_apis(
-            patterns, real_urlconf, filter_path, exclude_namespaces
-        )
-
-def patch_resolvers():
-    urlresolvers.get_resolver = outer_get_resolver
-    BaseHandler.get_response = new_get_response
-    if PATCH_SWAGGER and not hasattr(UrlParser, 'old_get_apis'):
-        UrlParser.old_get_apis = UrlParser.get_apis
-        UrlParser.get_apis = new_get_apis
+def patch_handler():
+    BaseHandler.get_response = my_get_response
+    urlresolvers.get_resolver = get_resolver_by_urlconf
+    UrlParser.old_get_apis = UrlParser.get_apis
+    UrlParser.get_apis = my_get_apis

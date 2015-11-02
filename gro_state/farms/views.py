@@ -1,9 +1,9 @@
 from ..farms.models import Farm
 from ..farms.serializers import FarmSerializer
-from ..core.viewsets import SingletonModelViewSet
+from rest_framework.viewsets import ModelViewSet
 
 
-class FarmViewSet(SingletonModelViewSet):
+class FarmViewSet(ModelViewSet):
     """ Represents a single physical OpenAg system """
     queryset = Farm.objects.all()
     serializer_class = FarmSerializer
