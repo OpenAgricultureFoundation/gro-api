@@ -23,6 +23,6 @@ application = get_wsgi_application()
 # lazy
 from django.test import RequestFactory
 
-fake_environ = RequestFactory().get('/').environ
+fake_environ = RequestFactory().get('/api/').environ
 fake_start_response = lambda x, y: None
 application(fake_environ, fake_start_response)

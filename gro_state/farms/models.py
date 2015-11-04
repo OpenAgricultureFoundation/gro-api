@@ -57,3 +57,6 @@ def generate_and_verify_slug(sender, instance, **kwargs):
     # once set
     if instance._old_slug and instance.slug != instance._old_slug:
         raise SlugChangeAttempted()
+
+
+class User(models.Model):

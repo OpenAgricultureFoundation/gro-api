@@ -22,8 +22,8 @@ INSTALLED_APPS = GRO_STATE_APPS + FRAMEWORK_APPS
 MIDDLEWARE_CLASSES += (
     #'debug_toolbar.middleware.DebugToolbarMiddleware',
 )
-STATIC_ROOT = os.path.join(BASE_DIR, 'gro_state', 'static')
-MEDIA_ROOT = os.path.join(BASE_DIR, 'gro_state', 'media')
+STATIC_ROOT = os.path.join(BASE_DIR, 'core', 'static')
+MEDIA_ROOT = os.path.join(BASE_DIR, 'core', 'media')
 
 ### Databases
 

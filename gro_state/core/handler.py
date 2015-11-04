@@ -14,11 +14,11 @@ from django.utils import lru_cache
 from django.utils.encoding import force_text
 from django.views import debug
 from rest_framework_swagger.urlparser import UrlParser
-from .urls import get_current_urls
+from .urls import get_urls_by_layout
 from .utils import get_farm_from_request, get_layout_from_farm
 from ..farms.models import Farm
 
-_layout = local()
+_farm = local()
 
 request_logger = logging.getLogger('django.request')
 
@@ -29,13 +29,13 @@ class FakeURLConfModule:
 @lru_cache.lru_cache(maxsize=None)
 def get_resolver_by_layout(layout):
     return urlresolvers.RegexURLResolver(
-        r'^/', FakeURLConfModule(get_current_urls(layout))
+        r'^/', FakeURLConfModule(get_urls_by_layout(layout))
     )
 
 def get_resolver_by_urlconf(urlconf):
     # the urlconf should never actually change, but we need this to replace the
     # old get_resolver function
-    return get_resolver_by_layout(_layout.value)
+    return get_resolver_by_layout(_farm.layout)
 
 def my_get_response(self, request):
     # There must be a default resolver in case there is an error before _layout
@@ -44,10 +44,10 @@ def my_get_response(self, request):
 
     try:
         # Set the value of _layout for the current thread
-        slug = get_farm_from_request(request)
-        _layout.value = slug and get_layout_from_farm(slug)
+        _farm.slug = get_farm_from_request(request)
+        _farm.layout = _farm.slug and get_layout_from_farm(_farm.slug)
 
-        resolver = get_resolver_by_layout(_layout.value)
+        resolver = get_resolver_by_layout(_farm.layout)
 
         response = None
         # Apply request middleware
@@ -175,13 +175,15 @@ def my_get_response(self, request):
 
     response._closable_objects.append(request)
 
-    if hasattr(_layout, 'value'):
-        del _layout.value
+    if hasattr(_farm, 'slug'):
+        del _farm.slug
+    if hasattr(_farm, 'layout'):
+        del _farm.layout
 
     return response
 
 def my_get_apis(self, patterns=None, urlconf=None, filter_path=None, exclude_namespaces=[]):
-    real_urlconf = FakeURLConfModule(get_current_urls())
+    real_urlconf = FakeURLConfModule(get_urls_by_layout('tray'))
     return self.old_get_apis(
         patterns, real_urlconf, filter_path, exclude_namespaces
     )

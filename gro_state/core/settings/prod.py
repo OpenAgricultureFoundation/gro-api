@@ -25,8 +25,8 @@ INSTALLED_APPS = GRO_STATE_APPS + FRAMEWORK_APPS
 
 ### Request handling
 
-STATIC_ROOT = '/var/www/gro/static'
-MEDIA_ROOT = '/var/www/gro/media'
+STATIC_ROOT = '/var/www/gro/state/static'
+MEDIA_ROOT = '/var/www/gro/state/media'
 
 CSRF_COOKIE_SECURE = True
 SESSION_COOKIE_SECURE = True
