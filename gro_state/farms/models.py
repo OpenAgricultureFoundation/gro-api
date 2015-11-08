@@ -1,9 +1,11 @@
 from slugify import slugify
 from django.db import models
-from django.db.models.signals import pre_save, post_save
+from django.db.models.signals import post_migrate, pre_save, post_save
 from django.conf import settings
+from django.contrib.auth.models import User
 from django.dispatch import receiver
 from rest_framework import status
+from rest_framework.authtoken.models import Token
 from rest_framework.exceptions import APIException
 from ..layout.schemata import all_schemata
 
@@ -42,6 +44,12 @@ class SlugChangeAttempted(APIException):
         'not allowed.'
     )
 
+@receiver(post_migrate)
+def create_farm(sender, **kwargs):
+    try:
+        Farm.objects.get_or_create(pk=1)
+    except OperationalError:
+        pass
 
 @receiver(pre_save, sender=Farm)
 def generate_and_verify_slug(sender, instance, **kwargs):
@@ -57,6 +65,3 @@ def generate_and_verify_slug(sender, instance, **kwargs):
     # once set
     if instance._old_slug and instance.slug != instance._old_slug:
         raise SlugChangeAttempted()
-
-
-class User(models.Model):

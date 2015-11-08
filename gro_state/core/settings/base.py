@@ -21,10 +21,15 @@ if not getattr(old_setup, 'is_patched', False):
 ### General globals
 
 REST_FRAMEWORK = {
-    'DEFAULT_AUTHENTICATION_CLASSES': ('rest_framework.authentication.TokenAuthentication',),
+    'DEFAULT_AUTHENTICATION_CLASSES': (
+        'rest_framework.authentication.SessionAuthentication',
+        'rest_framework.authentication.TokenAuthentication',
+    ),
     'DEFAULT_FILTER_BACKENDS': ('rest_framework.filters.DjangoFilterBackend',),
     'DEFAULT_PAGINATION_CLASS': 'gro_state.core.pagination.Pagination',
-    'DEFAULT_PERMISSION_CLASSES': ('rest_framework.permissions.DjangoModelPermissionsOrAnonReadOnly', ),
+    'DEFAULT_PERMISSION_CLASSES': (
+        'rest_framework.permissions.DjangoModelPermissionsOrAnonReadOnly',
+    ),
     'EXCEPTION_HANDLER': 'gro_state.core.views.exception_handler',
     'PAGE_SIZE': 100,
 }
@@ -58,7 +63,6 @@ FRAMEWORK_APPS = (
     'rest_auth',
     'allauth',
     'allauth.account',
-    'allauth.socialaccount',
     'rest_auth.registration',
 )
 
