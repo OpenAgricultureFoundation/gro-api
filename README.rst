@@ -13,6 +13,8 @@ gro-API
     :target: https://requires.io/github/OpenAgInitiative/gro-api/requirements/?branch=master
     :alt: Requirements Status
 
+**DEPRECATED** This repository is no longer being actively maintained.
+
 The gro-API is a REST server that manages an instance of a controlled growing
 environment. Users can write to resources on the server to control and monitor
 the environment itself, and firmware in the environment should write data to
